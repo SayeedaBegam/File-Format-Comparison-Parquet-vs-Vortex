@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.ipc as ipc
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
@@ -103,40 +104,72 @@ def write_vortex(
         arrow_table = con.execute(f"SELECT * FROM {table_name}").fetch_arrow_table()
         logger.info(f"Got {arrow_table.num_rows} rows")
 
-        vx_array = vx.array(arrow_table)
-        if use_compact:
-            vx_array = vx.compress(vx_array)
-
-        t0 = time.perf_counter()
-
-        if _VORTEX_HAS_IO:
-            vfile = out_dir / f"{table_name}.vortex"
+        try:
+            vx_array = vx.array(arrow_table)
             if use_compact:
-                vx.io.VortexWriteOptions.compact().write_path(vx_array, str(vfile))
+                vx_array = vx.compress(vx_array)
+
+            t0 = time.perf_counter()
+
+            if _VORTEX_HAS_IO:
+                vfile = out_dir / f"{table_name}.vortex"
+                if use_compact:
+                    vx.io.VortexWriteOptions.compact().write_path(vx_array, str(vfile))
+                else:
+                    vx.io.write(vx_array, str(vfile))
             else:
-                vx.io.write(vx_array, str(vfile))
-        else:
-            afile = out_dir / f"{table_name}.vortex.arrow"
-            arr_out = vx_array.to_arrow_table()
-            with pa.OSFile(str(afile), 'wb') as f:
-                writer = ipc.new_file(f, arr_out.schema)
-                writer.write_table(arr_out)
-                writer.close()
-            meta = {"vortex": _VORTEX_VERSION, "compact": use_compact}
-            (out_dir / f"{table_name}.meta").write_text(json.dumps(meta))
+                afile = out_dir / f"{table_name}.vortex.arrow"
+                arr_out = vx_array.to_arrow_table()
+                with pa.OSFile(str(afile), 'wb') as f:
+                    writer = ipc.new_file(f, arr_out.schema)
+                    writer.write_table(arr_out)
+                    writer.close()
+                meta = {"vortex": _VORTEX_VERSION, "compact": use_compact}
+                (out_dir / f"{table_name}.meta").write_text(json.dumps(meta))
 
-        compression_time = time.perf_counter() - t0
-        size = _dir_size(out_dir)
+            compression_time = time.perf_counter() - t0
+            size = _dir_size(out_dir)
 
-        return {
-            "format": "vortex",
-            "variant": _variant_name(options),
-            "compression_time_s": compression_time,
-            "compressed_size_bytes": size,
-            "writer_options": {"compact": use_compact, "has_io": _VORTEX_HAS_IO},
-        }
+            return {
+                "format": "vortex",
+                "variant": _variant_name(options),
+                "compression_time_s": compression_time,
+                "compressed_size_bytes": size,
+                "output_size_bytes": size,
+                "writer_options": {"compact": use_compact, "has_io": _VORTEX_HAS_IO},
+            }
+        except Exception:
+            _log_cast_diagnostics(arrow_table)
+            raise
     except Exception as e:
         raise RuntimeError(f"write_vortex failed: {e}") from e
+
+
+def _log_cast_diagnostics(tbl: pa.Table) -> None:
+    # Best-effort diagnostics for Vortex cast failures.
+    for name in tbl.schema.names:
+        col = tbl[name]
+        if not pa.types.is_integer(col.type):
+            continue
+        try:
+            min_val = pc.min(col).as_py()
+            max_val = pc.max(col).as_py()
+            logger.error(f"Column '{name}' type {col.type} min={min_val} max={max_val}")
+            if min_val is not None and min_val < 0:
+                try:
+                    import numpy as np
+                    vals = col.to_numpy(zero_copy_only=False)
+                    neg_idx = np.where(vals < 0)[0]
+                    if neg_idx.size > 0:
+                        i = int(neg_idx[0])
+                        logger.error(f"First negative in '{name}' at row {i}: {vals[i]}")
+                except Exception as e:
+                    logger.error(f"Failed to locate negative row for '{name}': {e}")
+            # U16 range hint for common cast failures
+            if max_val is not None and max_val > 65535:
+                logger.error(f"Column '{name}' exceeds U16 max: {max_val}")
+        except Exception as e:
+            logger.error(f"Failed diagnostics for '{name}': {e}")
 
 
 def scan_expr(out_path: str) -> str:

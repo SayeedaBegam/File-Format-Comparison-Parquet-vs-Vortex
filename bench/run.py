@@ -12,7 +12,13 @@ from typing import Dict, Any, List, Tuple, Optional
 import duckdb
 
 from ingest.generic_ingest import create_base_table_from_csv, create_base_table_from_parquet
-from backends import parquet_backend  # vortex_backend to be added by teammate
+from backends import parquet_backend
+try:
+    from backends import vortex_backend
+    _VORTEX_AVAILABLE = True
+except Exception:
+    vortex_backend = None
+    _VORTEX_AVAILABLE = False
 from report.report import write_csv, write_json, write_markdown
 
 
@@ -64,6 +70,9 @@ def main():
     ap.add_argument("--csv-sample-size", type=int, default=None, help="DuckDB read_csv_auto sample_size (e.g., -1 for full scan)")
     ap.add_argument("--csv-all-varchar", action="store_true", help="Force all CSV columns to VARCHAR")
     ap.add_argument("--csv-ignore-errors", action="store_true", help="Skip bad CSV rows during parsing")
+    ap.add_argument("--csv-delimiter", default=None, help="CSV delimiter (e.g., '|' for pipe-delimited files)")
+    ap.add_argument("--csv-header", default=None, choices=["true", "false"], help="Whether CSV has header row (true/false)")
+    ap.add_argument("--csv-nullstr", default=None, help="String to treat as NULL (e.g., 'null')")
 
     ap.add_argument("--min-col", default=None)
     ap.add_argument("--filter-col", default=None)
@@ -80,6 +89,10 @@ def main():
     # Parquet knobs
     ap.add_argument("--parquet-codec", default="zstd")
     ap.add_argument("--parquet-row-group-size", type=int, default=128_000)
+    # Vortex knobs
+    ap.add_argument("--vortex-compact", action="store_true", help="Use vortex compact encoding (if available)")
+    ap.add_argument("--vortex-cast", default=None, help="Comma-separated casts for Vortex only, e.g. col1:BIGINT,col2:VARCHAR")
+    ap.add_argument("--vortex-drop-cols", default=None, help="Comma-separated column names to drop for Vortex only")
 
     # DuckDB knobs
     ap.add_argument("--threads", type=int, default=None)
@@ -102,6 +115,12 @@ def main():
             read_csv_options["all_varchar"] = True
         if args.csv_ignore_errors:
             read_csv_options["ignore_errors"] = True
+        if args.csv_delimiter:
+            read_csv_options["delim"] = args.csv_delimiter
+        if args.csv_header is not None:
+            read_csv_options["header"] = (args.csv_header == "true")
+        if args.csv_nullstr is not None:
+            read_csv_options["nullstr"] = args.csv_nullstr
         create_base_table_from_csv(
             con,
             args.table,
@@ -144,10 +163,7 @@ def main():
     parquet_scan = parquet_backend.scan_expr(parquet_meta.get("parquet_path", parquet_out))
 
     # Queries
-    filter_val_sql = args.filter_val
-    # treat non-numeric as string literal
-    if not _looks_numeric(args.filter_val):
-        filter_val_sql = "'" + args.filter_val.replace("'", "''") + "'"
+    filter_val_sql = _format_filter_value(con, args.table, args.filter_col, args.filter_val)
 
     q_full = f"SELECT min({args.min_col}) FROM {parquet_scan};"
     q_rand = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
@@ -190,10 +206,89 @@ def main():
         "best_select_col_avg_median_ms": best_select_col[1] if best_select_col else None,
     }
 
-    # ---------- Vortex placeholder ----------
-    report["formats"]["vortex_default"] = {
-        "note": "Not run yet: vortex_backend.py not implemented.",
-    }
+    # ---------- Vortex pipeline ----------
+    if _VORTEX_AVAILABLE:
+        try:
+            vortex_out = str(out_dir / "vortex")
+            vortex_table = args.table
+            cast_map = _parse_casts(args.vortex_cast)
+            drop_cols = _parse_list(args.vortex_drop_cols)
+            if cast_map or drop_cols:
+                desc = con.execute(f"DESCRIBE {args.table};").fetchall()
+                select_parts = []
+                for col, *_ in desc:
+                    if col in drop_cols:
+                        continue
+                    qcol = _quote_ident(col)
+                    if col in cast_map:
+                        select_parts.append(f"CAST({qcol} AS {cast_map[col]}) AS {qcol}")
+                    else:
+                        select_parts.append(qcol)
+                con.execute(f"CREATE OR REPLACE TEMP VIEW vortex_source AS SELECT {', '.join(select_parts)} FROM {args.table};")
+                vortex_table = "vortex_source"
+            vortex_meta = vortex_backend.write_vortex(
+                con,
+                vortex_table,
+                vortex_out,
+                options={"compact": args.vortex_compact},
+            )
+            vortex_backend.register_vortex_dataset(con, vortex_out, view_name="vortex_dataset")
+            vortex_scan = vortex_backend.scan_expr(vortex_out)
+            min_col_expr_vx = _vortex_numeric_expr(con, "vortex_dataset", args.min_col)
+            sel_col_exprs_vx = {c: _vortex_numeric_expr(con, "vortex_dataset", c) for c in select_cols}
+            filter_val_sql_vx = _format_filter_value(con, "vortex_dataset", args.filter_col, args.filter_val)
+
+            q_full_vx = f"SELECT min({min_col_expr_vx}) FROM {vortex_scan};"
+            q_rand_vx = f"SELECT min({min_col_expr_vx}) FROM {vortex_scan} WHERE {args.filter_col} = {filter_val_sql_vx};"
+
+            m_full_vx = timed_query(con, q_full_vx, repeats=args.repeats, warmup=args.warmup)
+            m_rand_vx = timed_query(con, q_rand_vx, repeats=args.repeats, warmup=args.warmup)
+
+            sel_results_by_col_vx: Dict[str, List[Dict[str, Any]]] = {}
+            avg_selectivity_ms_vx: Dict[str, float] = {}
+            for sel_col in select_cols:
+                thresholds = quantile_thresholds(con, args.table, sel_col, ps)
+                sel_results = []
+                for p, thr in thresholds:
+                    thr_sql = format_value_sql(thr)
+                    q_sel = f"SELECT min({min_col_expr_vx}) FROM {vortex_scan} WHERE {sel_col_exprs_vx[sel_col]} <= {thr_sql};"
+                    m_sel = timed_query(con, q_sel, repeats=args.repeats, warmup=args.warmup)
+                    sel_results.append({"p": p, "threshold": thr, **m_sel})
+
+                    rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"),
+                                         "selectivity", p, vortex_meta, m_sel, select_col=sel_col))
+                sel_results_by_col_vx[sel_col] = sel_results
+                ms_values = [r["median_ms"] for r in sel_results if r.get("median_ms") is not None]
+                if ms_values:
+                    avg_selectivity_ms_vx[sel_col] = sum(ms_values) / len(ms_values)
+
+            rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"),
+                                 "full_scan_min", None, vortex_meta, m_full_vx))
+            rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"),
+                                 "random_access", None, vortex_meta, m_rand_vx))
+
+            best_select_col_vx = None
+            if avg_selectivity_ms_vx:
+                best_select_col_vx = min(avg_selectivity_ms_vx.items(), key=lambda kv: kv[1])
+
+            report["formats"][vortex_meta.get("variant", "vortex_default")] = {
+                "write": vortex_meta,
+                "queries": {
+                    "full_scan_min": m_full_vx,
+                    "random_access": m_rand_vx,
+                    "selectivity_by_col": sel_results_by_col_vx,
+                },
+                "best_select_col": best_select_col_vx[0] if best_select_col_vx else None,
+                "best_select_col_avg_median_ms": best_select_col_vx[1] if best_select_col_vx else None,
+            }
+        except Exception as e:
+            report["formats"]["vortex_error"] = {
+                "note": f"Vortex run failed: {e}",
+            }
+    else:
+        report["formats"]["vortex_default"] = {
+            "note": "Vortex backend unavailable (missing dependencies or import error).",
+        }
 
     # Write outputs (include dataset name to avoid overwrites)
     dataset_label = _dataset_label(args.input)
@@ -268,6 +363,19 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
             lines.append(f"- random_access median_ms: **{q['random_access']['median_ms']:.2f}**")
             if body.get("best_select_col"):
                 lines.append(f"- best_select_col: `{body.get('best_select_col')}` (avg median_ms **{body.get('best_select_col_avg_median_ms'):.2f}**)")
+            sel = q.get("selectivity_by_col", {})
+            if sel:
+                lines.append("- selectivity:")
+                for col, items in sel.items():
+                    parts = []
+                    for it in items:
+                        p = it.get("p")
+                        med = it.get("median_ms")
+                        if p is None or med is None:
+                            continue
+                        parts.append(f"{int(p*100)}%: {med:.2f}ms")
+                    if parts:
+                        lines.append(f"  - {col}: " + ", ".join(parts))
         else:
             lines.append(f"- {body.get('note','')}")
         lines.append("")
@@ -311,6 +419,65 @@ def _auto_pick_cols(con: duckdb.DuckDBPyConnection, table_name: str) -> Tuple[st
     ).fetchone()
     filter_val = filter_val[0] if filter_val else None
     return min_col, filter_col, filter_val, select_col
+
+
+def _parse_casts(spec: Optional[str]) -> Dict[str, str]:
+    if not spec:
+        return {}
+    out: Dict[str, str] = {}
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if ":" not in part:
+            raise SystemExit(f"Invalid --vortex-cast entry '{part}', expected col:TYPE")
+        col, typ = part.split(":", 1)
+        col = col.strip()
+        typ = typ.strip()
+        if not col or not typ:
+            raise SystemExit(f"Invalid --vortex-cast entry '{part}', expected col:TYPE")
+        out[col] = typ
+    return out
+
+
+def _quote_ident(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
+def _parse_list(spec: Optional[str]) -> List[str]:
+    if not spec:
+        return []
+    out = []
+    for part in spec.split(","):
+        part = part.strip()
+        if part:
+            out.append(part)
+    return out
+
+
+def _describe_types(con: duckdb.DuckDBPyConnection, table_name: str) -> Dict[str, str]:
+    desc = con.execute(f"DESCRIBE {table_name};").fetchall()
+    return {c: t.upper() for c, t, *_ in desc}
+
+
+def _format_filter_value(con: duckdb.DuckDBPyConnection, table_name: str, col: str, val: Any) -> str:
+    if val is None:
+        return "NULL"
+    col_types = _describe_types(con, table_name)
+    col_type = col_types.get(col, "")
+    text_types = {"VARCHAR", "TEXT"}
+    if col_type in text_types:
+        return "'" + str(val).replace("'", "''") + "'"
+    return str(val)
+
+
+def _vortex_numeric_expr(con: duckdb.DuckDBPyConnection, table_name: str, col: str) -> str:
+    col_types = _describe_types(con, table_name)
+    col_type = col_types.get(col, "")
+    qcol = _quote_ident(col)
+    if col_type in {"VARCHAR", "TEXT"}:
+        return f"TRY_CAST({qcol} AS DOUBLE)"
+    return qcol
 
 
 if __name__ == "__main__":

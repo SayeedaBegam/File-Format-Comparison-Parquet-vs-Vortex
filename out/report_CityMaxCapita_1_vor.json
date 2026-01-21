@@ -1,0 +1,165 @@
+{
+  "columns": {
+    "filter_col": "column00",
+    "min_col": "column03",
+    "select_col": "column03",
+    "select_cols": [
+      "column03"
+    ]
+  },
+  "dataset": {
+    "input": "clouddb_project/CityMaxCapita_1_vor.csv",
+    "input_type": "csv",
+    "rows": 912657
+  },
+  "formats": {
+    "parquet_zstd": {
+      "best_select_col": "column03",
+      "best_select_col_avg_median_ms": 13.434346599751734,
+      "queries": {
+        "full_scan_min": {
+          "median_ms": 11.91679700059467,
+          "p95_ms": 15.185949001534027,
+          "result_value": 41790.8448726852,
+          "runs": 7
+        },
+        "random_access": {
+          "median_ms": 8.493095001540496,
+          "p95_ms": 13.673279998329235,
+          "result_value": 41790.8448726852,
+          "runs": 7
+        },
+        "selectivity_by_col": {
+          "column03": [
+            {
+              "median_ms": 13.192227999752504,
+              "p": 0.01,
+              "p95_ms": 18.92345400119666,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 41807.02514166663
+            },
+            {
+              "median_ms": 13.511838000340504,
+              "p": 0.1,
+              "p95_ms": 15.899792000709567,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 41952.61608796292
+            },
+            {
+              "median_ms": 12.938928999574273,
+              "p": 0.25,
+              "p95_ms": 16.145589999723597,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42050.2607175926
+            },
+            {
+              "median_ms": 13.460858999678749,
+              "p": 0.5,
+              "p95_ms": 15.177139999650535,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42152.6147685185
+            },
+            {
+              "median_ms": 14.067878999412642,
+              "p": 0.9,
+              "p95_ms": 14.995941000961466,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42305.8618009259
+            }
+          ]
+        }
+      },
+      "write": {
+        "codec": "zstd",
+        "compression_level": null,
+        "compression_time_s": 1.2757397209988994,
+        "output_size_bytes": 89412492,
+        "parquet_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/parquet/base_table.parquet",
+        "row_group_size": 128000
+      }
+    },
+    "vortex_compact": {
+      "best_select_col": "column03",
+      "best_select_col_avg_median_ms": 1.849941399632371,
+      "queries": {
+        "full_scan_min": {
+          "median_ms": 0.9526110006845556,
+          "p95_ms": 1.037949999954435,
+          "result_value": 41790.8448726852,
+          "runs": 7
+        },
+        "random_access": {
+          "median_ms": 0.9426810011063935,
+          "p95_ms": 1.231311000083224,
+          "result_value": 41790.8448726852,
+          "runs": 7
+        },
+        "selectivity_by_col": {
+          "column03": [
+            {
+              "median_ms": 1.2427210003806977,
+              "p": 0.01,
+              "p95_ms": 1.808761000575032,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 41807.02514166663
+            },
+            {
+              "median_ms": 1.2868609992437996,
+              "p": 0.1,
+              "p95_ms": 1.7687210001895437,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 41952.61608796292
+            },
+            {
+              "median_ms": 1.9082609996985411,
+              "p": 0.25,
+              "p95_ms": 2.0509719997789944,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42050.2607175926
+            },
+            {
+              "median_ms": 2.158281999072642,
+              "p": 0.5,
+              "p95_ms": 2.348091000385466,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42152.6147685185
+            },
+            {
+              "median_ms": 2.6535819997661747,
+              "p": 0.9,
+              "p95_ms": 2.7079720002802787,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42305.8618009259
+            }
+          ]
+        }
+      },
+      "write": {
+        "compressed_size_bytes": 480618135,
+        "compression_time_s": 4.271003121999456,
+        "format": "vortex",
+        "output_size_bytes": 480618135,
+        "variant": "vortex_compact",
+        "writer_options": {
+          "compact": true,
+          "has_io": false
+        }
+      }
+    }
+  },
+  "system": {
+    "machine": "pool01-p-11.lnx.utn.de",
+    "platform": "Linux-5.15.0-164-generic-x86_64-with-glibc2.35",
+    "python": "3.10.12"
+  }
+}

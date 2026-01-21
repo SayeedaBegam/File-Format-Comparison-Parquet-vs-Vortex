@@ -25,7 +25,20 @@ def create_base_table_from_csv(
         con.execute(schema_sql)
         # assumes schema SQL creates table with correct name
         # if not, user should pass matching table_name in schema file
-        con.execute(f"COPY {table_name} FROM '{str(p)}' (AUTO_DETECT FALSE, HEADER TRUE);")
+        copy_args = ["AUTO_DETECT FALSE"]
+        if opts:
+            # Map read_csv_auto-style options to COPY options
+            if "delim" in opts or "delimiter" in opts:
+                delim = opts.get("delim", opts.get("delimiter"))
+                copy_args.append(f"DELIMITER '{delim}'")
+            if "header" in opts:
+                copy_args.append(f"HEADER {'TRUE' if opts['header'] else 'FALSE'}")
+            if "nullstr" in opts:
+                copy_args.append(f"NULLSTR '{opts['nullstr']}'")
+            if "ignore_errors" in opts:
+                copy_args.append(f"IGNORE_ERRORS {'TRUE' if opts['ignore_errors'] else 'FALSE'}")
+        copy_args_sql = ", ".join(copy_args)
+        con.execute(f"COPY {table_name} FROM '{str(p)}' ({copy_args_sql});")
         return
 
     # inference path

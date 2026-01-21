@@ -1,0 +1,165 @@
+{
+  "columns": {
+    "filter_col": "column02",
+    "min_col": "column00",
+    "select_col": "column00",
+    "select_cols": [
+      "column00"
+    ]
+  },
+  "dataset": {
+    "input": "clouddb_project/Euro2016_1.csv",
+    "input_type": "csv",
+    "rows": 2052497
+  },
+  "formats": {
+    "parquet_zstd": {
+      "best_select_col": "column00",
+      "best_select_col_avg_median_ms": 19.988952800486004,
+      "queries": {
+        "full_scan_min": {
+          "median_ms": 20.42021500164992,
+          "p95_ms": 22.159797998028807,
+          "result_value": 1,
+          "runs": 7
+        },
+        "random_access": {
+          "median_ms": 20.37294500041753,
+          "p95_ms": 21.506676999706542,
+          "result_value": 1,
+          "runs": 7
+        },
+        "selectivity_by_col": {
+          "column00": [
+            {
+              "median_ms": 18.55914200132247,
+              "p": 0.01,
+              "p95_ms": 20.40149599997676,
+              "result_value": 1,
+              "runs": 7,
+              "threshold": 1.0
+            },
+            {
+              "median_ms": 21.982237998599885,
+              "p": 0.1,
+              "p95_ms": 22.156348000862636,
+              "result_value": 1,
+              "runs": 7,
+              "threshold": 1.0
+            },
+            {
+              "median_ms": 19.75707500241697,
+              "p": 0.25,
+              "p95_ms": 20.93611600139411,
+              "result_value": 1,
+              "runs": 7,
+              "threshold": 1.0
+            },
+            {
+              "median_ms": 19.60959400093998,
+              "p": 0.5,
+              "p95_ms": 22.037279002688592,
+              "result_value": 1,
+              "runs": 7,
+              "threshold": 1.0
+            },
+            {
+              "median_ms": 20.036714999150718,
+              "p": 0.9,
+              "p95_ms": 20.364343999972334,
+              "result_value": 1,
+              "runs": 7,
+              "threshold": 1.0
+            }
+          ]
+        }
+      },
+      "write": {
+        "codec": "zstd",
+        "compression_level": null,
+        "compression_time_s": 1.240047458002664,
+        "output_size_bytes": 102528930,
+        "parquet_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/parquet/base_table.parquet",
+        "row_group_size": 128000
+      }
+    },
+    "vortex_compact": {
+      "best_select_col": "column00",
+      "best_select_col_avg_median_ms": 23.859565400198335,
+      "queries": {
+        "full_scan_min": {
+          "median_ms": 19.23332500155084,
+          "p95_ms": 20.8615160008776,
+          "result_value": null,
+          "runs": 7
+        },
+        "random_access": {
+          "median_ms": 0.3598710027290508,
+          "p95_ms": 0.3709400007210206,
+          "result_value": null,
+          "runs": 7
+        },
+        "selectivity_by_col": {
+          "column00": [
+            {
+              "median_ms": 32.118014998559374,
+              "p": 0.01,
+              "p95_ms": 32.81440800128621,
+              "result_value": null,
+              "runs": 7,
+              "threshold": 1.0
+            },
+            {
+              "median_ms": 27.57733799808193,
+              "p": 0.1,
+              "p95_ms": 30.022052000276744,
+              "result_value": null,
+              "runs": 7,
+              "threshold": 1.0
+            },
+            {
+              "median_ms": 20.006496000860352,
+              "p": 0.25,
+              "p95_ms": 32.79491599823814,
+              "result_value": null,
+              "runs": 7,
+              "threshold": 1.0
+            },
+            {
+              "median_ms": 19.949374000134412,
+              "p": 0.5,
+              "p95_ms": 20.794377000129316,
+              "result_value": null,
+              "runs": 7,
+              "threshold": 1.0
+            },
+            {
+              "median_ms": 19.646604003355606,
+              "p": 0.9,
+              "p95_ms": 26.150996000069426,
+              "result_value": null,
+              "runs": 7,
+              "threshold": 1.0
+            }
+          ]
+        }
+      },
+      "write": {
+        "compressed_size_bytes": 732851198,
+        "compression_time_s": 2.2359945149983105,
+        "format": "vortex",
+        "output_size_bytes": 732851198,
+        "variant": "vortex_compact",
+        "writer_options": {
+          "compact": true,
+          "has_io": false
+        }
+      }
+    }
+  },
+  "system": {
+    "machine": "pool01-p-11.lnx.utn.de",
+    "platform": "Linux-5.15.0-164-generic-x86_64-with-glibc2.35",
+    "python": "3.10.12"
+  }
+}

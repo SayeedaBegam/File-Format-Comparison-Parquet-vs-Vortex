@@ -29,11 +29,14 @@ def create_base_table_from_csv(
         return
 
     # inference path
+    csv_args = _format_kv(opts)
+    if csv_args:
+        csv_args = f", {csv_args}"
     if p.is_dir():
         glob = f"{str(p)}/**/*.csv"
-        con.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM read_csv_auto('{glob}', { _format_kv(opts) });")
+        con.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM read_csv_auto('{glob}'{csv_args});")
     else:
-        con.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM read_csv_auto('{str(p)}', { _format_kv(opts) });")
+        con.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM read_csv_auto('{str(p)}'{csv_args});")
 
 
 def create_base_table_from_parquet(con: duckdb.DuckDBPyConnection, table_name: str, parquet_path: str) -> None:

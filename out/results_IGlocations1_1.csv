@@ -1,0 +1,8 @@
+compressed_size_bytes,compression_time_s,filter_col,format,min_col,query_name,result_value,rows,runs,select_col,selectivity,time_ms_median,time_ms_p95,variant
+2289958,0.052474476000497816,column17,parquet,column01,selectivity,0,,7,column08,0.01,1.8003269997279858,1.9595789999584667,parquet_zstd
+2289958,0.052474476000497816,column17,parquet,column01,selectivity,0,,7,column08,0.1,1.7778429992176825,1.8609399994602427,parquet_zstd
+2289958,0.052474476000497816,column17,parquet,column01,selectivity,0,,7,column08,0.25,1.6587579993938562,1.6756679997342872,parquet_zstd
+2289958,0.052474476000497816,column17,parquet,column01,selectivity,0,,7,column08,0.5,1.599643999725231,1.6282599990518065,parquet_zstd
+2289958,0.052474476000497816,column17,parquet,column01,selectivity,0,,7,column08,0.9,1.537886000733124,1.5660659992136061,parquet_zstd
+2289958,0.052474476000497816,column17,parquet,column01,full_scan_min,0,,7,column08,,0.6819360005465569,0.7748249990982004,parquet_zstd
+2289958,0.052474476000497816,column17,parquet,column01,random_access,0,,7,column08,,0.7797809994372074,0.8756860006542411,parquet_zstd

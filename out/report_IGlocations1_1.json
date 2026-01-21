@@ -1,0 +1,88 @@
+{
+  "columns": {
+    "filter_col": "column17",
+    "min_col": "column01",
+    "select_col": "column08"
+  },
+  "dataset": {
+    "input": "Dataset/IGlocations1_1.csv",
+    "input_type": "csv",
+    "rows": 81611
+  },
+  "formats": {
+    "parquet_zstd": {
+      "queries": {
+        "full_scan_min": {
+          "median_ms": 0.6819360005465569,
+          "p95_ms": 0.7748249990982004,
+          "result_value": 0,
+          "runs": 7
+        },
+        "random_access": {
+          "median_ms": 0.7797809994372074,
+          "p95_ms": 0.8756860006542411,
+          "result_value": 0,
+          "runs": 7
+        },
+        "selectivity": [
+          {
+            "median_ms": 1.8003269997279858,
+            "p": 0.01,
+            "p95_ms": 1.9595789999584667,
+            "result_value": 0,
+            "runs": 7,
+            "threshold": 0.0
+          },
+          {
+            "median_ms": 1.7778429992176825,
+            "p": 0.1,
+            "p95_ms": 1.8609399994602427,
+            "result_value": 0,
+            "runs": 7,
+            "threshold": 0.0
+          },
+          {
+            "median_ms": 1.6587579993938562,
+            "p": 0.25,
+            "p95_ms": 1.6756679997342872,
+            "result_value": 0,
+            "runs": 7,
+            "threshold": 0.0
+          },
+          {
+            "median_ms": 1.599643999725231,
+            "p": 0.5,
+            "p95_ms": 1.6282599990518065,
+            "result_value": 0,
+            "runs": 7,
+            "threshold": 27000.0
+          },
+          {
+            "median_ms": 1.537886000733124,
+            "p": 0.9,
+            "p95_ms": 1.5660659992136061,
+            "result_value": 0,
+            "runs": 7,
+            "threshold": 83168.0
+          }
+        ]
+      },
+      "write": {
+        "codec": "zstd",
+        "compression_level": null,
+        "compression_time_s": 0.052474476000497816,
+        "output_size_bytes": 2289958,
+        "parquet_path": "out/parquet/ig.parquet",
+        "row_group_size": 128000
+      }
+    },
+    "vortex_default": {
+      "note": "Not run yet: vortex_backend.py not implemented."
+    }
+  },
+  "system": {
+    "machine": "sayeeda-Lenovo-Legion-5-15IMH05",
+    "platform": "Linux-6.8.0-65-generic-x86_64-with-glibc2.35",
+    "python": "3.10.12"
+  }
+}

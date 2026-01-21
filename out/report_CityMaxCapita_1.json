@@ -1,0 +1,95 @@
+{
+  "columns": {
+    "filter_col": "column00",
+    "min_col": "column03",
+    "select_col": "column03",
+    "select_cols": [
+      "column03"
+    ]
+  },
+  "dataset": {
+    "input": "Dataset/CityMaxCapita_1.csv",
+    "input_type": "csv",
+    "rows": 912657
+  },
+  "formats": {
+    "parquet_zstd": {
+      "best_select_col": "column03",
+      "best_select_col_avg_median_ms": 6.534919399200589,
+      "queries": {
+        "full_scan_min": {
+          "median_ms": 7.796367000992177,
+          "p95_ms": 8.038915999350138,
+          "result_value": 41790.8448726852,
+          "runs": 7
+        },
+        "random_access": {
+          "median_ms": 4.225352000503335,
+          "p95_ms": 4.380553998998948,
+          "result_value": 41794.5472800926,
+          "runs": 7
+        },
+        "selectivity_by_col": {
+          "column03": [
+            {
+              "median_ms": 5.869048998647486,
+              "p": 0.01,
+              "p95_ms": 7.2135369991883636,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 41807.02514166663
+            },
+            {
+              "median_ms": 5.787477999547264,
+              "p": 0.1,
+              "p95_ms": 5.944197999269818,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 41952.61608796292
+            },
+            {
+              "median_ms": 5.970671998511534,
+              "p": 0.25,
+              "p95_ms": 6.116554999607615,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42050.2607175926
+            },
+            {
+              "median_ms": 6.934394999916549,
+              "p": 0.5,
+              "p95_ms": 8.068825000009383,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42152.6147685185
+            },
+            {
+              "median_ms": 8.113002999380114,
+              "p": 0.9,
+              "p95_ms": 18.622026000230107,
+              "result_value": 41790.8448726852,
+              "runs": 7,
+              "threshold": 42305.8618009259
+            }
+          ]
+        }
+      },
+      "write": {
+        "codec": "zstd",
+        "compression_level": null,
+        "compression_time_s": 1.3403208979998453,
+        "output_size_bytes": 89467618,
+        "parquet_path": "out/parquet/city.parquet",
+        "row_group_size": 128000
+      }
+    },
+    "vortex_default": {
+      "note": "Not run yet: vortex_backend.py not implemented."
+    }
+  },
+  "system": {
+    "machine": "sayeeda-Lenovo-Legion-5-15IMH05",
+    "platform": "Linux-6.8.0-65-generic-x86_64-with-glibc2.35",
+    "python": "3.10.12"
+  }
+}

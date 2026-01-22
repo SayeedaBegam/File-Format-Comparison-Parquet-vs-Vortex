@@ -53,6 +53,9 @@ def format_value_sql(v: Any) -> str:
         return "NULL"
     if isinstance(v, str):
         return "'" + v.replace("'", "''") + "'"
+    # DuckDB expects timestamps/dates as quoted strings
+    if hasattr(v, "isoformat"):
+        return "'" + v.isoformat(sep=" ") + "'"
     return str(v)
 
 
@@ -185,6 +188,28 @@ def _auto_pick_cols(con: duckdb.DuckDBPyConnection, table_name: str) -> Tuple[st
     select_col = _choose_min_col(numeric_cols) or _choose_min_col(date_cols) or min_col
 
     return min_col, filter_col, filter_val, select_col
+
+
+def _auto_select_cols(con: duckdb.DuckDBPyConnection, table_name: str) -> List[str]:
+    desc = con.execute(f"DESCRIBE {table_name};").fetchall()
+    numeric_types = {
+        "TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT",
+        "FLOAT", "DOUBLE", "REAL", "DECIMAL",
+    }
+    date_types = {"DATE", "TIMESTAMP", "TIMESTAMP_TZ", "TIME"}
+    candidates = [c for c, t, *_ in desc if t.upper() in numeric_types or t.upper() in date_types]
+    out = []
+    for col in candidates:
+        qcol = _quote_ident(col)
+        nn, minv, maxv = con.execute(
+            f"SELECT COUNT({qcol}), MIN({qcol}), MAX({qcol}) FROM {table_name};"
+        ).fetchone()
+        if nn is None or minv is None or maxv is None:
+            continue
+        if maxv == minv:
+            continue
+        out.append(col)
+    return out
 
 
 def _parse_casts(spec: Optional[str]) -> Dict[str, str]:
@@ -361,6 +386,10 @@ def main() -> None:
 
     if args.auto_cols:
         args.min_col, args.filter_col, args.filter_val, args.select_col = _auto_pick_cols(con, args.table)
+        if not args.select_cols:
+            auto_sel_cols = _auto_select_cols(con, args.table)
+            if auto_sel_cols:
+                args.select_cols = ",".join(auto_sel_cols)
     elif not (args.min_col and args.filter_col and args.filter_val is not None and args.select_col):
         raise SystemExit("Provide --min-col, --filter-col, --filter-val, --select-col or use --auto-cols")
 

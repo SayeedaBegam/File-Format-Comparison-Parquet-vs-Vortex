@@ -24,7 +24,7 @@ def write_csv(rows: List[Dict[str, Any]], out_csv: str) -> None:
 def write_json(obj: Dict[str, Any], out_json: str) -> None:
     p = Path(out_json)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(obj, indent=2, sort_keys=True), encoding="utf-8")
+    p.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str), encoding="utf-8")
 
 
 def write_markdown(summary_md: str, out_md: str) -> None:

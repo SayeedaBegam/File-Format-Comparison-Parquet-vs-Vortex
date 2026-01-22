@@ -1,75 +1,75 @@
 {
   "columns": {
-    "filter_col": "column02",
-    "min_col": "column00",
-    "select_col": "column00",
+    "filter_col": "latitude",
+    "min_col": "id",
+    "select_col": "id",
     "select_cols": [
-      "column00"
+      "id"
     ]
   },
   "dataset": {
     "input": "clouddb_project/Euro2016_1.csv",
     "input_type": "csv",
-    "rows": 2052497
+    "rows": 14601
   },
   "formats": {
     "parquet_zstd": {
-      "best_select_col": "column00",
-      "best_select_col_avg_median_ms": 18.727290601236746,
+      "best_select_col": "id",
+      "best_select_col_avg_median_ms": 5.19316659483593,
       "queries": {
         "full_scan_min": {
-          "median_ms": 18.49149400368333,
-          "p95_ms": 19.260286004282534,
-          "result_value": 1,
+          "median_ms": 9.336550006992184,
+          "p95_ms": 9.893220994854346,
+          "result_value": 12,
           "runs": 7
         },
         "random_access": {
-          "median_ms": 19.549645003280602,
-          "p95_ms": 19.787085009738803,
-          "result_value": 1,
+          "median_ms": 4.375395001261495,
+          "p95_ms": 6.33626600028947,
+          "result_value": 2768455,
           "runs": 7
         },
         "selectivity_by_col": {
-          "column00": [
+          "id": [
             {
-              "median_ms": 18.764234002446756,
+              "median_ms": 4.228673002216965,
               "p": 0.01,
-              "p95_ms": 19.041904000914656,
-              "result_value": 1,
+              "p95_ms": 5.534384996281005,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 2194.0
             },
             {
-              "median_ms": 18.88708400656469,
+              "median_ms": 4.621153988409787,
               "p": 0.1,
-              "p95_ms": 20.928295998601243,
-              "result_value": 1,
+              "p95_ms": 5.405775998951867,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 1237250.0
             },
             {
-              "median_ms": 18.752465999568813,
+              "median_ms": 5.505984998308122,
               "p": 0.25,
-              "p95_ms": 18.944654002552852,
-              "result_value": 1,
+              "p95_ms": 6.1285959964152426,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 3719080.0
             },
             {
-              "median_ms": 18.731755000771955,
+              "median_ms": 6.975607990170829,
               "p": 0.5,
-              "p95_ms": 18.899375005275942,
-              "result_value": 1,
+              "p95_ms": 7.078256996464916,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 10715087.0
             },
             {
-              "median_ms": 18.500913996831514,
+              "median_ms": 4.634412995073944,
               "p": 0.9,
-              "p95_ms": 19.664655002998188,
-              "result_value": 1,
+              "p95_ms": 5.014155001845211,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 21780295.0
             }
           ]
         }
@@ -77,79 +77,79 @@
       "write": {
         "codec": "zstd",
         "compression_level": null,
-        "compression_time_s": 1.2208684200013522,
-        "output_size_bytes": 102528930,
-        "parquet_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/parquet/base_table.parquet",
+        "compression_time_s": 0.04276369299623184,
+        "output_size_bytes": 807203,
+        "parquet_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/parquet/Euro2016_1.parquet",
         "row_group_size": 128000
       }
     },
     "vortex_default": {
-      "best_select_col": "column00",
-      "best_select_col_avg_median_ms": 3.2956504030153155,
+      "best_select_col": "id",
+      "best_select_col_avg_median_ms": 4.587142195669003,
       "queries": {
         "full_scan_min": {
-          "median_ms": 3.2215949904639274,
-          "p95_ms": 4.189844999928027,
-          "result_value": 1,
+          "median_ms": 5.458115003420971,
+          "p95_ms": 7.386926998151466,
+          "result_value": 12,
           "runs": 7
         },
         "random_access": {
-          "median_ms": 5.037997005274519,
-          "p95_ms": 5.439047003164887,
-          "result_value": 1,
+          "median_ms": 6.901726999785751,
+          "p95_ms": 7.49346699740272,
+          "result_value": 2768455,
           "runs": 7
         },
         "selectivity_by_col": {
-          "column00": [
+          "id": [
             {
-              "median_ms": 3.211114992154762,
+              "median_ms": 4.3175839964533225,
               "p": 0.01,
-              "p95_ms": 3.699495006003417,
-              "result_value": 1,
+              "p95_ms": 5.139175002113916,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 2194.0
             },
             {
-              "median_ms": 3.701125009683892,
+              "median_ms": 3.9801940001780167,
               "p": 0.1,
-              "p95_ms": 3.7147539987927303,
-              "result_value": 1,
+              "p95_ms": 4.250003999914043,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 1237250.0
             },
             {
-              "median_ms": 3.2148240134119987,
+              "median_ms": 5.858124990481883,
               "p": 0.25,
-              "p95_ms": 3.711134006152861,
-              "result_value": 1,
+              "p95_ms": 8.009006996871904,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 3719080.0
             },
             {
-              "median_ms": 3.1432550022145733,
+              "median_ms": 4.133554000873119,
               "p": 0.5,
-              "p95_ms": 3.6582549946615472,
-              "result_value": 1,
+              "p95_ms": 5.124535993672907,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 10715087.0
             },
             {
-              "median_ms": 3.2079329976113513,
+              "median_ms": 4.646253990358673,
               "p": 0.9,
-              "p95_ms": 4.3073350097984076,
-              "result_value": 1,
+              "p95_ms": 5.194375989958644,
+              "result_value": 12,
               "runs": 7,
-              "threshold": 1.0
+              "threshold": 21780295.0
             }
           ]
         }
       },
       "write": {
-        "compression_time_s": 3.4674279230093816,
+        "compression_time_s": 0.06402501300908625,
         "format": "vortex",
-        "output_size_bytes": 173506500,
+        "output_size_bytes": 1244360,
         "variant": "vortex_default",
-        "vortex_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/vortex/base_table.vortex",
+        "vortex_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/vortex/Euro2016_1.vortex",
         "writer_options": {
           "compact_requested": false,
           "note": "Writer uses DuckDB Vortex extension defaults (no explicit strategy knobs set)."

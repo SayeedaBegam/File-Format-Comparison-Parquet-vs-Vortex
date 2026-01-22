@@ -15,58 +15,58 @@
   "formats": {
     "parquet_zstd": {
       "best_select_col": "column00",
-      "best_select_col_avg_median_ms": 19.988952800486004,
+      "best_select_col_avg_median_ms": 18.727290601236746,
       "queries": {
         "full_scan_min": {
-          "median_ms": 20.42021500164992,
-          "p95_ms": 22.159797998028807,
+          "median_ms": 18.49149400368333,
+          "p95_ms": 19.260286004282534,
           "result_value": 1,
           "runs": 7
         },
         "random_access": {
-          "median_ms": 20.37294500041753,
-          "p95_ms": 21.506676999706542,
+          "median_ms": 19.549645003280602,
+          "p95_ms": 19.787085009738803,
           "result_value": 1,
           "runs": 7
         },
         "selectivity_by_col": {
           "column00": [
             {
-              "median_ms": 18.55914200132247,
+              "median_ms": 18.764234002446756,
               "p": 0.01,
-              "p95_ms": 20.40149599997676,
+              "p95_ms": 19.041904000914656,
               "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             },
             {
-              "median_ms": 21.982237998599885,
+              "median_ms": 18.88708400656469,
               "p": 0.1,
-              "p95_ms": 22.156348000862636,
+              "p95_ms": 20.928295998601243,
               "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             },
             {
-              "median_ms": 19.75707500241697,
+              "median_ms": 18.752465999568813,
               "p": 0.25,
-              "p95_ms": 20.93611600139411,
+              "p95_ms": 18.944654002552852,
               "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             },
             {
-              "median_ms": 19.60959400093998,
+              "median_ms": 18.731755000771955,
               "p": 0.5,
-              "p95_ms": 22.037279002688592,
+              "p95_ms": 18.899375005275942,
               "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             },
             {
-              "median_ms": 20.036714999150718,
+              "median_ms": 18.500913996831514,
               "p": 0.9,
-              "p95_ms": 20.364343999972334,
+              "p95_ms": 19.664655002998188,
               "result_value": 1,
               "runs": 7,
               "threshold": 1.0
@@ -77,67 +77,67 @@
       "write": {
         "codec": "zstd",
         "compression_level": null,
-        "compression_time_s": 1.240047458002664,
+        "compression_time_s": 1.2208684200013522,
         "output_size_bytes": 102528930,
         "parquet_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/parquet/base_table.parquet",
         "row_group_size": 128000
       }
     },
-    "vortex_compact": {
+    "vortex_default": {
       "best_select_col": "column00",
-      "best_select_col_avg_median_ms": 23.859565400198335,
+      "best_select_col_avg_median_ms": 3.2956504030153155,
       "queries": {
         "full_scan_min": {
-          "median_ms": 19.23332500155084,
-          "p95_ms": 20.8615160008776,
-          "result_value": null,
+          "median_ms": 3.2215949904639274,
+          "p95_ms": 4.189844999928027,
+          "result_value": 1,
           "runs": 7
         },
         "random_access": {
-          "median_ms": 0.3598710027290508,
-          "p95_ms": 0.3709400007210206,
-          "result_value": null,
+          "median_ms": 5.037997005274519,
+          "p95_ms": 5.439047003164887,
+          "result_value": 1,
           "runs": 7
         },
         "selectivity_by_col": {
           "column00": [
             {
-              "median_ms": 32.118014998559374,
+              "median_ms": 3.211114992154762,
               "p": 0.01,
-              "p95_ms": 32.81440800128621,
-              "result_value": null,
+              "p95_ms": 3.699495006003417,
+              "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             },
             {
-              "median_ms": 27.57733799808193,
+              "median_ms": 3.701125009683892,
               "p": 0.1,
-              "p95_ms": 30.022052000276744,
-              "result_value": null,
+              "p95_ms": 3.7147539987927303,
+              "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             },
             {
-              "median_ms": 20.006496000860352,
+              "median_ms": 3.2148240134119987,
               "p": 0.25,
-              "p95_ms": 32.79491599823814,
-              "result_value": null,
+              "p95_ms": 3.711134006152861,
+              "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             },
             {
-              "median_ms": 19.949374000134412,
+              "median_ms": 3.1432550022145733,
               "p": 0.5,
-              "p95_ms": 20.794377000129316,
-              "result_value": null,
+              "p95_ms": 3.6582549946615472,
+              "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             },
             {
-              "median_ms": 19.646604003355606,
+              "median_ms": 3.2079329976113513,
               "p": 0.9,
-              "p95_ms": 26.150996000069426,
-              "result_value": null,
+              "p95_ms": 4.3073350097984076,
+              "result_value": 1,
               "runs": 7,
               "threshold": 1.0
             }
@@ -145,14 +145,14 @@
         }
       },
       "write": {
-        "compressed_size_bytes": 732851198,
-        "compression_time_s": 2.2359945149983105,
+        "compression_time_s": 3.4674279230093816,
         "format": "vortex",
-        "output_size_bytes": 732851198,
-        "variant": "vortex_compact",
+        "output_size_bytes": 173506500,
+        "variant": "vortex_default",
+        "vortex_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/vortex/base_table.vortex",
         "writer_options": {
-          "compact": true,
-          "has_io": false
+          "compact_requested": false,
+          "note": "Writer uses DuckDB Vortex extension defaults (no explicit strategy knobs set)."
         }
       }
     }

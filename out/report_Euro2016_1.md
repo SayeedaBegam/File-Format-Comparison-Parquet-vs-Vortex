@@ -8,18 +8,18 @@
 
 ## parquet_zstd
 - size_bytes: **102528930**
-- compression_time_s: **1.240**
-- full_scan_min median_ms: **20.42**
-- random_access median_ms: **20.37**
-- best_select_col: `column00` (avg median_ms **19.99**)
+- compression_time_s: **1.221**
+- full_scan_min median_ms: **18.49**
+- random_access median_ms: **19.55**
+- best_select_col: `column00` (avg median_ms **18.73**)
 - selectivity:
-  - column00: 1%: 18.56ms, 10%: 21.98ms, 25%: 19.76ms, 50%: 19.61ms, 90%: 20.04ms
+  - column00: 1%: 18.76ms, 10%: 18.89ms, 25%: 18.75ms, 50%: 18.73ms, 90%: 18.50ms
 
-## vortex_compact
-- size_bytes: **732851198**
-- compression_time_s: **2.236**
-- full_scan_min median_ms: **19.23**
-- random_access median_ms: **0.36**
-- best_select_col: `column00` (avg median_ms **23.86**)
+## vortex_default
+- size_bytes: **173506500**
+- compression_time_s: **3.467**
+- full_scan_min median_ms: **3.22**
+- random_access median_ms: **5.04**
+- best_select_col: `column00` (avg median_ms **3.30**)
 - selectivity:
-  - column00: 1%: 32.12ms, 10%: 27.58ms, 25%: 20.01ms, 50%: 19.95ms, 90%: 19.65ms
+  - column00: 1%: 3.21ms, 10%: 3.70ms, 25%: 3.21ms, 50%: 3.14ms, 90%: 3.21ms

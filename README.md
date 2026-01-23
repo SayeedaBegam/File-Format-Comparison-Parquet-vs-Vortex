@@ -14,11 +14,12 @@ Pipeline:
 
 ## Metrics
 For each format we record:
-- write time (compression_time_s)
-- output size (size_bytes)
-- query latencies (median and p95)
-- selectivity timings for several percentiles
-- validation checks (row count, min(), filtered count, null counts)
+- write time (compression_time_s) — lower is better
+- output size (size_bytes) — lower is better
+- compression ratio (input_size_bytes / output_size_bytes) — higher is better
+- query latencies (median and p95) — lower is better
+- selectivity timings for several percentiles — lower is better
+- validation checks (row count, min(), filtered count, null counts) — should match base table
 
 Queries used:
 - full_scan_min: `min(min_col)` over the full table
@@ -31,6 +32,11 @@ Column roles:
 - select_cols: the list of columns used for selectivity curves
 
 When `--auto-cols` is used, selectivity is run across all numeric/date columns that are not constant.
+
+Recommendations in the report:
+- storage-first: picks the format with the highest compression_ratio
+- read-latency-first: picks the format with the lowest random_access median
+- scan-first: picks the format with the lowest full_scan_min median
 
 ## Current results (from `out/`)
 Reports already generated are stored under:

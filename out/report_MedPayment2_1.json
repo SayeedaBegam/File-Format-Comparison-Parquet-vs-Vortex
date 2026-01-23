@@ -1,1090 +1,1127 @@
 {
   "columns": {
-    "filter_col": "column24",
-    "min_col": "column10",
-    "select_col": "column10",
+    "filter_col": "provider_type",
+    "min_col": "npi",
+    "select_col": "npi",
     "select_cols": [
-      "column10",
-      "column01",
-      "column02",
-      "column03",
-      "column04",
-      "column05",
-      "column08",
-      "column22",
-      "column25",
-      "column26",
-      "column27",
-      "column28"
+      "npi",
+      "average_Medicare_allowed_amt",
+      "average_Medicare_payment_amt",
+      "average_submitted_chrg_amt",
+      "bene_day_srvc_cnt",
+      "bene_unique_cnt",
+      "line_srvc_cnt",
+      "nppes_provider_zip",
+      "stdev_Medicare_allowed_amt",
+      "stdev_Medicare_payment_amt",
+      "stdev_submitted_chrg_amt",
+      "Calculation_0820513143749095"
     ]
   },
   "dataset": {
     "input": "clouddb_project/MedPayment2_1.csv",
+    "input_size_bytes": 1930063282,
     "input_type": "csv",
     "rows": 9153273
   },
   "formats": {
     "parquet_zstd": {
-      "best_select_col": "column05",
-      "best_select_col_avg_median_ms": 35.060947399915676,
+      "best_select_col": "nppes_provider_zip",
+      "best_select_col_avg_median_ms": 34.385588400073175,
+      "compression_ratio": 4.472673307047854,
       "queries": {
         "full_scan_min": {
-          "median_ms": 37.489001000039934,
-          "p95_ms": 52.296436000006,
+          "median_ms": 41.143446000205586,
+          "p95_ms": 52.500976999908744,
           "result_value": 1,
           "runs": 7
         },
         "random_access": {
-          "median_ms": 36.9676889999937,
-          "p95_ms": 41.63731800008463,
+          "median_ms": 39.18885500024771,
+          "p95_ms": 42.15122799996607,
           "result_value": 1003007329,
           "runs": 7
         },
         "selectivity_by_col": {
-          "column01": [
+          "Calculation_0820513143749095": [
             {
-              "median_ms": 40.99054699986482,
+              "median_ms": 46.16792999968311,
               "p": 0.01,
-              "p95_ms": 41.90009499984626,
+              "p95_ms": 46.25846199996886,
+              "result_value": 1003001363,
+              "runs": 7,
+              "threshold": 0.5396516009630001
+            },
+            {
+              "median_ms": 44.35324899986881,
+              "p": 0.1,
+              "p95_ms": 45.549440999820945,
+              "result_value": 1003000423,
+              "runs": 7,
+              "threshold": 6.72
+            },
+            {
+              "median_ms": 44.32008900039364,
+              "p": 0.25,
+              "p95_ms": 44.59704900000361,
+              "result_value": 1003000134,
+              "runs": 7,
+              "threshold": 17.47259741875
+            },
+            {
+              "median_ms": 44.50169800020376,
+              "p": 0.5,
+              "p95_ms": 50.60758299987356,
+              "result_value": 1003000126,
+              "runs": 7,
+              "threshold": 44.575131006999996
+            },
+            {
+              "median_ms": 40.00587500013353,
+              "p": 0.9,
+              "p95_ms": 40.70705599951907,
+              "result_value": 1003000126,
+              "runs": 7,
+              "threshold": 149.57
+            }
+          ],
+          "average_Medicare_allowed_amt": [
+            {
+              "median_ms": 39.37634500016429,
+              "p": 0.01,
+              "p95_ms": 40.330055000595166,
               "result_value": 1003001363,
               "runs": 7,
               "threshold": 0.7457085317230001
             },
             {
-              "median_ms": 39.945236999983535,
+              "median_ms": 40.705066000555234,
               "p": 0.1,
-              "p95_ms": 40.70859500006918,
+              "p95_ms": 40.79308600012155,
               "result_value": 1003000423,
               "runs": 7,
               "threshold": 8.57
             },
             {
-              "median_ms": 38.711886000101,
+              "median_ms": 38.83709500041732,
               "p": 0.25,
-              "p95_ms": 39.10688099995241,
+              "p95_ms": 44.19184899961692,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 21.79
             },
             {
-              "median_ms": 38.12235200007308,
+              "median_ms": 39.389544000187016,
               "p": 0.5,
-              "p95_ms": 39.26045299999714,
+              "p95_ms": 39.5416049996129,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 60.19
             },
             {
-              "median_ms": 39.23454000005222,
+              "median_ms": 40.08298400003696,
               "p": 0.9,
-              "p95_ms": 40.25566800009983,
+              "p95_ms": 41.405158000088704,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 188.74
             }
           ],
-          "column02": [
+          "average_Medicare_payment_amt": [
             {
-              "median_ms": 41.20203299999048,
+              "median_ms": 40.16948600019532,
               "p": 0.01,
-              "p95_ms": 42.35468300021239,
+              "p95_ms": 40.79581499991036,
               "result_value": 1003001363,
               "runs": 7,
               "threshold": 0.5396516009630001
             },
             {
-              "median_ms": 39.98209500014127,
+              "median_ms": 40.257106000353815,
               "p": 0.1,
-              "p95_ms": 40.652808999993795,
+              "p95_ms": 41.282267000497086,
               "result_value": 1003000423,
               "runs": 7,
               "threshold": 6.72
             },
             {
-              "median_ms": 41.50980700001128,
+              "median_ms": 41.29515700060438,
               "p": 0.25,
-              "p95_ms": 42.9551279999032,
+              "p95_ms": 42.41614700003993,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 17.47259741875
             },
             {
-              "median_ms": 39.380658000027324,
+              "median_ms": 41.16647600039869,
               "p": 0.5,
-              "p95_ms": 39.84416200000851,
+              "p95_ms": 43.68930800046655,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 44.575131006999996
             },
             {
-              "median_ms": 40.30576400009522,
+              "median_ms": 39.58590500042192,
               "p": 0.9,
-              "p95_ms": 40.74006800010466,
+              "p95_ms": 40.19066499949986,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 149.57
             }
           ],
-          "column03": [
+          "average_submitted_chrg_amt": [
             {
-              "median_ms": 43.37061800015363,
+              "median_ms": 42.344018000221695,
               "p": 0.01,
-              "p95_ms": 44.178513000133535,
+              "p95_ms": 44.835990000137826,
               "result_value": 1003001017,
               "runs": 7,
               "threshold": 5.0
             },
             {
-              "median_ms": 45.39154300005066,
+              "median_ms": 41.455476000010094,
               "p": 0.1,
-              "p95_ms": 45.61654500002987,
+              "p95_ms": 42.271346999768866,
               "result_value": 1003000423,
               "runs": 7,
               "threshold": 23.0
             },
             {
-              "median_ms": 43.253245999949286,
+              "median_ms": 42.03834799955075,
               "p": 0.25,
-              "p95_ms": 44.046263000154795,
+              "p95_ms": 42.3916569998255,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 50.0
             },
             {
-              "median_ms": 41.61507300000267,
+              "median_ms": 41.10804599986295,
               "p": 0.5,
-              "p95_ms": 42.077996999978495,
+              "p95_ms": 42.73735900005704,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 122.8
             },
             {
-              "median_ms": 43.97744099992451,
+              "median_ms": 38.242612999965786,
               "p": 0.9,
-              "p95_ms": 46.61746300007508,
+              "p95_ms": 38.75641499962512,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 600.0
             }
           ],
-          "column04": [
+          "bene_day_srvc_cnt": [
             {
-              "median_ms": 37.444047999997565,
+              "median_ms": 37.111673000254086,
               "p": 0.01,
-              "p95_ms": 37.951111999973364,
+              "p95_ms": 39.104595000026166,
               "result_value": 1003000407,
               "runs": 7,
               "threshold": 11.0
             },
             {
-              "median_ms": 37.64638899997408,
+              "median_ms": 36.50430200013943,
               "p": 0.1,
-              "p95_ms": 38.58760599996458,
+              "p95_ms": 38.25942300045426,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 14.0
             },
             {
-              "median_ms": 38.021631999981764,
+              "median_ms": 36.33993299990834,
               "p": 0.25,
-              "p95_ms": 38.163172999929884,
+              "p95_ms": 37.10909300025378,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 20.0
             },
             {
-              "median_ms": 39.67211500003032,
+              "median_ms": 36.47632299998804,
               "p": 0.5,
-              "p95_ms": 40.09470699998019,
+              "p95_ms": 36.87701199942239,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 42.0
             },
             {
-              "median_ms": 38.625646000127745,
+              "median_ms": 35.747160999562766,
               "p": 0.9,
-              "p95_ms": 39.438512000060655,
+              "p95_ms": 37.303002999578894,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 291.0
             }
           ],
-          "column05": [
+          "bene_unique_cnt": [
             {
-              "median_ms": 34.42398099991806,
+              "median_ms": 33.925839999938034,
               "p": 0.01,
-              "p95_ms": 34.864557000219065,
+              "p95_ms": 35.73349100042833,
               "result_value": 1003000407,
               "runs": 7,
               "threshold": 11.0
             },
             {
-              "median_ms": 34.17263799997272,
+              "median_ms": 34.70761999960814,
               "p": 0.1,
-              "p95_ms": 34.51273200016658,
+              "p95_ms": 35.21215199998551,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 13.0
             },
             {
-              "median_ms": 34.920803999966665,
+              "median_ms": 35.062971000115795,
               "p": 0.25,
-              "p95_ms": 35.624001000087446,
+              "p95_ms": 36.58040299978893,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 17.0
             },
             {
-              "median_ms": 35.86609299986776,
+              "median_ms": 34.48198099977162,
               "p": 0.5,
-              "p95_ms": 36.50760799996533,
+              "p95_ms": 35.494601000209514,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 33.0
             },
             {
-              "median_ms": 35.921220999853176,
+              "median_ms": 36.50679200018203,
               "p": 0.9,
-              "p95_ms": 37.03372000018135,
+              "p95_ms": 36.8492330007939,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 174.0
             }
           ],
-          "column08": [
+          "line_srvc_cnt": [
             {
-              "median_ms": 35.052642999971795,
+              "median_ms": 34.16449000087596,
               "p": 0.01,
-              "p95_ms": 35.27535600005649,
+              "p95_ms": 35.16126100021211,
               "result_value": 1003000407,
               "runs": 7,
               "threshold": 11.0
             },
             {
-              "median_ms": 35.020143999872744,
+              "median_ms": 35.42413100058184,
               "p": 0.1,
-              "p95_ms": 35.520428000154425,
+              "p95_ms": 35.94766099922708,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 14.0
             },
             {
-              "median_ms": 37.099458000056984,
+              "median_ms": 34.18998999950418,
               "p": 0.25,
-              "p95_ms": 37.56413199994313,
+              "p95_ms": 34.5737999996345,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 21.0
             },
             {
-              "median_ms": 37.05252899999323,
+              "median_ms": 36.509751999801665,
               "p": 0.5,
-              "p95_ms": 38.05320599985862,
+              "p95_ms": 37.566883000181406,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 45.0
             },
             {
-              "median_ms": 37.3712919999889,
+              "median_ms": 38.21724399949744,
               "p": 0.9,
-              "p95_ms": 38.299338999877364,
+              "p95_ms": 38.88703399934457,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 343.0
             }
           ],
-          "column10": [
+          "npi": [
             {
-              "median_ms": 37.32349000006252,
+              "median_ms": 37.960803000714805,
               "p": 0.01,
-              "p95_ms": 49.622192000015275,
+              "p95_ms": 64.98325899974589,
               "result_value": 1,
               "runs": 7,
               "threshold": 1003998524.76
             },
             {
-              "median_ms": 37.40566900000886,
+              "median_ms": 36.65646200079209,
               "p": 0.1,
-              "p95_ms": 45.27602600001046,
+              "p95_ms": 39.33829500056163,
               "result_value": 1,
               "runs": 7,
               "threshold": 1093998742.0
             },
             {
-              "median_ms": 35.46648399992591,
+              "median_ms": 33.86054000020522,
               "p": 0.25,
-              "p95_ms": 35.72533600004135,
+              "p95_ms": 34.468410999579646,
               "result_value": 1,
               "runs": 7,
               "threshold": 1245479054.0
             },
             {
-              "median_ms": 35.51925400006439,
+              "median_ms": 33.84190999986458,
               "p": 0.5,
-              "p95_ms": 36.577761999978975,
+              "p95_ms": 36.41787200012914,
               "result_value": 1,
               "runs": 7,
               "threshold": 1497931406.0
             },
             {
-              "median_ms": 34.160580999923695,
+              "median_ms": 34.078149999913876,
               "p": 0.9,
-              "p95_ms": 35.74679799999103,
+              "p95_ms": 34.22589000001608,
               "result_value": 1,
               "runs": 7,
               "threshold": 1902016405.0
             }
           ],
-          "column22": [
+          "nppes_provider_zip": [
             {
-              "median_ms": 36.84101700014253,
+              "median_ms": 35.424661000433844,
               "p": 0.01,
-              "p95_ms": 37.41781100006847,
+              "p95_ms": 36.099951999858604,
               "result_value": 1003003609,
               "runs": 7,
               "threshold": 6905.0
             },
             {
-              "median_ms": 35.2292119998765,
+              "median_ms": 34.47614100059582,
               "p": 0.1,
-              "p95_ms": 36.05884899980083,
+              "p95_ms": 36.25248099979217,
               "result_value": 1003000530,
               "runs": 7,
               "threshold": 85704.0
             },
             {
-              "median_ms": 39.59565600007409,
+              "median_ms": 33.22621899951628,
               "p": 0.25,
-              "p95_ms": 43.34760599999754,
+              "p95_ms": 34.382589000415464,
               "result_value": 1003000449,
               "runs": 7,
               "threshold": 150091728.0
             },
             {
-              "median_ms": 35.815406999972765,
+              "median_ms": 34.26737999961915,
               "p": 0.5,
-              "p95_ms": 36.69432399988182,
+              "p95_ms": 34.995960999367526,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 370277541.0
             },
             {
-              "median_ms": 35.909288000084416,
+              "median_ms": 34.533541000200785,
               "p": 0.9,
-              "p95_ms": 36.38029099988671,
+              "p95_ms": 35.65541099942493,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 895201576.0
             }
           ],
-          "column25": [
+          "stdev_Medicare_allowed_amt": [
             {
-              "median_ms": 39.00678899981358,
+              "median_ms": 41.53971499999898,
               "p": 0.01,
-              "p95_ms": 39.13113100020382,
+              "p95_ms": 44.133088999842585,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 38.91354699999283,
+              "median_ms": 38.69406500052719,
               "p": 0.1,
-              "p95_ms": 39.592243000015515,
+              "p95_ms": 39.5142859997577,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 38.7393159999192,
+              "median_ms": 37.64490199955617,
               "p": 0.25,
-              "p95_ms": 39.94873600004212,
+              "p95_ms": 38.27354299937724,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 38.43149399995127,
+              "median_ms": 37.81266300029529,
               "p": 0.5,
-              "p95_ms": 39.062758999989455,
+              "p95_ms": 38.31962399999611,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 37.826540999958524,
+              "median_ms": 37.642511999365524,
               "p": 0.9,
-              "p95_ms": 38.68482600000789,
+              "p95_ms": 39.36461499961297,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 11.861834272100001
             }
           ],
-          "column26": [
+          "stdev_Medicare_payment_amt": [
             {
-              "median_ms": 42.06235900005595,
+              "median_ms": 39.52878400014015,
               "p": 0.01,
-              "p95_ms": 42.35523199986346,
+              "p95_ms": 40.41615599999204,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 41.697075999991284,
+              "median_ms": 40.76195499965252,
               "p": 0.1,
-              "p95_ms": 42.37167099995531,
+              "p95_ms": 42.18369699992763,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 40.64900799994575,
+              "median_ms": 39.505685000222,
               "p": 0.25,
-              "p95_ms": 41.29293200003303,
+              "p95_ms": 43.521008000425354,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.046549284275000005
             },
             {
-              "median_ms": 41.10414100000526,
+              "median_ms": 40.0546660002874,
               "p": 0.5,
-              "p95_ms": 41.96417800017116,
+              "p95_ms": 40.89050599941402,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 4.9789780299
             },
             {
-              "median_ms": 41.35032100020908,
+              "median_ms": 40.532535999773245,
               "p": 0.9,
-              "p95_ms": 41.70290499996554,
+              "p95_ms": 42.30532699966716,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 28.901390592700007
             }
           ],
-          "column27": [
+          "stdev_submitted_chrg_amt": [
             {
-              "median_ms": 43.49307699999372,
+              "median_ms": 41.14371600007871,
               "p": 0.01,
-              "p95_ms": 44.23901299992394,
+              "p95_ms": 41.759417000321264,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 42.61932999997953,
+              "median_ms": 40.70285599937051,
               "p": 0.1,
-              "p95_ms": 101.41148899992913,
+              "p95_ms": 40.90397700019821,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 39.84124800012978,
+              "median_ms": 40.73761600011494,
               "p": 0.25,
-              "p95_ms": 46.52751799994803,
+              "p95_ms": 41.32554500029073,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 37.72899199998392,
+              "median_ms": 40.67494599985366,
               "p": 0.5,
-              "p95_ms": 38.363146000165216,
+              "p95_ms": 42.34367799926986,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 38.30433600001015,
+              "median_ms": 42.561987999761186,
               "p": 0.9,
-              "p95_ms": 39.199482000185526,
+              "p95_ms": 43.463138000333856,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 30.142979993
             }
-          ],
-          "column28": [
-            {
-              "median_ms": 41.070442999853185,
-              "p": 0.01,
-              "p95_ms": 42.55823599987707,
-              "result_value": 1003001363,
-              "runs": 7,
-              "threshold": 0.5396516009630001
-            },
-            {
-              "median_ms": 38.268543999947724,
-              "p": 0.1,
-              "p95_ms": 38.388924999935625,
-              "result_value": 1003000423,
-              "runs": 7,
-              "threshold": 6.72
-            },
-            {
-              "median_ms": 39.391483000144945,
-              "p": 0.25,
-              "p95_ms": 39.95441699998992,
-              "result_value": 1003000134,
-              "runs": 7,
-              "threshold": 17.47259741875
-            },
-            {
-              "median_ms": 39.55244300004779,
-              "p": 0.5,
-              "p95_ms": 40.7134810000116,
-              "result_value": 1003000126,
-              "runs": 7,
-              "threshold": 44.575131006999996
-            },
-            {
-              "median_ms": 38.02738099989256,
-              "p": 0.9,
-              "p95_ms": 38.25700200013671,
-              "result_value": 1003000126,
-              "runs": 7,
-              "threshold": 149.57
-            }
           ]
         }
+      },
+      "validation": {
+        "base_count": 9153273,
+        "base_filtered_count": 96704,
+        "base_min": 1,
+        "base_nulls_filter_col": 1,
+        "base_nulls_min_col": 0,
+        "count_match": true,
+        "filter_nulls_match": true,
+        "filtered_count_match": true,
+        "format_count": 9153273,
+        "format_filtered_count": 96704,
+        "format_min": 1,
+        "format_nulls_filter_col": 1,
+        "format_nulls_min_col": 0,
+        "min_match": true,
+        "min_nulls_match": true
       },
       "write": {
         "codec": "zstd",
         "compression_level": null,
-        "compression_time_s": 4.693256908999956,
-        "output_size_bytes": 431308194,
-        "parquet_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/parquet/base_table.parquet",
+        "compression_time_s": 4.72494893000021,
+        "output_size_bytes": 431523420,
+        "parquet_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/parquet/MedPayment2_1.parquet",
         "row_group_size": 128000
       }
     },
     "vortex_default": {
-      "best_select_col": "column08",
-      "best_select_col_avg_median_ms": 12.822760199969707,
+      "best_select_col": "npi",
+      "best_select_col_avg_median_ms": 7.246556599966425,
+      "compression_ratio": 3.0135338489040686,
       "queries": {
         "full_scan_min": {
-          "median_ms": 8.557607000057033,
-          "p95_ms": 9.09047800018925,
+          "median_ms": 6.507334999696468,
+          "p95_ms": 6.861844999548339,
           "result_value": 1,
           "runs": 7
         },
         "random_access": {
-          "median_ms": 6.415633000187881,
-          "p95_ms": 6.661343999894598,
+          "median_ms": 7.051515000057407,
+          "p95_ms": 7.556477000434825,
           "result_value": 1003007329,
           "runs": 7
         },
         "selectivity_by_col": {
-          "column01": [
+          "Calculation_0820513143749095": [
             {
-              "median_ms": 14.628447999939453,
+              "median_ms": 15.31774300019606,
               "p": 0.01,
-              "p95_ms": 15.04171800002041,
+              "p95_ms": 16.019505999793182,
+              "result_value": 1003001363,
+              "runs": 7,
+              "threshold": 0.5396516009630001
+            },
+            {
+              "median_ms": 16.98708500043722,
+              "p": 0.1,
+              "p95_ms": 18.854165999982797,
+              "result_value": 1003000423,
+              "runs": 7,
+              "threshold": 6.72
+            },
+            {
+              "median_ms": 18.27903499997774,
+              "p": 0.25,
+              "p95_ms": 18.523245999858773,
+              "result_value": 1003000134,
+              "runs": 7,
+              "threshold": 17.47259741875
+            },
+            {
+              "median_ms": 19.036097999560297,
+              "p": 0.5,
+              "p95_ms": 19.792297999629227,
+              "result_value": 1003000126,
+              "runs": 7,
+              "threshold": 44.575131006999996
+            },
+            {
+              "median_ms": 19.64991699969687,
+              "p": 0.9,
+              "p95_ms": 20.117836999816063,
+              "result_value": 1003000126,
+              "runs": 7,
+              "threshold": 149.57
+            }
+          ],
+          "average_Medicare_allowed_amt": [
+            {
+              "median_ms": 14.519542000016372,
+              "p": 0.01,
+              "p95_ms": 15.82957400023588,
               "result_value": 1003001363,
               "runs": 7,
               "threshold": 0.7457085317230001
             },
             {
-              "median_ms": 16.844191000018327,
+              "median_ms": 16.8099649999931,
               "p": 0.1,
-              "p95_ms": 17.780053000024054,
+              "p95_ms": 17.78304500021477,
               "result_value": 1003000423,
               "runs": 7,
               "threshold": 8.57
             },
             {
-              "median_ms": 17.653073000019504,
+              "median_ms": 17.646506000346562,
               "p": 0.25,
-              "p95_ms": 18.432833999895593,
+              "p95_ms": 18.741506999504054,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 21.79
             },
             {
-              "median_ms": 19.46529599990754,
+              "median_ms": 16.819544000099995,
               "p": 0.5,
-              "p95_ms": 20.846950000077413,
+              "p95_ms": 17.3149160000321,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 60.19
             },
             {
-              "median_ms": 22.59329200001048,
+              "median_ms": 16.96563400037121,
               "p": 0.9,
-              "p95_ms": 22.91462399989541,
+              "p95_ms": 18.146815999898536,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 188.74
             }
           ],
-          "column02": [
+          "average_Medicare_payment_amt": [
             {
-              "median_ms": 15.47336999988147,
+              "median_ms": 15.386944000056246,
               "p": 0.01,
-              "p95_ms": 15.807698999878994,
+              "p95_ms": 15.968003000125464,
               "result_value": 1003001363,
               "runs": 7,
               "threshold": 0.5396516009630001
             },
             {
-              "median_ms": 18.26883499984433,
+              "median_ms": 17.1911249999539,
               "p": 0.1,
-              "p95_ms": 19.457827999985966,
+              "p95_ms": 18.113336999704188,
               "result_value": 1003000423,
               "runs": 7,
               "threshold": 6.72
             },
             {
-              "median_ms": 20.13222899995526,
+              "median_ms": 18.362265000178013,
               "p": 0.25,
-              "p95_ms": 20.687379000037254,
+              "p95_ms": 19.030287000532553,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 17.47259741875
             },
             {
-              "median_ms": 21.92463200003658,
+              "median_ms": 19.397797000237915,
               "p": 0.5,
-              "p95_ms": 22.599041999910696,
+              "p95_ms": 20.758029000717215,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 44.575131006999996
             },
             {
-              "median_ms": 25.0773879999997,
+              "median_ms": 20.069636999323848,
               "p": 0.9,
-              "p95_ms": 25.896630000033838,
+              "p95_ms": 20.44611800010898,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 149.57
             }
           ],
-          "column03": [
+          "average_submitted_chrg_amt": [
             {
-              "median_ms": 13.34147599982316,
+              "median_ms": 13.35493199985649,
               "p": 0.01,
-              "p95_ms": 13.619816000073115,
+              "p95_ms": 13.449191999825416,
               "result_value": 1003001017,
               "runs": 7,
               "threshold": 5.0
             },
             {
-              "median_ms": 15.646989000060785,
+              "median_ms": 15.318153999942297,
               "p": 0.1,
-              "p95_ms": 15.96389100018314,
+              "p95_ms": 15.872124999987136,
               "result_value": 1003000423,
               "runs": 7,
               "threshold": 23.0
             },
             {
-              "median_ms": 16.787502000170207,
+              "median_ms": 15.04085299984581,
               "p": 0.25,
-              "p95_ms": 17.113242000050377,
+              "p95_ms": 16.14789399991423,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 50.0
             },
             {
-              "median_ms": 18.914064999989932,
+              "median_ms": 16.576434999478806,
               "p": 0.5,
-              "p95_ms": 19.352947000015774,
+              "p95_ms": 16.886256000361755,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 122.8
             },
             {
-              "median_ms": 21.165549999977884,
+              "median_ms": 16.668723999828217,
               "p": 0.9,
-              "p95_ms": 21.886110999957964,
+              "p95_ms": 17.252055999961158,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 600.0
             }
           ],
-          "column04": [
+          "bene_day_srvc_cnt": [
             {
-              "median_ms": 19.787686999961807,
+              "median_ms": 10.745968999799516,
               "p": 0.01,
-              "p95_ms": 20.816878999994515,
+              "p95_ms": 10.910269999840239,
               "result_value": 1003000407,
               "runs": 7,
               "threshold": 11.0
             },
             {
-              "median_ms": 19.60212600010891,
+              "median_ms": 9.868619000371837,
               "p": 0.1,
-              "p95_ms": 20.136108000087916,
+              "p95_ms": 9.955698000339908,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 14.0
             },
             {
-              "median_ms": 20.080547999896226,
+              "median_ms": 10.0334879998627,
               "p": 0.25,
-              "p95_ms": 20.615120000002207,
+              "p95_ms": 10.255318999952578,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 20.0
             },
             {
-              "median_ms": 21.219350000137638,
+              "median_ms": 10.148258000299393,
               "p": 0.5,
-              "p95_ms": 21.976541999947585,
+              "p95_ms": 10.316079000403988,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 42.0
             },
             {
-              "median_ms": 21.401230000037685,
+              "median_ms": 10.331187999327085,
               "p": 0.9,
-              "p95_ms": 21.570489999930942,
+              "p95_ms": 10.601441000289924,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 291.0
             }
           ],
-          "column05": [
+          "bene_unique_cnt": [
             {
-              "median_ms": 20.308928000076776,
+              "median_ms": 10.065997999845422,
               "p": 0.01,
-              "p95_ms": 20.967308999843226,
+              "p95_ms": 10.268319999340747,
               "result_value": 1003000407,
               "runs": 7,
               "threshold": 11.0
             },
             {
-              "median_ms": 19.990667999991274,
+              "median_ms": 9.326008000243746,
               "p": 0.1,
-              "p95_ms": 21.40701000007539,
+              "p95_ms": 9.441637999771046,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 13.0
             },
             {
-              "median_ms": 19.807459000048766,
+              "median_ms": 9.447228000681207,
               "p": 0.25,
-              "p95_ms": 21.264899000016158,
+              "p95_ms": 10.078508999868063,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 17.0
             },
             {
-              "median_ms": 20.119847999922058,
+              "median_ms": 9.589598000275146,
               "p": 0.5,
-              "p95_ms": 20.31897000006211,
+              "p95_ms": 10.138399000425125,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 33.0
             },
             {
-              "median_ms": 20.095508000167683,
+              "median_ms": 9.598468000149296,
               "p": 0.9,
-              "p95_ms": 20.58999800010497,
+              "p95_ms": 9.872958999949333,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 174.0
             }
           ],
-          "column08": [
+          "line_srvc_cnt": [
             {
-              "median_ms": 10.272407999991628,
+              "median_ms": 10.678460000235646,
               "p": 0.01,
-              "p95_ms": 10.566110999889133,
+              "p95_ms": 11.247949999415141,
               "result_value": 1003000407,
               "runs": 7,
               "threshold": 11.0
             },
             {
-              "median_ms": 11.42508199995973,
+              "median_ms": 12.127340999541047,
               "p": 0.1,
-              "p95_ms": 11.6375220000009,
+              "p95_ms": 12.403101000018069,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 14.0
             },
             {
-              "median_ms": 11.436111999955756,
+              "median_ms": 11.995140999715659,
               "p": 0.25,
-              "p95_ms": 12.243892000014966,
+              "p95_ms": 12.624811000023328,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 21.0
             },
             {
-              "median_ms": 13.879756000051202,
+              "median_ms": 11.993320000328822,
               "p": 0.5,
-              "p95_ms": 14.599646000078792,
+              "p95_ms": 12.682201000643545,
               "result_value": 1003000134,
               "runs": 7,
               "threshold": 45.0
             },
             {
-              "median_ms": 17.10044299989022,
+              "median_ms": 12.777601000379946,
               "p": 0.9,
-              "p95_ms": 17.302014000051713,
+              "p95_ms": 13.026732999605883,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 343.0
             }
           ],
-          "column10": [
+          "npi": [
             {
-              "median_ms": 16.965241999969294,
+              "median_ms": 7.247776999975031,
               "p": 0.01,
-              "p95_ms": 17.39180300000953,
+              "p95_ms": 7.870637000451097,
               "result_value": 1,
               "runs": 7,
               "threshold": 1003998524.76
             },
             {
-              "median_ms": 16.717392000145992,
+              "median_ms": 7.24171700039733,
               "p": 0.1,
-              "p95_ms": 17.812623000054373,
+              "p95_ms": 7.581406000099378,
               "result_value": 1,
               "runs": 7,
               "threshold": 1093998742.0
             },
             {
-              "median_ms": 16.648982999868167,
+              "median_ms": 7.049005999760993,
               "p": 0.25,
-              "p95_ms": 17.44931300004282,
+              "p95_ms": 7.259086999511055,
               "result_value": 1,
               "runs": 7,
               "threshold": 1245479054.0
             },
             {
-              "median_ms": 16.95610299998407,
+              "median_ms": 7.335567000154697,
               "p": 0.5,
-              "p95_ms": 17.608323999866116,
+              "p95_ms": 7.402625999930024,
               "result_value": 1,
               "runs": 7,
               "threshold": 1497931406.0
             },
             {
-              "median_ms": 17.805054000064047,
+              "median_ms": 7.358715999544074,
               "p": 0.9,
-              "p95_ms": 18.481484999938402,
+              "p95_ms": 7.4186070005453075,
               "result_value": 1,
               "runs": 7,
               "threshold": 1902016405.0
             }
           ],
-          "column22": [
+          "nppes_provider_zip": [
             {
-              "median_ms": 22.075131000065085,
+              "median_ms": 10.521189000428421,
               "p": 0.01,
-              "p95_ms": 26.045289999956367,
+              "p95_ms": 11.134869999295915,
               "result_value": 1003003609,
               "runs": 7,
               "threshold": 6905.0
             },
             {
-              "median_ms": 21.031549000099403,
+              "median_ms": 9.716258000480593,
               "p": 0.1,
-              "p95_ms": 22.201891999884538,
+              "p95_ms": 10.024629000326968,
               "result_value": 1003000530,
               "runs": 7,
               "threshold": 85704.0
             },
             {
-              "median_ms": 21.898389999932988,
+              "median_ms": 10.109819999343017,
               "p": 0.25,
-              "p95_ms": 22.099781999941115,
+              "p95_ms": 10.27578900084336,
               "result_value": 1003000449,
               "runs": 7,
               "threshold": 150091728.0
             },
             {
-              "median_ms": 22.038701000155925,
+              "median_ms": 10.125379999408324,
               "p": 0.5,
-              "p95_ms": 22.410452000031,
+              "p95_ms": 10.803619000398612,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 370277541.0
             },
             {
-              "median_ms": 21.93753099982132,
+              "median_ms": 10.067099000480084,
               "p": 0.9,
-              "p95_ms": 22.401241999887134,
+              "p95_ms": 10.31290899936721,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 895201576.0
             }
           ],
-          "column25": [
+          "stdev_Medicare_allowed_amt": [
             {
-              "median_ms": 17.78505199990832,
+              "median_ms": 16.837204000694328,
               "p": 0.01,
-              "p95_ms": 18.6813150000944,
+              "p95_ms": 17.19883499936259,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 18.69787400005407,
+              "median_ms": 15.65055300034146,
               "p": 0.1,
-              "p95_ms": 19.027955999945334,
+              "p95_ms": 16.56336399992142,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 18.50332399999388,
+              "median_ms": 15.782773999490018,
               "p": 0.25,
-              "p95_ms": 19.327005999912217,
+              "p95_ms": 15.993052999874635,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 18.013034999967203,
+              "median_ms": 15.810515000339365,
               "p": 0.5,
-              "p95_ms": 19.078655999919647,
+              "p95_ms": 16.05724300043221,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 20.18017599993982,
+              "median_ms": 16.114123000079417,
               "p": 0.9,
-              "p95_ms": 20.59346800001549,
+              "p95_ms": 16.61484600026597,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 11.861834272100001
             }
           ],
-          "column26": [
+          "stdev_Medicare_payment_amt": [
             {
-              "median_ms": 19.42699599999287,
+              "median_ms": 18.272655999680865,
               "p": 0.01,
-              "p95_ms": 19.5208669999829,
+              "p95_ms": 19.32415699957346,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 19.447266000042873,
+              "median_ms": 18.536845999733487,
               "p": 0.1,
-              "p95_ms": 19.984217999990506,
+              "p95_ms": 19.244866000008187,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 19.345067000131166,
+              "median_ms": 17.98358499945607,
               "p": 0.25,
-              "p95_ms": 19.77199699990706,
+              "p95_ms": 19.304086999909487,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.046549284275000005
             },
             {
-              "median_ms": 20.88636899998164,
+              "median_ms": 18.92242600024474,
               "p": 0.5,
-              "p95_ms": 21.669650000148977,
+              "p95_ms": 19.368598000255588,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 4.9789780299
             },
             {
-              "median_ms": 24.04274500008796,
+              "median_ms": 19.934918000217294,
               "p": 0.9,
-              "p95_ms": 24.80432600009408,
+              "p95_ms": 21.132099000169546,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 28.901390592700007
             }
           ],
-          "column27": [
+          "stdev_submitted_chrg_amt": [
             {
-              "median_ms": 18.79323499997554,
+              "median_ms": 15.149132999795256,
               "p": 0.01,
-              "p95_ms": 19.135296000058588,
+              "p95_ms": 16.662043999531306,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 18.24968500000068,
+              "median_ms": 15.11311400008708,
               "p": 0.1,
-              "p95_ms": 19.172825999930865,
+              "p95_ms": 16.11671299997397,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 18.451074000040535,
+              "median_ms": 15.187322999736352,
               "p": 0.25,
-              "p95_ms": 18.90060599998833,
+              "p95_ms": 15.446504999999888,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 18.72302500009937,
+              "median_ms": 15.661934000490874,
               "p": 0.5,
-              "p95_ms": 20.115287999942666,
+              "p95_ms": 16.242114000306174,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 0.0
             },
             {
-              "median_ms": 20.214365999891015,
+              "median_ms": 16.168873999959033,
               "p": 0.9,
-              "p95_ms": 21.089889999984734,
+              "p95_ms": 16.398784000557498,
               "result_value": 1003000126,
               "runs": 7,
               "threshold": 30.142979993
             }
-          ],
-          "column28": [
-            {
-              "median_ms": 15.062069000123302,
-              "p": 0.01,
-              "p95_ms": 15.25375799997164,
-              "result_value": 1003001363,
-              "runs": 7,
-              "threshold": 0.5396516009630001
-            },
-            {
-              "median_ms": 18.951216000004933,
-              "p": 0.1,
-              "p95_ms": 19.243533999997453,
-              "result_value": 1003000423,
-              "runs": 7,
-              "threshold": 6.72
-            },
-            {
-              "median_ms": 20.744548000038776,
-              "p": 0.25,
-              "p95_ms": 21.3060180001321,
-              "result_value": 1003000134,
-              "runs": 7,
-              "threshold": 17.47259741875
-            },
-            {
-              "median_ms": 23.06435299988152,
-              "p": 0.5,
-              "p95_ms": 23.288023999839425,
-              "result_value": 1003000126,
-              "runs": 7,
-              "threshold": 44.575131006999996
-            },
-            {
-              "median_ms": 26.11323899986928,
-              "p": 0.9,
-              "p95_ms": 27.519930999915232,
-              "result_value": 1003000126,
-              "runs": 7,
-              "threshold": 149.57
-            }
           ]
         }
       },
+      "validation": {
+        "base_count": 9153273,
+        "base_filtered_count": 96704,
+        "base_min": 1,
+        "base_nulls_filter_col": 1,
+        "base_nulls_min_col": 0,
+        "count_match": true,
+        "filter_nulls_match": true,
+        "filtered_count_match": true,
+        "format_count": 9153273,
+        "format_filtered_count": 96704,
+        "format_min": 1,
+        "format_nulls_filter_col": 1,
+        "format_nulls_min_col": 0,
+        "min_match": true,
+        "min_nulls_match": true
+      },
       "write": {
-        "compression_time_s": 17.397049896999988,
+        "compression_time_s": 17.362614513000153,
         "format": "vortex",
-        "output_size_bytes": 636291500,
+        "output_size_bytes": 640465108,
         "variant": "vortex_default",
-        "vortex_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/vortex/base_table.vortex",
+        "vortex_path": "clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/vortex/MedPayment2_1.vortex",
         "writer_options": {
           "compact_requested": false,
           "note": "Writer uses DuckDB Vortex extension defaults (no explicit strategy knobs set)."

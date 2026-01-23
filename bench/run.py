@@ -117,9 +117,16 @@ def main() -> None:
     select_cols = _select_cols(args.select_col, args.select_cols)
 
     rows_csv: List[Dict[str, Any]] = []
+    input_size_bytes = None
+    if args.input_type == "csv":
+        try:
+            input_size_bytes = Path(args.input).stat().st_size
+        except OSError:
+            input_size_bytes = None
+
     report: Dict[str, Any] = {
         "system": {"platform": platform.platform(), "python": platform.python_version(), "machine": platform.node()},
-        "dataset": {"input": args.input, "input_type": args.input_type, "rows": rowcount},
+        "dataset": {"input": args.input, "input_type": args.input_type, "rows": rowcount, "input_size_bytes": input_size_bytes},
         "columns": {"min_col": args.min_col, "filter_col": args.filter_col, "select_col": args.select_col, "select_cols": select_cols},
         "formats": {},
     }
@@ -162,8 +169,12 @@ def main() -> None:
     if avg_selectivity_ms:
         best_select_col = min(avg_selectivity_ms.items(), key=lambda kv: kv[1])
 
+    parquet_ratio = None
+    if input_size_bytes and parquet_meta.get("output_size_bytes"):
+        parquet_ratio = input_size_bytes / parquet_meta.get("output_size_bytes")
     report["formats"][f"parquet_{args.parquet_codec}"] = {
         "write": parquet_meta,
+        "compression_ratio": parquet_ratio,
         "queries": {
             "full_scan_min": m_full,
             "random_access": m_rand,
@@ -274,8 +285,12 @@ def main() -> None:
             if avg_selectivity_ms_vx:
                 best_select_col_vx = min(avg_selectivity_ms_vx.items(), key=lambda kv: kv[1])
 
+            vortex_ratio = None
+            if input_size_bytes and vortex_meta.get("output_size_bytes"):
+                vortex_ratio = input_size_bytes / vortex_meta.get("output_size_bytes")
             report["formats"][vortex_meta.get("variant", "vortex_default")] = {
                 "write": vortex_meta,
+                "compression_ratio": vortex_ratio,
                 "queries": {
                     "full_scan_min": m_full_vx,
                     "random_access": m_rand_vx,

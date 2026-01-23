@@ -276,6 +276,15 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
     lines.append(f"- min_col: `{cols['min_col']}`")
     lines.append(f"- filter_col: `{cols['filter_col']}`")
     lines.append(f"- select_cols: `{', '.join(cols.get('select_cols', []))}`")
+    recs = _recommendations(report)
+    if recs:
+        lines.append("- recommendations:")
+        if recs.get("storage_first"):
+            lines.append(f"  - storage-first: `{recs['storage_first']}`")
+        if recs.get("read_latency_first"):
+            lines.append(f"  - read-latency-first: `{recs['read_latency_first']}`")
+        if recs.get("scan_first"):
+            lines.append(f"  - scan-first: `{recs['scan_first']}`")
     lines.append("")
     for name, body in report["formats"].items():
         lines.append(f"## {name}")
@@ -283,6 +292,8 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
             w = body["write"]
             lines.append(f"- size_bytes: **{w.get('output_size_bytes')}**")
             lines.append(f"- compression_time_s: **{w.get('compression_time_s'):.3f}**")
+            if body.get("compression_ratio") is not None:
+                lines.append(f"- compression_ratio: **{body.get('compression_ratio'):.3f}**")
             q = body["queries"]
             lines.append(f"- full_scan_min median_ms: **{q['full_scan_min']['median_ms']:.2f}**")
             lines.append(f"- random_access median_ms: **{q['random_access']['median_ms']:.2f}**")
@@ -324,3 +335,40 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
 def _null_count(con: duckdb.DuckDBPyConnection, from_expr: str, col: str) -> int:
     qcol = _quote_ident(col)
     return con.execute(f"SELECT COUNT(*) FROM {from_expr} WHERE {qcol} IS NULL;").fetchone()[0]
+
+
+def _recommendations(report: Dict[str, Any]) -> Dict[str, str]:
+    best_storage = None
+    best_storage_ratio = None
+    best_read = None
+    best_read_ms = None
+    best_scan = None
+    best_scan_ms = None
+
+    for name, body in report.get("formats", {}).items():
+        if "write" not in body or "queries" not in body:
+            continue
+        ratio = body.get("compression_ratio")
+        if ratio is not None and (best_storage_ratio is None or ratio > best_storage_ratio):
+            best_storage_ratio = ratio
+            best_storage = name
+
+        q = body["queries"]
+        read_ms = q.get("random_access", {}).get("median_ms")
+        if read_ms is not None and (best_read_ms is None or read_ms < best_read_ms):
+            best_read_ms = read_ms
+            best_read = name
+
+        scan_ms = q.get("full_scan_min", {}).get("median_ms")
+        if scan_ms is not None and (best_scan_ms is None or scan_ms < best_scan_ms):
+            best_scan_ms = scan_ms
+            best_scan = name
+
+    out: Dict[str, str] = {}
+    if best_storage:
+        out["storage_first"] = best_storage
+    if best_read:
+        out["read_latency_first"] = best_read
+    if best_scan:
+        out["scan_first"] = best_scan
+    return out

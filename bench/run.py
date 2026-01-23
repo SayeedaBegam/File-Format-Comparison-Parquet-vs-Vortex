@@ -20,6 +20,7 @@ from report.report import write_csv, write_json, write_markdown
 from utils_run import (
     _auto_pick_cols,
     _auto_select_cols,
+    _count_csv_rows_and_size,
     _dataset_label,
     _format_filter_value,
     _markdown_summary,
@@ -79,6 +80,9 @@ def main() -> None:
     if args.threads is not None:
         con.execute(f"PRAGMA threads={int(args.threads)};")
 
+    input_size_bytes = None
+    input_rows = None
+    drop_notes: List[str] = []
     if args.input_type == "csv":
         read_csv_options: Dict[str, Any] = {}
         if args.csv_sample_size is not None:
@@ -93,6 +97,8 @@ def main() -> None:
             read_csv_options["header"] = (args.csv_header == "true")
         if args.csv_nullstr is not None:
             read_csv_options["nullstr"] = args.csv_nullstr
+        has_header = args.csv_header == "true" if args.csv_header is not None else False
+        input_rows, input_size_bytes = _count_csv_rows_and_size(args.input, has_header)
         create_base_table_from_csv(
             con,
             args.table,
@@ -113,20 +119,28 @@ def main() -> None:
         raise SystemExit("Provide --min-col, --filter-col, --filter-val, --select-col or use --auto-cols")
 
     rowcount = con.execute(f"SELECT COUNT(*) FROM {args.table};").fetchone()[0]
+    dropped_rows = None
+    if input_rows is not None:
+        dropped_rows = max(input_rows - rowcount, 0)
+        if dropped_rows > 0:
+            if args.csv_ignore_errors:
+                drop_notes.append("rows dropped because --csv-ignore-errors skips malformed rows")
+            drop_notes.append("common causes: bad quotes, type conversion failures, inconsistent delimiters")
     ps = [float(x.strip()) for x in args.selectivities.split(",") if x.strip()]
     select_cols = _select_cols(args.select_col, args.select_cols)
 
     rows_csv: List[Dict[str, Any]] = []
-    input_size_bytes = None
-    if args.input_type == "csv":
-        try:
-            input_size_bytes = Path(args.input).stat().st_size
-        except OSError:
-            input_size_bytes = None
-
     report: Dict[str, Any] = {
         "system": {"platform": platform.platform(), "python": platform.python_version(), "machine": platform.node()},
-        "dataset": {"input": args.input, "input_type": args.input_type, "rows": rowcount, "input_size_bytes": input_size_bytes},
+        "dataset": {
+            "input": args.input,
+            "input_type": args.input_type,
+            "rows": rowcount,
+            "input_rows": input_rows,
+            "dropped_rows": dropped_rows,
+            "drop_notes": drop_notes if drop_notes else None,
+            "input_size_bytes": input_size_bytes,
+        },
         "columns": {"min_col": args.min_col, "filter_col": args.filter_col, "select_col": args.select_col, "select_cols": select_cols},
         "formats": {},
     }

@@ -38,6 +38,11 @@ Recommendations in the report:
 - read-latency-first: picks the format with the lowest random_access median
 - scan-first: picks the format with the lowest full_scan_min median
 
+CSV row counts in the report:
+- Input rows: number of rows in the CSV file (line count minus header if present).
+- Dropped rows: `input_rows - loaded_rows`.
+- Drop notes: short reasons (e.g., malformed rows, type conversion failures).
+
 ## Current results (from `out/`)
 Reports already generated are stored under:
 - `out/report_*.md` and `out/report_*.json`

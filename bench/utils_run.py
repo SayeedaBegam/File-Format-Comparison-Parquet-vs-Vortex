@@ -265,6 +265,28 @@ def _row(
     }
 
 
+def _iter_csv_files(p: Path) -> List[Path]:
+    if p.is_dir():
+        return list(p.rglob("*.csv"))
+    return [p]
+
+
+def _count_csv_rows_and_size(input_path: str, has_header: bool) -> Tuple[int, int]:
+    p = Path(input_path)
+    total_lines = 0
+    total_size = 0
+    for f in _iter_csv_files(p):
+        if not f.exists():
+            continue
+        total_size += f.stat().st_size
+        with f.open("rb") as fh:
+            for _ in fh:
+                total_lines += 1
+        if has_header and total_lines > 0:
+            total_lines -= 1
+    return total_lines, total_size
+
+
 def _markdown_summary(report: Dict[str, Any]) -> str:
     lines = []
     lines.append("# Benchmark Report")
@@ -272,6 +294,13 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
     ds = report["dataset"]
     lines.append(f"- Input: `{ds['input']}` ({ds['input_type']})")
     lines.append(f"- Rows: **{ds['rows']}**")
+    if ds.get("input_rows") is not None:
+        lines.append(f"- Input rows: **{ds['input_rows']}**")
+    if ds.get("dropped_rows") is not None:
+        lines.append(f"- Dropped rows: **{ds['dropped_rows']}**")
+        notes = ds.get("drop_notes") or []
+        for note in notes:
+            lines.append(f"- Drop note: {note}")
     cols = report["columns"]
     lines.append(f"- min_col: `{cols['min_col']}`")
     lines.append(f"- filter_col: `{cols['filter_col']}`")

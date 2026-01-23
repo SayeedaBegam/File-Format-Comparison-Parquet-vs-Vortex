@@ -7,29 +7,31 @@
 - select_cols: `column01, column03, column04, column06, column08, column10`
 
 ## parquet_zstd
-- size_bytes: **102531934**
-- compression_time_s: **1.185**
-- full_scan_min median_ms: **22.63**
-- random_access median_ms: **22.59**
-- best_select_col: `column10` (avg median_ms **15.49**)
+- size_bytes: **102528930**
+- compression_time_s: **1.216**
+- full_scan_min median_ms: **20.43**
+- random_access median_ms: **21.31**
+- best_select_col: `column10` (avg median_ms **15.21**)
+- validation_pass: **True**
 - selectivity:
-  - column01: 1%: 26.56ms, 10%: 24.05ms, 25%: 23.01ms, 50%: 22.05ms, 90%: 22.13ms
-  - column03: 1%: 19.88ms, 10%: 20.69ms, 25%: 21.75ms, 50%: 20.11ms, 90%: 22.36ms
-  - column04: 1%: 21.29ms, 10%: 21.76ms, 25%: 22.47ms, 50%: 21.50ms, 90%: 21.35ms
-  - column06: 1%: 24.55ms, 10%: 24.23ms, 25%: 24.02ms, 50%: 23.72ms, 90%: 24.44ms
-  - column08: 1%: 24.25ms, 10%: 23.76ms, 25%: 24.48ms, 50%: 24.53ms, 90%: 23.04ms
-  - column10: 1%: 10.42ms, 10%: 12.85ms, 25%: 16.61ms, 50%: 15.85ms, 90%: 21.73ms
+  - column01: 1%: 26.66ms, 10%: 26.54ms, 25%: 26.09ms, 50%: 24.14ms, 90%: 22.79ms
+  - column03: 1%: 19.62ms, 10%: 19.33ms, 25%: 19.07ms, 50%: 20.80ms, 90%: 20.30ms
+  - column04: 1%: 22.21ms, 10%: 20.52ms, 25%: 20.54ms, 50%: 20.70ms, 90%: 20.42ms
+  - column06: 1%: 24.17ms, 10%: 22.28ms, 25%: 25.62ms, 50%: 23.74ms, 90%: 25.14ms
+  - column08: 1%: 24.33ms, 10%: 29.53ms, 25%: 26.11ms, 50%: 28.14ms, 90%: 31.40ms
+  - column10: 1%: 9.87ms, 10%: 11.98ms, 25%: 14.45ms, 50%: 16.34ms, 90%: 23.43ms
 
 ## vortex_default
-- size_bytes: **173503388**
-- compression_time_s: **3.450**
-- full_scan_min median_ms: **4.45**
-- random_access median_ms: **4.92**
-- best_select_col: `column03` (avg median_ms **4.95**)
+- size_bytes: **173506500**
+- compression_time_s: **3.449**
+- full_scan_min median_ms: **4.41**
+- random_access median_ms: **4.87**
+- best_select_col: `column03` (avg median_ms **4.91**)
+- validation_pass: **True**
 - selectivity:
-  - column01: 1%: 8.52ms, 10%: 8.40ms, 25%: 6.26ms, 50%: 6.15ms, 90%: 6.33ms
-  - column03: 1%: 4.90ms, 10%: 4.95ms, 25%: 4.93ms, 50%: 4.85ms, 90%: 5.11ms
-  - column04: 1%: 4.91ms, 10%: 5.02ms, 25%: 5.12ms, 50%: 5.07ms, 90%: 5.03ms
-  - column06: 1%: 5.91ms, 10%: 6.87ms, 25%: 7.26ms, 50%: 6.94ms, 90%: 7.18ms
-  - column08: 1%: 6.48ms, 10%: 6.77ms, 25%: 6.89ms, 50%: 6.79ms, 90%: 7.37ms
-  - column10: 1%: 4.90ms, 10%: 5.07ms, 25%: 5.25ms, 50%: 5.63ms, 90%: 6.75ms
+  - column01: 1%: 8.70ms, 10%: 6.41ms, 25%: 6.17ms, 50%: 6.48ms, 90%: 6.21ms
+  - column03: 1%: 4.94ms, 10%: 4.94ms, 25%: 4.73ms, 50%: 4.91ms, 90%: 5.04ms
+  - column04: 1%: 5.12ms, 10%: 4.97ms, 25%: 5.08ms, 50%: 5.02ms, 90%: 5.01ms
+  - column06: 1%: 6.06ms, 10%: 6.58ms, 25%: 6.91ms, 50%: 6.84ms, 90%: 8.02ms
+  - column08: 1%: 6.66ms, 10%: 6.90ms, 25%: 7.22ms, 50%: 6.71ms, 90%: 7.09ms
+  - column10: 1%: 5.27ms, 10%: 5.36ms, 25%: 5.32ms, 50%: 6.04ms, 90%: 7.37ms

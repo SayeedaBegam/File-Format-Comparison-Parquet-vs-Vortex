@@ -54,8 +54,9 @@ Observed patterns in those reports:
 - Exact numbers depend on the dataset and parsing options.
 
 Check the latest report files for the full numbers:
-- `out/report_CityMaxCapita_1_vor.md`
+- `out/report_CityMaxCapita_1.md`
 - `out/report_Euro2016_1.md`
+- `out/report_IGlocations1_1.md`
 - `out/report_MedPayment2_1.md`
 
 ## Files and responsibilities

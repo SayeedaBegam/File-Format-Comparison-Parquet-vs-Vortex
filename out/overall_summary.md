@@ -1,6 +1,6 @@
 # Overall Summary
 
-- datasets: **6**
+- datasets: **7**
 
 ## Datasets
 name | rows | input_rows | dropped_rows | input_size_mb
@@ -11,11 +11,12 @@ IGlocations1_1 | 81,611 | 81,611 | 0 | 6.58
 MedPayment1_1 | 9,153,273 | 9,153,273 | 0 | 1747.66
 MedPayment2_1 | 9,153,273 | 9,153,273 | 0 | 1840.65
 NYC_1 | 9,624,351 | 9,624,351 | 0 | 6471.16
+Physicians_1 | 9,153,273 | 9,153,273 | 0 | 1747.66
 
 ## Formats (Geomean)
 format | comp_ratio | comp_time_s | size_mb | full_scan_ms | selective_pred_ms | random_access_ms
 --- | --- | --- | --- | --- | --- | ---
-parquet_snappy | 3.809 | 1.886 | 134.175 | 18.773 | 18.161 | 34.012
-parquet_uncompressed | 2.394 | 2.532 | 213.497 | 17.363 | 17.215 | 21.835
-parquet_zstd | 5.179 | 1.669 | 98.685 | 19.471 | 17.956 | 40.007
-vortex_default | 3.618 | 1.778 | 141.281 | 4.781 | 4.676 | 12.336
+parquet_snappy | 3.831 | 2.165 | 159.022 | 21.377 | 20.585 | 38.047
+parquet_uncompressed | 2.435 | 2.906 | 250.231 | 21.399 | 20.626 | 25.265
+parquet_zstd | 5.129 | 1.916 | 118.791 | 22.144 | 20.203 | 45.852
+vortex_default | 3.559 | 2.077 | 171.162 | 5.12 | 4.839 | 13.428

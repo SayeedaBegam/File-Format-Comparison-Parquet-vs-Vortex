@@ -4,6 +4,7 @@ from __future__ import annotations
 import statistics
 import time
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import duckdb
@@ -356,6 +357,18 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
             lines.append(f"- compression_time_s: **{w.get('compression_time_s'):.3f}**")
             if body.get("compression_ratio") is not None:
                 lines.append(f"- compression_ratio: **{body.get('compression_ratio'):.3f}**")
+            enc = body.get("encodings")
+            if enc:
+                per_col = enc.get("per_column")
+                if per_col:
+                    lines.append("- encodings:")
+                    for col, encs in per_col.items():
+                        if isinstance(encs, list):
+                            lines.append(f"  - {col}: {', '.join(encs)}")
+                        else:
+                            lines.append(f"  - {col}: {encs}")
+                elif enc.get("note"):
+                    lines.append(f"- encodings: {enc.get('note')}")
             q = body["queries"]
             lines.append(f"- full_scan_min median_ms: **{q['full_scan_min']['median_ms']:.2f}**")
             if "selective_predicate" in q:
@@ -439,3 +452,127 @@ def _recommendations(report: Dict[str, Any]) -> Dict[str, str]:
     if best_scan:
         out["scan_first"] = best_scan
     return out
+
+
+def _iter_parquet_files(p: Path) -> List[Path]:
+    if p.is_dir():
+        return sorted(p.rglob("*.parquet"))
+    return [p]
+
+
+def _parquet_encodings(parquet_path: str) -> Dict[str, Any]:
+    try:
+        import pyarrow.parquet as pq
+    except Exception as exc:
+        return {"note": f"pyarrow not available: {exc}"}
+
+    p = Path(parquet_path)
+    files = _iter_parquet_files(p)
+    if not files:
+        return {"note": "no parquet files found for encoding inspection"}
+
+    encodings: Dict[str, set] = {}
+    errors: List[str] = []
+    for f in files:
+        try:
+            pf = pq.ParquetFile(str(f))
+        except Exception as exc:
+            errors.append(f"{f.name}: {exc}")
+            continue
+        meta = pf.metadata
+        if meta is None:
+            continue
+        schema = meta.schema
+        for rg in range(meta.num_row_groups):
+            rg_meta = meta.row_group(rg)
+            for col_idx in range(rg_meta.num_columns):
+                col_meta = rg_meta.column(col_idx)
+                try:
+                    col_name = schema.column(col_idx).path_in_schema
+                except Exception:
+                    try:
+                        col_name = pf.schema_arrow.names[col_idx]
+                    except Exception:
+                        col_name = f"column_{col_idx}"
+                encs = []
+                for enc in col_meta.encodings:
+                    encs.append(enc.name if hasattr(enc, "name") else str(enc))
+                if col_name not in encodings:
+                    encodings[col_name] = set()
+                encodings[col_name].update(encs)
+
+    if not encodings:
+        note = "no encodings found in parquet metadata"
+        if errors:
+            note += f"; errors: {', '.join(errors)}"
+        return {"note": note}
+
+    out = {"per_column": {k: sorted(v) for k, v in encodings.items()}}
+    if errors:
+        out["note"] = f"errors reading some files: {', '.join(errors)}"
+    return out
+
+
+def _parse_vortex_display_tree(tree: str) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    skip_prefixes = ("root:", "metadata:", "buffer", "validity:", "children:", "nulls:")
+    for line in tree.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith(skip_prefixes):
+            continue
+        if not stripped.startswith("field "):
+            continue
+        match = re.match(r"field\\s+['\\\"]?([^'\\\"]+)['\\\"]?:\\s*(.+)$", stripped)
+        if not match:
+            continue
+        name = match.group(1).strip()
+        enc = match.group(2).strip()
+        enc_id = enc.split()[0] if enc else enc
+        if name:
+            out[name] = enc_id
+    return out
+
+
+def _iter_vortex_files(p: Path) -> List[Path]:
+    if p.is_dir():
+        return sorted(p.rglob("*.vortex"))
+    return [p]
+
+
+def _vortex_encodings(vortex_path: str) -> Dict[str, Any]:
+    try:
+        import vortex as vx
+    except Exception as exc:
+        return {"note": f"vortex python module not available: {exc}"}
+
+    p = Path(vortex_path)
+    files = _iter_vortex_files(p)
+    if not files:
+        return {"note": "no vortex files found for encoding inspection"}
+
+    tree = None
+    error = None
+    try:
+        obj = vx.open(str(files[0]))
+        arr = obj
+        if hasattr(obj, "read") and callable(getattr(obj, "read")):
+            try:
+                arr = obj.read()
+            except Exception:
+                arr = obj
+        if hasattr(arr, "display_tree"):
+            tree = arr.display_tree()
+        else:
+            error = "vortex object has no display_tree()"
+    except Exception as exc:
+        error = str(exc)
+
+    if tree:
+        per_col = _parse_vortex_display_tree(tree)
+        if per_col:
+            out = {"per_column": per_col}
+            out["note"] = "parsed from display_tree(); format may change between versions"
+            return out
+        return {"note": "display_tree available but no per-column fields parsed"}
+
+    return {"note": f"unable to read vortex encodings: {error}" if error else "unable to read vortex encodings"}

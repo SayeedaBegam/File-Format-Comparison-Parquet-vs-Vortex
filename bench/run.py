@@ -27,10 +27,12 @@ from utils_run import (
     _null_count,
     _parse_casts,
     _parse_list,
+    _parquet_encodings,
     _quote_ident,
     _pick_point_lookup,
     _row,
     _select_cols,
+    _vortex_encodings,
     _vortex_numeric_expr,
     format_value_sql,
     quantile_thresholds,
@@ -203,9 +205,11 @@ def main() -> None:
     parquet_ratio = None
     if input_size_bytes and parquet_meta.get("output_size_bytes"):
         parquet_ratio = input_size_bytes / parquet_meta.get("output_size_bytes")
+    parquet_encodings = _parquet_encodings(parquet_meta.get("parquet_path", parquet_out))
     report["formats"][f"parquet_{args.parquet_codec}"] = {
         "write": parquet_meta,
         "compression_ratio": parquet_ratio,
+        "encodings": parquet_encodings,
         "queries": {
             "full_scan_min": m_full,
             "selective_predicate": m_sel_pred,
@@ -329,9 +333,11 @@ def main() -> None:
             vortex_ratio = None
             if input_size_bytes and vortex_meta.get("output_size_bytes"):
                 vortex_ratio = input_size_bytes / vortex_meta.get("output_size_bytes")
+            vortex_encodings = _vortex_encodings(vortex_meta.get("vortex_path", vortex_out))
             report["formats"][vortex_meta.get("variant", "vortex_default")] = {
                 "write": vortex_meta,
                 "compression_ratio": vortex_ratio,
+                "encodings": vortex_encodings,
                 "queries": {
                     "full_scan_min": m_full_vx,
                     "selective_predicate": m_sel_pred_vx,

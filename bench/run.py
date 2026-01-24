@@ -17,6 +17,7 @@ except Exception:
     vortex_backend = None
     _VORTEX_AVAILABLE = False
 from report.plots import generate_dataset_plots, generate_overall_plots
+from report.summary import generate_overall_summary
 from report.report import write_csv, write_json, write_markdown
 from utils_run import (
     _auto_pick_cols,
@@ -510,6 +511,7 @@ def main() -> None:
     write_markdown(_markdown_summary(report), str(report_md_path))
     generate_dataset_plots(report, out_dir / "plots" / dataset_label, max_cols=10)
     generate_overall_plots(out_dir / "plots" / "overall", out_dir)
+    generate_overall_summary(out_dir, out_dir)
 
     print(f"Done. Wrote: {results_path}, {report_json_path}, {report_md_path}")
 

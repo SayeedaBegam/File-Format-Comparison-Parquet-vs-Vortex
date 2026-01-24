@@ -252,11 +252,14 @@ def _plot_like_per_column(report: Dict[str, Any], out_dir: Path, max_cols: int) 
             legend_handles, legend_labels = ax.get_legend_handles_labels()
     for ax in axes_flat[n:]:
         ax.axis("off")
+    title = "LIKE Predicates by Column (Top-10 columns)"
     if legend_handles and legend_labels:
-        fig.legend(legend_handles, legend_labels, loc="upper center", ncol=len(legend_labels), fontsize=8)
-        fig.subplots_adjust(top=0.86)
-    fig.suptitle("LIKE Predicates by Column (Top-10 columns)")
-    fig.tight_layout()
+        fig.legend(legend_handles, legend_labels, loc="upper center", bbox_to_anchor=(0.5, 0.98), ncol=len(legend_labels), fontsize=8)
+        fig.tight_layout(rect=[0, 0, 1, 0.82])
+        fig.suptitle(title, y=0.995)
+    else:
+        fig.suptitle(title)
+        fig.tight_layout()
     fig.savefig(out_dir / "like_by_column.png", dpi=150)
     plt.close(fig)
 

@@ -1,0 +1,123 @@
+{
+  "dataset_count": 4,
+  "datasets": [
+    {
+      "column_type_counts": null,
+      "dropped_rows": 0,
+      "input": "clouddb_project/CityMaxCapita_1.csv",
+      "input_rows": 912657,
+      "input_size_bytes": 349155009,
+      "name": "CityMaxCapita_1",
+      "ndv_ratio_by_type": null,
+      "rows": 912657
+    },
+    {
+      "column_type_counts": null,
+      "dropped_rows": null,
+      "input": "clouddb_project/Euro2016_1.csv",
+      "input_rows": null,
+      "input_size_bytes": null,
+      "name": "Euro2016_1",
+      "ndv_ratio_by_type": null,
+      "rows": 2052497
+    },
+    {
+      "column_type_counts": {
+        "bool": 0,
+        "date": 0,
+        "numeric": 15,
+        "other": 0,
+        "text": 3
+      },
+      "dropped_rows": 0,
+      "input": "clouddb_project/IGlocations1_1.csv",
+      "input_rows": 81611,
+      "input_size_bytes": 6904315,
+      "name": "IGlocations1_1",
+      "ndv_ratio_by_type": {
+        "bool": null,
+        "date": null,
+        "numeric": 0.11468388656757873,
+        "other": null,
+        "text": 0.13020712077211813
+      },
+      "rows": 81611
+    },
+    {
+      "column_type_counts": null,
+      "dropped_rows": null,
+      "input": "clouddb_project/MedPayment2_1.csv",
+      "input_rows": null,
+      "input_size_bytes": 1930063282,
+      "name": "MedPayment2_1",
+      "ndv_ratio_by_type": null,
+      "rows": 9153273
+    }
+  ],
+  "formats": {
+    "parquet_snappy": {
+      "compression_ratio_geomean": 2.4574941252766513,
+      "compression_time_s_geomean": 0.06295864300045652,
+      "datasets": 1,
+      "like_median_ms_geomean": {
+        "contains": 6.1149973330935214,
+        "prefix": 3.821586332681666,
+        "suffix": 5.394196556153474
+      },
+      "output_size_bytes_geomean": 2809494.0000000005,
+      "query_median_ms_geomean": {
+        "full_scan_min": 3.382803999556927,
+        "random_access": 5.951307000941597,
+        "selective_predicate": 3.7973650032654405
+      }
+    },
+    "parquet_uncompressed": {
+      "compression_ratio_geomean": 1.5694357244920365,
+      "compression_time_s_geomean": 0.08716836199891985,
+      "datasets": 1,
+      "like_median_ms_geomean": {
+        "contains": 5.441030554922894,
+        "prefix": 3.7030295000780216,
+        "suffix": 4.996739110437273
+      },
+      "output_size_bytes_geomean": 4399233.999999999,
+      "query_median_ms_geomean": {
+        "full_scan_min": 3.941644998121774,
+        "random_access": 4.347494999819901,
+        "selective_predicate": 3.4572540025692433
+      }
+    },
+    "parquet_zstd": {
+      "compression_ratio_geomean": 3.752971048296989,
+      "compression_time_s_geomean": 0.8248557923267622,
+      "datasets": 3,
+      "like_median_ms_geomean": {
+        "contains": 5.916914778127749,
+        "prefix": 3.815453000546161,
+        "suffix": 5.338943888394473
+      },
+      "output_size_bytes_geomean": 54809747.50173432,
+      "query_median_ms_geomean": {
+        "full_scan_min": 13.91917297381256,
+        "random_access": 15.488944087961553,
+        "selective_predicate": 3.3249040025111753
+      }
+    },
+    "vortex_default": {
+      "compression_ratio_geomean": 2.6347903459381743,
+      "compression_time_s_geomean": 1.9028889420152428,
+      "datasets": 3,
+      "like_median_ms_geomean": {
+        "contains": 3.3914841110850427,
+        "prefix": 2.68528966565403,
+        "suffix": 3.260470554879349
+      },
+      "output_size_bytes_geomean": 81507391.65989366,
+      "query_median_ms_geomean": {
+        "full_scan_min": 4.153316168764947,
+        "random_access": 4.5210535836253145,
+        "selective_predicate": 3.173204000631813
+      }
+    }
+  }
+}

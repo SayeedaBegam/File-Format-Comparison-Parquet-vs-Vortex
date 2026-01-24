@@ -200,7 +200,7 @@ def _auto_select_cols(con: duckdb.DuckDBPyConnection, table_name: str) -> List[s
     return out
 
 
-def _pick_point_lookup(con: duckdb.DuckDBPyConnection, table_name: str) -> Tuple[Optional[str], Optional[Any]]:
+def _pick_random_access(con: duckdb.DuckDBPyConnection, table_name: str) -> Tuple[Optional[str], Optional[Any]]:
     desc = con.execute(f"DESCRIBE {table_name};").fetchall()
     numeric_types = {
         "TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT",
@@ -231,6 +231,77 @@ def _pick_point_lookup(con: duckdb.DuckDBPyConnection, table_name: str) -> Tuple
     val = con.execute(f"SELECT {qbest} FROM {table_name} WHERE {qbest} IS NOT NULL LIMIT 1;").fetchone()
     val = val[0] if val else None
     return best_col, val
+
+
+def _type_bucket(type_name: str) -> str:
+    base = type_name.split("(", 1)[0].strip().upper()
+    numeric_types = {
+        "TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT",
+        "FLOAT", "DOUBLE", "REAL", "DECIMAL",
+    }
+    date_types = {"DATE", "TIMESTAMP", "TIMESTAMP_TZ", "TIME"}
+    text_types = {"VARCHAR", "TEXT"}
+    bool_types = {"BOOLEAN"}
+    if base in numeric_types:
+        return "numeric"
+    if base in date_types:
+        return "date"
+    if base in text_types:
+        return "text"
+    if base in bool_types:
+        return "bool"
+    return "other"
+
+
+def _column_type_counts(con: duckdb.DuckDBPyConnection, table_name: str) -> Dict[str, int]:
+    col_types = _describe_types(con, table_name)
+    counts: Dict[str, int] = {"numeric": 0, "date": 0, "text": 0, "bool": 0, "other": 0}
+    for _, t in col_types.items():
+        bucket = _type_bucket(t)
+        counts[bucket] = counts.get(bucket, 0) + 1
+    return counts
+
+
+def _ndv_ratio_by_col(
+    con: duckdb.DuckDBPyConnection,
+    table_name: str,
+    rowcount: int,
+) -> List[Dict[str, Any]]:
+    col_types = _describe_types(con, table_name)
+    out: List[Dict[str, Any]] = []
+    for col, t in col_types.items():
+        qcol = _quote_ident(col)
+        ndv = con.execute(f"SELECT COUNT(DISTINCT {qcol}) FROM {table_name};").fetchone()[0]
+        ratio = (ndv / rowcount) if rowcount else None
+        out.append(
+            {
+                "col": col,
+                "type": _type_bucket(t),
+                "ndv": ndv,
+                "ndv_ratio": ratio,
+            }
+        )
+    return out
+
+
+def _ndv_ratio_top_cols(ndv_stats: List[Dict[str, Any]], top_n: int) -> List[Dict[str, Any]]:
+    items = [s for s in ndv_stats if s.get("ndv_ratio") is not None]
+    items.sort(key=lambda x: x["ndv_ratio"], reverse=True)
+    return items[:top_n]
+
+
+def _ndv_ratio_by_type(ndv_stats: List[Dict[str, Any]]) -> Dict[str, Optional[float]]:
+    buckets: Dict[str, List[float]] = {"numeric": [], "date": [], "text": [], "bool": [], "other": []}
+    for s in ndv_stats:
+        ratio = s.get("ndv_ratio")
+        if ratio is None:
+            continue
+        bucket = s.get("type", "other")
+        buckets.setdefault(bucket, []).append(ratio)
+    out: Dict[str, Optional[float]] = {}
+    for bucket, vals in buckets.items():
+        out[bucket] = (sum(vals) / len(vals)) if vals else None
+    return out
 
 
 def _parse_casts(spec: Optional[str]) -> Dict[str, str]:
@@ -280,8 +351,9 @@ def _row(
     write_meta: Dict[str, Any],
     qmeta: Dict[str, Any],
     select_col: Optional[str] = None,
+    extras: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    return {
+    row = {
         "format": fmt,
         "variant": variant,
         "query_name": query_name,
@@ -297,6 +369,9 @@ def _row(
         "runs": qmeta.get("runs"),
         "result_value": qmeta.get("result_value"),
     }
+    if extras:
+        row.update(extras)
+    return row
 
 
 def _iter_csv_files(p: Path) -> List[Path]:
@@ -327,18 +402,47 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
     lines.append("")
     ds = report["dataset"]
     lines.append(f"- Input: `{ds['input']}` ({ds['input_type']})")
-    lines.append(f"- Rows: **{ds['rows']}**")
+    lines.append(f"- Rows: **{_format_int(ds['rows'])}**")
     if ds.get("input_rows") is not None:
-        lines.append(f"- Input rows: **{ds['input_rows']}**")
+        lines.append(f"- Input rows: **{_format_int(ds['input_rows'])}**")
     if ds.get("dropped_rows") is not None:
-        lines.append(f"- Dropped rows: **{ds['dropped_rows']}**")
+        lines.append(f"- Dropped rows: **{_format_int(ds['dropped_rows'])}**")
         notes = ds.get("drop_notes") or []
         for note in notes:
             lines.append(f"- Drop note: {note}")
+    if ds.get("input_size_bytes") is not None:
+        lines.append(f"- Input size: **{_format_mb(ds['input_size_bytes'])} MB**")
+    type_counts = ds.get("column_type_counts")
+    if type_counts:
+        parts = []
+        for key in ["numeric", "text", "date", "bool", "other"]:
+            val = type_counts.get(key)
+            if val is not None:
+                parts.append(f"{key}={_format_int(val)}")
+        if parts:
+            lines.append(f"- column_type_counts: {', '.join(parts)}")
     cols = report["columns"]
     lines.append(f"- min_col: `{cols['min_col']}`")
     lines.append(f"- filter_col: `{cols['filter_col']}`")
     lines.append(f"- select_cols: `{', '.join(cols.get('select_cols', []))}`")
+    ndv_by_type = ds.get("ndv_ratio_by_type")
+    if ndv_by_type:
+        parts = []
+        for key in ["numeric", "text", "date", "bool", "other"]:
+            val = ndv_by_type.get(key)
+            if val is not None:
+                parts.append(f"{key}={val:.3f}")
+        if parts:
+            lines.append(f"- ndv_ratio_by_type: {', '.join(parts)}")
+    ndv_top = cols.get("ndv_ratio_top_cols") or []
+    if ndv_top:
+        lines.append("- ndv_ratio_top_cols:")
+        for item in ndv_top:
+            col = item.get("col")
+            ratio = item.get("ndv_ratio")
+            if col is None or ratio is None:
+                continue
+            lines.append(f"  - {col}: {ratio:.3f}")
     recs = _recommendations(report)
     if recs:
         lines.append("- recommendations:")
@@ -353,7 +457,8 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
         lines.append(f"## {name}")
         if "write" in body:
             w = body["write"]
-            lines.append(f"- size_bytes: **{w.get('output_size_bytes')}**")
+            if w.get("output_size_bytes") is not None:
+                lines.append(f"- size_mb: **{_format_mb(w.get('output_size_bytes'))}**")
             lines.append(f"- compression_time_s: **{w.get('compression_time_s'):.3f}**")
             if body.get("compression_ratio") is not None:
                 lines.append(f"- compression_ratio: **{body.get('compression_ratio'):.3f}**")
@@ -373,8 +478,10 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
             lines.append(f"- full_scan_min median_ms: **{q['full_scan_min']['median_ms']:.2f}**")
             if "selective_predicate" in q:
                 lines.append(f"- selective_predicate median_ms: **{q['selective_predicate']['median_ms']:.2f}**")
-            if "point_lookup" in q:
-                lines.append(f"- point_lookup median_ms: **{q['point_lookup']['median_ms']:.2f}**")
+            if "random_access" in q:
+                lines.append(f"- random_access median_ms: **{q['random_access']['median_ms']:.2f}**")
+            elif "point_lookup" in q:
+                lines.append(f"- random_access median_ms: **{q['point_lookup']['median_ms']:.2f}**")
             if body.get("best_select_col"):
                 lines.append(
                     f"- best_select_col: `{body.get('best_select_col')}` "
@@ -404,6 +511,37 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
                         parts.append(f"{int(p*100)}%: {med:.2f}ms")
                     if parts:
                         lines.append(f"  - {col}: " + ", ".join(parts))
+            like = q.get("like_by_col", {})
+            if like:
+                lines.append("- like_predicates:")
+                like_summary: Dict[str, List[float]] = {}
+                for col, items in like.items():
+                    for it in items:
+                        p = it.get("target_selectivity")
+                        p_list = it.get("target_selectivities")
+                        actual = it.get("selectivity")
+                        med = it.get("median_ms")
+                        pattern = it.get("pattern")
+                        ptype = it.get("pattern_type")
+                        if med is None or pattern is None or ptype is None:
+                            continue
+                        like_summary.setdefault(ptype, []).append(med)
+                        if isinstance(p_list, list) and p_list:
+                            target = ",".join([f"{int(x*100)}%" for x in p_list])
+                        else:
+                            target = f"{int(p*100)}%" if p is not None else "n/a"
+                        actual_s = f"{(actual*100):.2f}%" if actual is not None else "n/a"
+                        lines.append(
+                            f"  - {col} {ptype} target {target} (actual {actual_s}) `{pattern}`: {med:.2f}ms"
+                        )
+                if like_summary:
+                    lines.append("- like_summary:")
+                    for ptype in sorted(like_summary.keys()):
+                        vals = like_summary[ptype]
+                        if not vals:
+                            continue
+                        avg_ms = statistics.mean(vals)
+                        lines.append(f"  - {ptype}: avg median_ms **{avg_ms:.2f}** (n={len(vals)})")
         else:
             lines.append(f"- {body.get('note','')}")
         lines.append("")
@@ -432,7 +570,9 @@ def _recommendations(report: Dict[str, Any]) -> Dict[str, str]:
             best_storage = name
 
         q = body["queries"]
-        read_ms = q.get("point_lookup", {}).get("median_ms")
+        read_ms = q.get("random_access", {}).get("median_ms")
+        if read_ms is None:
+            read_ms = q.get("point_lookup", {}).get("median_ms")
         if read_ms is None:
             read_ms = q.get("selective_predicate", {}).get("median_ms")
         if read_ms is not None and (best_read_ms is None or read_ms < best_read_ms):
@@ -451,6 +591,121 @@ def _recommendations(report: Dict[str, Any]) -> Dict[str, str]:
         out["read_latency_first"] = best_read
     if best_scan:
         out["scan_first"] = best_scan
+    return out
+
+
+def _format_int(val: Any) -> str:
+    try:
+        return f"{int(val):,}"
+    except Exception:
+        return str(val)
+
+
+def _format_mb(val: Any) -> str:
+    try:
+        return f"{(float(val) / (1024 * 1024)):.2f}"
+    except Exception:
+        return "n/a"
+
+
+_LIKE_ESCAPE_CHAR = "!"
+
+
+def _escape_like_literal(value: str) -> str:
+    return value.replace(_LIKE_ESCAPE_CHAR, _LIKE_ESCAPE_CHAR * 2).replace("%", _LIKE_ESCAPE_CHAR + "%").replace("_", _LIKE_ESCAPE_CHAR + "_")
+
+
+def _string_columns(con: duckdb.DuckDBPyConnection, table_name: str) -> List[str]:
+    col_types = _describe_types(con, table_name)
+    return [c for c, t in col_types.items() if t in {"VARCHAR", "TEXT"}]
+
+
+def _like_pattern_specs_for_col(
+    con: duckdb.DuckDBPyConnection,
+    table_name: str,
+    col: str,
+    targets: List[float],
+    total_rows: int,
+    max_candidates: int = 50,
+    pattern_len: int = 3,
+) -> List[Dict[str, Any]]:
+    if total_rows <= 0:
+        return []
+    qcol = _quote_ident(col)
+    rows = con.execute(
+        f"SELECT DISTINCT {qcol} FROM {table_name} WHERE {qcol} IS NOT NULL LIMIT {max_candidates};"
+    ).fetchall()
+    values = [r[0] for r in rows if r and r[0] is not None]
+    if not values:
+        return []
+
+    patterns_by_type = {"prefix": set(), "suffix": set(), "contains": set()}
+    for v in values:
+        s = str(v)
+        if not s:
+            continue
+        esc = _escape_like_literal(s)
+        use_len = min(len(esc), pattern_len)
+        if use_len <= 0:
+            continue
+        prefix = esc[:use_len]
+        suffix = esc[-use_len:]
+        mid_start = max((len(esc) - use_len) // 2, 0)
+        mid = esc[mid_start:mid_start + use_len]
+        patterns_by_type["prefix"].add(prefix + "%")
+        patterns_by_type["suffix"].add("%" + suffix)
+        patterns_by_type["contains"].add("%" + mid + "%")
+
+    specs_map: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    for pattern_type, patterns in patterns_by_type.items():
+        if not patterns:
+            continue
+        candidates = []
+        for pattern in list(patterns)[:max_candidates]:
+            pattern_sql = format_value_sql(pattern)
+            cnt = con.execute(
+                f"SELECT COUNT(*) FROM {table_name} WHERE {qcol} LIKE {pattern_sql} ESCAPE '!';"
+            ).fetchone()[0]
+            sel = (cnt / total_rows) if total_rows else 0.0
+            candidates.append((pattern, sel))
+        if not candidates:
+            continue
+        for target in targets:
+            best = min(candidates, key=lambda x: abs(x[1] - target))
+            key = (pattern_type, best[0])
+            entry = specs_map.get(key)
+            if entry is None:
+                entry = {
+                    "pattern_type": pattern_type,
+                    "pattern": best[0],
+                    "target_selectivities": [],
+                }
+                specs_map[key] = entry
+            entry["target_selectivities"].append(target)
+    return list(specs_map.values())
+
+
+def _like_pattern_specs_by_col(
+    con: duckdb.DuckDBPyConnection,
+    table_name: str,
+    targets: List[float],
+    total_rows: int,
+    max_candidates: int = 50,
+    pattern_len: int = 3,
+) -> Dict[str, List[Dict[str, Any]]]:
+    out: Dict[str, List[Dict[str, Any]]] = {}
+    for col in _string_columns(con, table_name):
+        specs = _like_pattern_specs_for_col(
+            con,
+            table_name,
+            col,
+            targets,
+            total_rows,
+            max_candidates=max_candidates,
+            pattern_len=pattern_len,
+        )
+        if specs:
+            out[col] = specs
     return out
 
 

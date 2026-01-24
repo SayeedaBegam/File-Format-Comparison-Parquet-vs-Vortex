@@ -16,20 +16,27 @@ try:
 except Exception:
     vortex_backend = None
     _VORTEX_AVAILABLE = False
+from report.plots import generate_dataset_plots, generate_overall_plots
 from report.report import write_csv, write_json, write_markdown
 from utils_run import (
     _auto_pick_cols,
     _auto_select_cols,
+    _column_type_counts,
     _count_csv_rows_and_size,
     _dataset_label,
+    _describe_types,
     _format_filter_value,
+    _like_pattern_specs_by_col,
     _markdown_summary,
+    _ndv_ratio_by_col,
+    _ndv_ratio_by_type,
+    _ndv_ratio_top_cols,
     _null_count,
     _parse_casts,
     _parse_list,
     _parquet_encodings,
     _quote_ident,
-    _pick_point_lookup,
+    _pick_random_access,
     _row,
     _select_cols,
     _vortex_encodings,
@@ -62,11 +69,20 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--repeats", type=int, default=7)
     ap.add_argument("--warmup", type=int, default=1)
-    ap.add_argument("--parquet-codec", default="zstd")
+    ap.add_argument("--parquet-codec", default=None)
+    ap.add_argument("--parquet-codecs", default="zstd,snappy,uncompressed")
     ap.add_argument("--parquet-row-group-size", type=int, default=128_000)
     ap.add_argument("--vortex-compact", action="store_true")
     ap.add_argument("--vortex-cast", default=None)
     ap.add_argument("--vortex-drop-cols", default=None)
+    ap.add_argument(
+        "--like-tests",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable/disable LIKE predicate tests (default: true)",
+    )
+    ap.add_argument("--like-max-candidates", type=int, default=50)
+    ap.add_argument("--like-pattern-len", type=int, default=3)
     ap.add_argument(
         "--validate-io",
         action=argparse.BooleanOptionalAction,
@@ -122,6 +138,10 @@ def main() -> None:
         raise SystemExit("Provide --min-col, --filter-col, --filter-val, --select-col or use --auto-cols")
 
     rowcount = con.execute(f"SELECT COUNT(*) FROM {args.table};").fetchone()[0]
+    col_type_counts = _column_type_counts(con, args.table)
+    ndv_stats = _ndv_ratio_by_col(con, args.table, rowcount)
+    ndv_top_cols = _ndv_ratio_top_cols(ndv_stats, 10)
+    ndv_by_type = _ndv_ratio_by_type(ndv_stats)
     dropped_rows = None
     if input_rows is not None:
         dropped_rows = max(input_rows - rowcount, 0)
@@ -131,9 +151,19 @@ def main() -> None:
             drop_notes.append("common causes: bad quotes, type conversion failures, inconsistent delimiters")
     ps = [float(x.strip()) for x in args.selectivities.split(",") if x.strip()]
     select_cols = _select_cols(args.select_col, args.select_cols)
+    like_specs_by_col = {}
+    if args.like_tests:
+        like_specs_by_col = _like_pattern_specs_by_col(
+            con,
+            args.table,
+            ps,
+            rowcount,
+            max_candidates=args.like_max_candidates,
+            pattern_len=args.like_pattern_len,
+        )
 
     rows_csv: List[Dict[str, Any]] = []
-    point_lookup_col, point_lookup_val = _pick_point_lookup(con, args.table)
+    random_access_col, random_access_val = _pick_random_access(con, args.table)
     report: Dict[str, Any] = {
         "system": {"platform": platform.platform(), "python": platform.python_version(), "machine": platform.node()},
         "dataset": {
@@ -144,81 +174,29 @@ def main() -> None:
             "dropped_rows": dropped_rows,
             "drop_notes": drop_notes if drop_notes else None,
             "input_size_bytes": input_size_bytes,
+            "column_type_counts": col_type_counts,
+            "ndv_ratio_by_type": ndv_by_type,
         },
         "columns": {
             "min_col": args.min_col,
             "filter_col": args.filter_col,
             "select_col": args.select_col,
             "select_cols": select_cols,
-            "point_lookup_col": point_lookup_col,
+            "random_access_col": random_access_col,
+            "ndv_ratio_top_cols": ndv_top_cols,
         },
         "formats": {},
     }
 
-    parquet_out = str(out_dir / "parquet")
-    parquet_meta = parquet_backend.write(
-        con,
-        args.table,
-        parquet_out,
-        options={"codec": args.parquet_codec, "row_group_size": args.parquet_row_group_size},
-    )
-    parquet_scan = parquet_backend.scan_expr(parquet_meta.get("parquet_path", parquet_out))
+    if args.parquet_codec:
+        parquet_codecs = [args.parquet_codec]
+    else:
+        parquet_codecs = [c.strip() for c in args.parquet_codecs.split(",") if c.strip()]
+    seen_codecs = set()
+    parquet_codecs = [c for c in parquet_codecs if not (c in seen_codecs or seen_codecs.add(c))]
 
     filter_val_sql = _format_filter_value(con, args.table, args.filter_col, args.filter_val)
-    q_full = f"SELECT min({args.min_col}) FROM {parquet_scan};"
-    q_sel_pred = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
-    m_full = timed_query(con, q_full, repeats=args.repeats, warmup=args.warmup)
-    m_sel_pred = timed_query(con, q_sel_pred, repeats=args.repeats, warmup=args.warmup)
 
-    m_point = None
-    if point_lookup_col and point_lookup_val is not None:
-        q_pl_col = _quote_ident(point_lookup_col)
-        pl_val_sql = format_value_sql(point_lookup_val)
-        q_point = f"SELECT * FROM {parquet_scan} WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
-        m_point = timed_query(con, q_point, repeats=args.repeats, warmup=args.warmup)
-
-    sel_results_by_col: Dict[str, List[Dict[str, Any]]] = {}
-    avg_selectivity_ms: Dict[str, float] = {}
-    for sel_col in select_cols:
-        thresholds = quantile_thresholds(con, args.table, sel_col, ps)
-        sel_results = []
-        for p, thr in thresholds:
-            thr_sql = format_value_sql(thr)
-            q_sel = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {sel_col} <= {thr_sql};"
-            m_sel = timed_query(con, q_sel, repeats=args.repeats, warmup=args.warmup)
-            sel_results.append({"p": p, "threshold": thr, **m_sel})
-            rows_csv.append(_row(args, "parquet", f"parquet_{args.parquet_codec}", "selectivity", p, parquet_meta, m_sel, select_col=sel_col))
-        sel_results_by_col[sel_col] = sel_results
-        ms_values = [r["median_ms"] for r in sel_results if r.get("median_ms") is not None]
-        if ms_values:
-            avg_selectivity_ms[sel_col] = sum(ms_values) / len(ms_values)
-
-    rows_csv.append(_row(args, "parquet", f"parquet_{args.parquet_codec}", "full_scan_min", None, parquet_meta, m_full))
-    rows_csv.append(_row(args, "parquet", f"parquet_{args.parquet_codec}", "selective_predicate", None, parquet_meta, m_sel_pred))
-    if m_point:
-        rows_csv.append(_row(args, "parquet", f"parquet_{args.parquet_codec}", "point_lookup", None, parquet_meta, m_point))
-
-    best_select_col = None
-    if avg_selectivity_ms:
-        best_select_col = min(avg_selectivity_ms.items(), key=lambda kv: kv[1])
-
-    parquet_ratio = None
-    if input_size_bytes and parquet_meta.get("output_size_bytes"):
-        parquet_ratio = input_size_bytes / parquet_meta.get("output_size_bytes")
-    parquet_encodings = _parquet_encodings(parquet_meta.get("parquet_path", parquet_out))
-    report["formats"][f"parquet_{args.parquet_codec}"] = {
-        "write": parquet_meta,
-        "compression_ratio": parquet_ratio,
-        "encodings": parquet_encodings,
-        "queries": {
-            "full_scan_min": m_full,
-            "selective_predicate": m_sel_pred,
-            "point_lookup": m_point,
-            "selectivity_by_col": sel_results_by_col,
-        },
-        "best_select_col": best_select_col[0] if best_select_col else None,
-        "best_select_col_avg_median_ms": best_select_col[1] if best_select_col else None,
-    }
     if args.validate_io:
         base_count = con.execute(f"SELECT COUNT(*) FROM {args.table};").fetchone()[0]
         base_min = con.execute(f"SELECT min({args.min_col}) FROM {args.table};").fetchone()[0]
@@ -228,30 +206,128 @@ def main() -> None:
             f"SELECT COUNT(*) FROM {args.table} WHERE {args.filter_col} = {filter_val_sql};"
         ).fetchone()[0]
 
-        pq_count = con.execute(f"SELECT COUNT(*) FROM {parquet_scan};").fetchone()[0]
-        pq_min = con.execute(f"SELECT min({args.min_col}) FROM {parquet_scan};").fetchone()[0]
-        pq_nulls_min = _null_count(con, parquet_scan, args.min_col)
-        pq_nulls_filter = _null_count(con, parquet_scan, args.filter_col)
-        pq_filtered = con.execute(
-            f"SELECT COUNT(*) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
-        ).fetchone()[0]
-        report["formats"][f"parquet_{args.parquet_codec}"]["validation"] = {
-            "base_count": base_count,
-            "format_count": pq_count,
-            "base_min": base_min,
-            "format_min": pq_min,
-            "count_match": base_count == pq_count,
-            "min_match": base_min == pq_min,
-            "base_filtered_count": base_filtered,
-            "format_filtered_count": pq_filtered,
-            "filtered_count_match": base_filtered == pq_filtered,
-            "base_nulls_min_col": base_nulls_min,
-            "format_nulls_min_col": pq_nulls_min,
-            "min_nulls_match": base_nulls_min == pq_nulls_min,
-            "base_nulls_filter_col": base_nulls_filter,
-            "format_nulls_filter_col": pq_nulls_filter,
-            "filter_nulls_match": base_nulls_filter == pq_nulls_filter,
+    for codec in parquet_codecs:
+        parquet_out = str(out_dir / f"parquet_{codec}")
+        parquet_meta = parquet_backend.write(
+            con,
+            args.table,
+            parquet_out,
+            options={"codec": codec, "row_group_size": args.parquet_row_group_size},
+        )
+        parquet_scan = parquet_backend.scan_expr(parquet_meta.get("parquet_path", parquet_out))
+
+        q_full = f"SELECT min({args.min_col}) FROM {parquet_scan};"
+        q_sel_pred = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
+        m_full = timed_query(con, q_full, repeats=args.repeats, warmup=args.warmup)
+        m_sel_pred = timed_query(con, q_sel_pred, repeats=args.repeats, warmup=args.warmup)
+
+        m_random = None
+        if random_access_col and random_access_val is not None:
+            q_pl_col = _quote_ident(random_access_col)
+            pl_val_sql = format_value_sql(random_access_val)
+            q_point = f"SELECT * FROM {parquet_scan} WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
+            m_random = timed_query(con, q_point, repeats=args.repeats, warmup=args.warmup)
+
+        sel_results_by_col: Dict[str, List[Dict[str, Any]]] = {}
+        avg_selectivity_ms: Dict[str, float] = {}
+        for sel_col in select_cols:
+            thresholds = quantile_thresholds(con, args.table, sel_col, ps)
+            sel_results = []
+            for p, thr in thresholds:
+                thr_sql = format_value_sql(thr)
+                q_sel = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {sel_col} <= {thr_sql};"
+                m_sel = timed_query(con, q_sel, repeats=args.repeats, warmup=args.warmup)
+                sel_results.append({"p": p, "threshold": thr, **m_sel})
+                rows_csv.append(_row(args, "parquet", f"parquet_{codec}", "selectivity", p, parquet_meta, m_sel, select_col=sel_col))
+            sel_results_by_col[sel_col] = sel_results
+            ms_values = [r["median_ms"] for r in sel_results if r.get("median_ms") is not None]
+            if ms_values:
+                avg_selectivity_ms[sel_col] = sum(ms_values) / len(ms_values)
+
+        rows_csv.append(_row(args, "parquet", f"parquet_{codec}", "full_scan_min", None, parquet_meta, m_full))
+        rows_csv.append(_row(args, "parquet", f"parquet_{codec}", "selective_predicate", None, parquet_meta, m_sel_pred))
+        if m_random:
+            rows_csv.append(_row(args, "parquet", f"parquet_{codec}", "random_access", None, parquet_meta, m_random))
+
+        like_results_by_col: Dict[str, List[Dict[str, Any]]] = {}
+        for col, specs in like_specs_by_col.items():
+            qcol = _quote_ident(col)
+            for spec in specs:
+                pattern_sql = format_value_sql(spec["pattern"])
+                q_like = f"SELECT COUNT(*) FROM {parquet_scan} WHERE {qcol} LIKE {pattern_sql} ESCAPE '!';"
+                m_like = timed_query(con, q_like, repeats=args.repeats, warmup=args.warmup)
+                match_count = m_like.get("result_value")
+                sel = (match_count / rowcount) if rowcount else None
+                item = {**spec, "match_count": match_count, "selectivity": sel, **m_like}
+                like_results_by_col.setdefault(col, []).append(item)
+                targets = spec.get("target_selectivities")
+                targets_str = ",".join([str(t) for t in targets]) if isinstance(targets, list) else None
+                rows_csv.append(
+                    _row(
+                        args,
+                        "parquet",
+                        f"parquet_{codec}",
+                        "like_predicate",
+                        sel,
+                        parquet_meta,
+                        m_like,
+                        select_col=col,
+                        extras={
+                            "pattern_type": spec["pattern_type"],
+                            "pattern": spec["pattern"],
+                            "target_selectivities": targets_str,
+                            "match_count": match_count,
+                        },
+                    )
+                )
+
+        best_select_col = None
+        if avg_selectivity_ms:
+            best_select_col = min(avg_selectivity_ms.items(), key=lambda kv: kv[1])
+
+        parquet_ratio = None
+        if input_size_bytes and parquet_meta.get("output_size_bytes"):
+            parquet_ratio = input_size_bytes / parquet_meta.get("output_size_bytes")
+        parquet_encodings = _parquet_encodings(parquet_meta.get("parquet_path", parquet_out))
+        report["formats"][f"parquet_{codec}"] = {
+            "write": parquet_meta,
+            "compression_ratio": parquet_ratio,
+            "encodings": parquet_encodings,
+            "queries": {
+                "full_scan_min": m_full,
+                "selective_predicate": m_sel_pred,
+                "random_access": m_random,
+                "selectivity_by_col": sel_results_by_col,
+                "like_by_col": like_results_by_col,
+            },
+            "best_select_col": best_select_col[0] if best_select_col else None,
+            "best_select_col_avg_median_ms": best_select_col[1] if best_select_col else None,
         }
+        if args.validate_io:
+            pq_count = con.execute(f"SELECT COUNT(*) FROM {parquet_scan};").fetchone()[0]
+            pq_min = con.execute(f"SELECT min({args.min_col}) FROM {parquet_scan};").fetchone()[0]
+            pq_nulls_min = _null_count(con, parquet_scan, args.min_col)
+            pq_nulls_filter = _null_count(con, parquet_scan, args.filter_col)
+            pq_filtered = con.execute(
+                f"SELECT COUNT(*) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
+            ).fetchone()[0]
+            report["formats"][f"parquet_{codec}"]["validation"] = {
+                "base_count": base_count,
+                "format_count": pq_count,
+                "base_min": base_min,
+                "format_min": pq_min,
+                "count_match": base_count == pq_count,
+                "min_match": base_min == pq_min,
+                "base_filtered_count": base_filtered,
+                "format_filtered_count": pq_filtered,
+                "filtered_count_match": base_filtered == pq_filtered,
+                "base_nulls_min_col": base_nulls_min,
+                "format_nulls_min_col": pq_nulls_min,
+                "min_nulls_match": base_nulls_min == pq_nulls_min,
+                "base_nulls_filter_col": base_nulls_filter,
+                "format_nulls_filter_col": pq_nulls_filter,
+                "filter_nulls_match": base_nulls_filter == pq_nulls_filter,
+            }
 
     if _VORTEX_AVAILABLE:
         try:
@@ -289,18 +365,19 @@ def main() -> None:
             min_col_expr_vx = _vortex_numeric_expr(con, "vortex_dataset", args.min_col)
             sel_col_exprs_vx = {c: _vortex_numeric_expr(con, "vortex_dataset", c) for c in select_cols}
             filter_val_sql_vx = _format_filter_value(con, "vortex_dataset", args.filter_col, args.filter_val)
+            vx_text_cols = {c for c, t in _describe_types(con, "vortex_dataset").items() if t in {"VARCHAR", "TEXT"}}
 
             q_full_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset;"
             q_sel_pred_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset WHERE {args.filter_col} = {filter_val_sql_vx};"
             m_full_vx = timed_query(con, q_full_vx, repeats=args.repeats, warmup=args.warmup)
             m_sel_pred_vx = timed_query(con, q_sel_pred_vx, repeats=args.repeats, warmup=args.warmup)
 
-            m_point_vx = None
-            if point_lookup_col and point_lookup_val is not None:
-                q_pl_col = _quote_ident(point_lookup_col)
-                pl_val_sql = format_value_sql(point_lookup_val)
+            m_random_vx = None
+            if random_access_col and random_access_val is not None:
+                q_pl_col = _quote_ident(random_access_col)
+                pl_val_sql = format_value_sql(random_access_val)
                 q_point_vx = f"SELECT * FROM vortex_dataset WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
-                m_point_vx = timed_query(con, q_point_vx, repeats=args.repeats, warmup=args.warmup)
+                m_random_vx = timed_query(con, q_point_vx, repeats=args.repeats, warmup=args.warmup)
 
             sel_results_by_col_vx: Dict[str, List[Dict[str, Any]]] = {}
             avg_selectivity_ms_vx: Dict[str, float] = {}
@@ -323,8 +400,42 @@ def main() -> None:
 
             rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "full_scan_min", None, vortex_meta, m_full_vx))
             rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "selective_predicate", None, vortex_meta, m_sel_pred_vx))
-            if m_point_vx:
-                rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "point_lookup", None, vortex_meta, m_point_vx))
+            if m_random_vx:
+                rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "random_access", None, vortex_meta, m_random_vx))
+
+            like_results_by_col_vx: Dict[str, List[Dict[str, Any]]] = {}
+            for col, specs in like_specs_by_col.items():
+                if col not in vx_text_cols:
+                    continue
+                qcol = _quote_ident(col)
+                for spec in specs:
+                    pattern_sql = format_value_sql(spec["pattern"])
+                    q_like = f"SELECT COUNT(*) FROM vortex_dataset WHERE {qcol} LIKE {pattern_sql} ESCAPE '!';"
+                    m_like = timed_query(con, q_like, repeats=args.repeats, warmup=args.warmup)
+                    match_count = m_like.get("result_value")
+                    sel = (match_count / rowcount) if rowcount else None
+                    item = {**spec, "match_count": match_count, "selectivity": sel, **m_like}
+                    like_results_by_col_vx.setdefault(col, []).append(item)
+                    targets = spec.get("target_selectivities")
+                    targets_str = ",".join([str(t) for t in targets]) if isinstance(targets, list) else None
+                    rows_csv.append(
+                        _row(
+                            args,
+                            "vortex",
+                            vortex_meta.get("variant", "vortex_default"),
+                            "like_predicate",
+                            sel,
+                            vortex_meta,
+                            m_like,
+                            select_col=col,
+                            extras={
+                                "pattern_type": spec["pattern_type"],
+                                "pattern": spec["pattern"],
+                                "target_selectivities": targets_str,
+                                "match_count": match_count,
+                            },
+                        )
+                    )
 
             best_select_col_vx = None
             if avg_selectivity_ms_vx:
@@ -341,8 +452,9 @@ def main() -> None:
                 "queries": {
                     "full_scan_min": m_full_vx,
                     "selective_predicate": m_sel_pred_vx,
-                    "point_lookup": m_point_vx,
+                    "random_access": m_random_vx,
                     "selectivity_by_col": sel_results_by_col_vx,
+                    "like_by_col": like_results_by_col_vx,
                 },
                 "best_select_col": best_select_col_vx[0] if best_select_col_vx else None,
                 "best_select_col_avg_median_ms": best_select_col_vx[1] if best_select_col_vx else None,
@@ -396,6 +508,8 @@ def main() -> None:
     write_csv(rows_csv, str(results_path))
     write_json(report, str(report_json_path))
     write_markdown(_markdown_summary(report), str(report_md_path))
+    generate_dataset_plots(report, out_dir / "plots" / dataset_label, max_cols=10)
+    generate_overall_plots(out_dir / "plots" / "overall", out_dir)
 
     print(f"Done. Wrote: {results_path}, {report_json_path}, {report_md_path}")
 

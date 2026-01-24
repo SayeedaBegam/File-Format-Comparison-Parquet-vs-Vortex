@@ -15,21 +15,35 @@ Pipeline:
 ## Metrics
 For each format we record:
 - write time (compression_time_s) — lower is better
-- output size (size_bytes) — lower is better
+- output size (reported as size_mb) — lower is better
 - compression ratio (input_size_bytes / output_size_bytes) — higher is better
 - query latencies (median and p95) — lower is better
 - selectivity timings for several percentiles — lower is better
+- LIKE predicate timings on text columns — lower is better
+- encoding schemes (Parquet metadata; Vortex best-effort) — informational
 - validation checks (row count, min(), filtered count, null counts) — should match base table
 
 Queries used:
 - full_scan_min: `min(min_col)` over the full table
-- random_access: `min(min_col)` with `filter_col = filter_val`
+- selective_predicate: `min(min_col)` with `filter_col = filter_val`
+- random_access: `SELECT * ... WHERE random_access_col = value LIMIT 1` (point lookup)
 - selectivity: `min(min_col)` with `select_col <= threshold` at 1%, 10%, 25%, 50%, 90%
 
 Column roles:
 - min_col: the column used for `min(...)` queries (numeric/date with real variation)
-- filter_col / filter_val: used to build the random_access filter
+- filter_col / filter_val: used to build the selective_predicate filter
+- random_access_col: used for the point-lookup query
 - select_cols: the list of columns used for selectivity curves
+
+LIKE predicate tests:
+- prefix: `pattern%`
+- suffix: `%pattern`
+- contains: `%pattern%`
+We try to match target selectivities and report the actual match rate.
+
+NDV ratio:
+- Defined as NDV / rows for each column.
+- Reported per column (top-10) and averaged by type (numeric/text/date/bool/other).
 
 When `--auto-cols` is used, selectivity is run across all numeric/date columns that are not constant.
 
@@ -47,6 +61,7 @@ CSV row counts in the report:
 Reports already generated are stored under:
 - `out/report_*.md` and `out/report_*.json`
 - `out/results_*.csv`
+- `out/overall_summary.md` and `out/overall_summary.json`
 
 Observed patterns in those reports:
 - Parquet output is usually smaller.
@@ -66,6 +81,8 @@ Check the latest report files for the full numbers:
 - `bench/backends/parquet_backend.py`: Parquet write + scan expression
 - `bench/backends/vortex_backend.py`: Vortex write + scan expression (DuckDB extension)
 - `bench/report/report.py`: CSV/JSON/Markdown writers
+- `bench/report/plots.py`: plot generation
+- `bench/report/summary.py`: overall summary (markdown + JSON)
 
 ## Install
 From this folder:
@@ -139,7 +156,8 @@ Query selection:
 - `--selectivities`: percentiles, e.g. `0.01,0.1,0.25,0.5,0.9`
 
 Parquet:
-- `--parquet-codec` (default `zstd`)
+- `--parquet-codec` (override a single codec)
+- `--parquet-codecs` (default `zstd,snappy,uncompressed`)
 - `--parquet-row-group-size`
 
 Vortex:
@@ -147,9 +165,23 @@ Vortex:
 - `--vortex-cast`: cast columns before Vortex write, format `col:TYPE`
 - `--vortex-drop-cols`: drop columns before Vortex write
 
+LIKE predicates:
+- `--like-tests` / `--no-like-tests` (default: enabled)
+- `--like-max-candidates` (default: 50)
+- `--like-pattern-len` (default: 3)
+
 Validation:
 - Validation is on by default: compares row counts, min(), filtered counts, and null counts between base table and formats.
 - Explicitly enable with `--validate-io`, or disable with `--no-validate-io`.
+
+Plots:
+- Per-dataset plots are written to `out/plots/<dataset>/`.
+- Overall plots (geomean and dataset diversity) are written to `out/plots/overall/`.
+- Plots include storage, scan/predicate latency, selectivity curves, LIKE summaries, NDV ratio, dataset size/rows, column type mix, and parquet codec comparisons.
+
+Encoding schemes:
+- Parquet encodings are read from metadata (PyArrow).
+- Vortex encodings are best-effort via `display_tree()`; failures are reported as notes.
 
 ## Notes
 - If your CSV has no header, do not use `--csv-header true`. It will treat the first data row as column names.

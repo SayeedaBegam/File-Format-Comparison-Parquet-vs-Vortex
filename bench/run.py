@@ -28,6 +28,7 @@ from utils_run import (
     _parse_casts,
     _parse_list,
     _quote_ident,
+    _pick_point_lookup,
     _row,
     _select_cols,
     _vortex_numeric_expr,
@@ -130,6 +131,7 @@ def main() -> None:
     select_cols = _select_cols(args.select_col, args.select_cols)
 
     rows_csv: List[Dict[str, Any]] = []
+    point_lookup_col, point_lookup_val = _pick_point_lookup(con, args.table)
     report: Dict[str, Any] = {
         "system": {"platform": platform.platform(), "python": platform.python_version(), "machine": platform.node()},
         "dataset": {
@@ -141,7 +143,13 @@ def main() -> None:
             "drop_notes": drop_notes if drop_notes else None,
             "input_size_bytes": input_size_bytes,
         },
-        "columns": {"min_col": args.min_col, "filter_col": args.filter_col, "select_col": args.select_col, "select_cols": select_cols},
+        "columns": {
+            "min_col": args.min_col,
+            "filter_col": args.filter_col,
+            "select_col": args.select_col,
+            "select_cols": select_cols,
+            "point_lookup_col": point_lookup_col,
+        },
         "formats": {},
     }
 
@@ -156,9 +164,16 @@ def main() -> None:
 
     filter_val_sql = _format_filter_value(con, args.table, args.filter_col, args.filter_val)
     q_full = f"SELECT min({args.min_col}) FROM {parquet_scan};"
-    q_rand = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
+    q_sel_pred = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
     m_full = timed_query(con, q_full, repeats=args.repeats, warmup=args.warmup)
-    m_rand = timed_query(con, q_rand, repeats=args.repeats, warmup=args.warmup)
+    m_sel_pred = timed_query(con, q_sel_pred, repeats=args.repeats, warmup=args.warmup)
+
+    m_point = None
+    if point_lookup_col and point_lookup_val is not None:
+        q_pl_col = _quote_ident(point_lookup_col)
+        pl_val_sql = format_value_sql(point_lookup_val)
+        q_point = f"SELECT * FROM {parquet_scan} WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
+        m_point = timed_query(con, q_point, repeats=args.repeats, warmup=args.warmup)
 
     sel_results_by_col: Dict[str, List[Dict[str, Any]]] = {}
     avg_selectivity_ms: Dict[str, float] = {}
@@ -177,7 +192,9 @@ def main() -> None:
             avg_selectivity_ms[sel_col] = sum(ms_values) / len(ms_values)
 
     rows_csv.append(_row(args, "parquet", f"parquet_{args.parquet_codec}", "full_scan_min", None, parquet_meta, m_full))
-    rows_csv.append(_row(args, "parquet", f"parquet_{args.parquet_codec}", "random_access", None, parquet_meta, m_rand))
+    rows_csv.append(_row(args, "parquet", f"parquet_{args.parquet_codec}", "selective_predicate", None, parquet_meta, m_sel_pred))
+    if m_point:
+        rows_csv.append(_row(args, "parquet", f"parquet_{args.parquet_codec}", "point_lookup", None, parquet_meta, m_point))
 
     best_select_col = None
     if avg_selectivity_ms:
@@ -191,7 +208,8 @@ def main() -> None:
         "compression_ratio": parquet_ratio,
         "queries": {
             "full_scan_min": m_full,
-            "random_access": m_rand,
+            "selective_predicate": m_sel_pred,
+            "point_lookup": m_point,
             "selectivity_by_col": sel_results_by_col,
         },
         "best_select_col": best_select_col[0] if best_select_col else None,
@@ -269,9 +287,16 @@ def main() -> None:
             filter_val_sql_vx = _format_filter_value(con, "vortex_dataset", args.filter_col, args.filter_val)
 
             q_full_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset;"
-            q_rand_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset WHERE {args.filter_col} = {filter_val_sql_vx};"
+            q_sel_pred_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset WHERE {args.filter_col} = {filter_val_sql_vx};"
             m_full_vx = timed_query(con, q_full_vx, repeats=args.repeats, warmup=args.warmup)
-            m_rand_vx = timed_query(con, q_rand_vx, repeats=args.repeats, warmup=args.warmup)
+            m_sel_pred_vx = timed_query(con, q_sel_pred_vx, repeats=args.repeats, warmup=args.warmup)
+
+            m_point_vx = None
+            if point_lookup_col and point_lookup_val is not None:
+                q_pl_col = _quote_ident(point_lookup_col)
+                pl_val_sql = format_value_sql(point_lookup_val)
+                q_point_vx = f"SELECT * FROM vortex_dataset WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
+                m_point_vx = timed_query(con, q_point_vx, repeats=args.repeats, warmup=args.warmup)
 
             sel_results_by_col_vx: Dict[str, List[Dict[str, Any]]] = {}
             avg_selectivity_ms_vx: Dict[str, float] = {}
@@ -293,7 +318,9 @@ def main() -> None:
                     avg_selectivity_ms_vx[sel_col] = sum(ms_values) / len(ms_values)
 
             rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "full_scan_min", None, vortex_meta, m_full_vx))
-            rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "random_access", None, vortex_meta, m_rand_vx))
+            rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "selective_predicate", None, vortex_meta, m_sel_pred_vx))
+            if m_point_vx:
+                rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "point_lookup", None, vortex_meta, m_point_vx))
 
             best_select_col_vx = None
             if avg_selectivity_ms_vx:
@@ -307,7 +334,8 @@ def main() -> None:
                 "compression_ratio": vortex_ratio,
                 "queries": {
                     "full_scan_min": m_full_vx,
-                    "random_access": m_rand_vx,
+                    "selective_predicate": m_sel_pred_vx,
+                    "point_lookup": m_point_vx,
                     "selectivity_by_col": sel_results_by_col_vx,
                 },
                 "best_select_col": best_select_col_vx[0] if best_select_col_vx else None,

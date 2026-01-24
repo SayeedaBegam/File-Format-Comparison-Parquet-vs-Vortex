@@ -199,6 +199,39 @@ def _auto_select_cols(con: duckdb.DuckDBPyConnection, table_name: str) -> List[s
     return out
 
 
+def _pick_point_lookup(con: duckdb.DuckDBPyConnection, table_name: str) -> Tuple[Optional[str], Optional[Any]]:
+    desc = con.execute(f"DESCRIBE {table_name};").fetchall()
+    numeric_types = {
+        "TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT",
+        "FLOAT", "DOUBLE", "REAL", "DECIMAL",
+    }
+    date_types = {"DATE", "TIMESTAMP", "TIMESTAMP_TZ", "TIME"}
+    text_types = {"VARCHAR", "TEXT"}
+    candidates = [c for c, t, *_ in desc if t.upper() in numeric_types | date_types | text_types]
+    best_col = None
+    best_ndv = -1
+    for col in candidates:
+        qcol = _quote_ident(col)
+        ndv, nn = con.execute(
+            f"SELECT COUNT(DISTINCT {qcol}), COUNT({qcol}) FROM {table_name};"
+        ).fetchone()
+        if ndv is None or nn is None or nn == 0:
+            continue
+        if col in text_types:
+            avg_len = con.execute(f"SELECT AVG(LENGTH({qcol})) FROM {table_name};").fetchone()[0]
+            if avg_len is not None and avg_len > 128:
+                continue
+        if ndv > best_ndv:
+            best_ndv = ndv
+            best_col = col
+    if not best_col:
+        return None, None
+    qbest = _quote_ident(best_col)
+    val = con.execute(f"SELECT {qbest} FROM {table_name} WHERE {qbest} IS NOT NULL LIMIT 1;").fetchone()
+    val = val[0] if val else None
+    return best_col, val
+
+
 def _parse_casts(spec: Optional[str]) -> Dict[str, str]:
     if not spec:
         return {}
@@ -325,7 +358,10 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
                 lines.append(f"- compression_ratio: **{body.get('compression_ratio'):.3f}**")
             q = body["queries"]
             lines.append(f"- full_scan_min median_ms: **{q['full_scan_min']['median_ms']:.2f}**")
-            lines.append(f"- random_access median_ms: **{q['random_access']['median_ms']:.2f}**")
+            if "selective_predicate" in q:
+                lines.append(f"- selective_predicate median_ms: **{q['selective_predicate']['median_ms']:.2f}**")
+            if "point_lookup" in q:
+                lines.append(f"- point_lookup median_ms: **{q['point_lookup']['median_ms']:.2f}**")
             if body.get("best_select_col"):
                 lines.append(
                     f"- best_select_col: `{body.get('best_select_col')}` "
@@ -383,7 +419,9 @@ def _recommendations(report: Dict[str, Any]) -> Dict[str, str]:
             best_storage = name
 
         q = body["queries"]
-        read_ms = q.get("random_access", {}).get("median_ms")
+        read_ms = q.get("point_lookup", {}).get("median_ms")
+        if read_ms is None:
+            read_ms = q.get("selective_predicate", {}).get("median_ms")
         if read_ms is not None and (best_read_ms is None or read_ms < best_read_ms):
             best_read_ms = read_ms
             best_read = name

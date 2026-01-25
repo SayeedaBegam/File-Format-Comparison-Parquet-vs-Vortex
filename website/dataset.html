@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parquet vs Vortex - Dataset Detail</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <img src="./logo.png" alt="File format comparison logo" class="brand-logo" />
+        <div>
+          <div class="brand-title">File format comparison</div>
+          <div class="brand-subtitle">Sayeeda Begam Mohamed Ikbal, Goutham Muralikrishnan</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="./index.html">Overall</a>
+        <a class="nav-link is-active" href="./dataset.html">Dataset detail</a>
+        <a class="nav-link" href="./upload.html">Upload</a>
+      </nav>
+    </header>
+
+    <main class="page dataset-layout">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">Datasets</div>
+          <input
+            id="dataset-search"
+            class="search"
+            type="search"
+            placeholder="Search datasets"
+          />
+        </div>
+        <div id="dataset-list" class="sidebar-list"></div>
+      </aside>
+
+      <div class="dataset-main">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Select a dataset</h2>
+            <p>Pick a dataset or upload a report JSON to summarize.</p>
+          </div>
+          <div class="selector-row">
+            <select id="dataset-select" class="select"></select>
+            <button id="load-dataset" class="button primary">Load dataset</button>
+          </div>
+          <div class="upload-card">
+            <label class="upload-label" for="upload-json">
+              Upload report JSON
+            </label>
+            <input id="upload-json" type="file" accept=".json,application/json" />
+            <div class="upload-hint">
+              Supported: report_*.json or overall_summary.json
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="dataset-summary">
+          <div class="panel-header">
+            <h2>Dataset summary</h2>
+            <p id="dataset-caption">Load a dataset to see the details.</p>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Rows</div>
+              <div class="stat-value" id="ds-rows">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Input size</div>
+              <div class="stat-value" id="ds-size">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Dropped rows</div>
+              <div class="stat-value" id="ds-drop">--</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Columns</div>
+              <div class="stat-value" id="ds-cols">--</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Format performance</h2>
+            <p>Compression, compression time, and query medians by format.</p>
+          </div>
+          <div id="format-detail-grid" class="format-grid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Interactive chart</h2>
+            <p>Swap metrics and hover a bar for exact values.</p>
+          </div>
+          <div class="selector-row">
+            <select id="interactive-view" class="select">
+              <option value="metric">Format metrics</option>
+              <option value="selectivity">Best selectivity column</option>
+              <option value="like">LIKE predicates</option>
+            </select>
+            <select id="dataset-metric" class="select">
+              <option value="compression_ratio">Compression ratio</option>
+              <option value="output_size">Output size</option>
+              <option value="write_time">Compression time</option>
+              <option value="full_scan">Full scan median</option>
+              <option value="selective">Selective predicate median</option>
+              <option value="random_access">Random access median</option>
+            </select>
+          </div>
+          <div class="chart-card" id="metric-chart-block">
+            <div class="chart-title" id="dataset-chart-title">Compression ratio</div>
+            <div id="dataset-chart" class="chart"></div>
+          </div>
+          <div class="detail-row" id="selectivity-block">
+            <div class="detail-card">
+              <h3>Best selectivity column</h3>
+              <div class="selector-row">
+                <select id="selectivity-select" class="select"></select>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title" id="selectivity-title">Best selectivity median (ms)</div>
+                <div id="selectivity-note" class="selectivity-note"></div>
+                <div id="selectivity-chart" class="chart"></div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-row" id="like-block">
+            <div class="detail-card">
+              <h3>LIKE predicates</h3>
+              <div class="selector-row">
+                <select id="like-select" class="select"></select>
+                <select id="like-column-select" class="select"></select>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">Pattern type latency</div>
+                <div id="like-chart" class="chart"></div>
+              </div>
+              <div id="like-summary" class="like-summary"></div>
+              <div id="like-table" class="like-table"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Dataset details</h2>
+            <p>Column mix, NDV ratios, recommendations, encodings, and predicates.</p>
+          </div>
+          <div class="details-grid">
+            <div class="detail-card">
+              <h3>Column types</h3>
+              <div id="col-type-bars" class="stacked-bar"></div>
+              <div id="col-type-legend" class="legend"></div>
+            </div>
+            <div class="detail-card">
+              <h3>NDV ratio by type</h3>
+              <div id="ndv-bars" class="mini-bars"></div>
+            </div>
+            <div class="detail-card">
+              <h3>Recommendations</h3>
+              <div id="recommendations" class="rec-grid"></div>
+            </div>
+            <div class="detail-card">
+              <h3>Encodings</h3>
+              <div class="selector-row">
+                <select id="encoding-select" class="select"></select>
+              </div>
+              <div id="encoding-list" class="encoding-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="upload-summary">
+          <div class="panel-header">
+            <h2>Upload summary</h2>
+            <p id="upload-caption">Upload a JSON report to populate this section.</p>
+          </div>
+          <div id="upload-output" class="format-grid"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div>Reports loaded from <code>out/</code> or manual upload.</div>
+      <div class="footer-links">
+        <a href="./index.html">Overall</a>
+        <a href="./upload.html">Upload</a>
+        <a href="../out/">Out directory</a>
+      </div>
+    </footer>
+
+    <script src="./dataset.js"></script>
+  </body>
+</html>

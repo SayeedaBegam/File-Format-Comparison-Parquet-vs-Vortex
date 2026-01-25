@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parquet vs Vortex - Upload Dataset</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <img src="./logo.png" alt="File format comparison logo" class="brand-logo" />
+        <div>
+          <div class="brand-title">File format comparison</div>
+          <div class="brand-subtitle">Sayeeda Begam Mohamed Ikbal, Goutham Muralikrishnan</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="./index.html">Overall</a>
+        <a class="nav-link" href="./dataset.html">Dataset detail</a>
+        <a class="nav-link is-active" href="./upload.html">Upload</a>
+      </nav>
+    </header>
+
+    <main class="page">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Upload a dataset</h2>
+          <p>Upload a CSV and we'll run Parquet + Vortex benchmarks automatically.</p>
+        </div>
+        <div class="upload-card">
+          <label class="upload-label" for="dataset-file">
+            Dataset file
+          </label>
+          <input id="dataset-file" type="file" accept=".csv" />
+          <div class="upload-hint">
+            Upload a CSV and we'll run the benchmark automatically.
+          </div>
+        </div>
+        <div class="selector-row">
+          <div id="run-status" class="status-pill">Waiting for a file.</div>
+        </div>
+        <pre id="run-error" class="error-box" hidden></pre>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">File name</div>
+            <div class="stat-value" id="file-name">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">File size</div>
+            <div class="stat-value" id="file-size">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Detected type</div>
+            <div class="stat-value" id="file-type">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Output folder</div>
+            <div class="stat-value"><code>out/</code></div>
+          </div>
+        </div>
+
+      </section>
+
+      <section class="panel" id="run-summary">
+        <div class="panel-header">
+          <h2>Run summary</h2>
+          <p id="run-caption">Upload a dataset to generate a report.</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Rows</div>
+            <div class="stat-value" id="run-rows">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Input size</div>
+            <div class="stat-value" id="run-size">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Dropped rows</div>
+            <div class="stat-value" id="run-drop">--</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Columns</div>
+            <div class="stat-value" id="run-cols">--</div>
+          </div>
+        </div>
+        <div id="report-output" class="format-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Interactive chart</h2>
+          <p>Pick a metric and compare formats.</p>
+        </div>
+        <div class="selector-row">
+          <select id="upload-metric" class="select">
+            <option value="compression_ratio">Compression ratio</option>
+            <option value="output_size">Output size</option>
+            <option value="write_time">Compression time</option>
+            <option value="full_scan">Full scan median</option>
+            <option value="selective">Selective predicate median</option>
+            <option value="random_access">Random access median</option>
+          </select>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title" id="upload-chart-title">Compression ratio</div>
+          <div id="upload-chart" class="chart"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Advanced insights</h2>
+          <p>Selectivity curves, encodings, and LIKE predicates (when available).</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Best selectivity column</h3>
+            <div class="selector-row">
+              <select id="upload-selectivity-select" class="select"></select>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title" id="upload-selectivity-title">Selectivity curves</div>
+              <div id="upload-selectivity-chart" class="chart"></div>
+            </div>
+          </div>
+          <div class="detail-card">
+            <h3>LIKE predicates</h3>
+            <div class="selector-row">
+              <select id="upload-like-select" class="select"></select>
+              <select id="upload-like-column-select" class="select"></select>
+            </div>
+            <div class="chart-card">
+              <div class="chart-title">Pattern type latency</div>
+              <div id="upload-like-chart" class="chart"></div>
+            </div>
+            <div id="upload-like-summary" class="like-summary"></div>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Encodings</h3>
+            <div class="selector-row">
+              <select id="upload-encoding-select" class="select"></select>
+            </div>
+            <div id="upload-encoding-list" class="encoding-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Generated plots</h2>
+          <p>Select a plot and click to open fullscreen.</p>
+        </div>
+        <div class="selector-row">
+          <select id="plot-select" class="select"></select>
+        </div>
+        <div class="plot-viewer">
+          <img id="plot-preview" alt="Plot preview" />
+        </div>
+      </section>
+
+      <div id="plot-modal" class="modal" hidden>
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+          <button id="plot-exit" class="button ghost">Exit</button>
+          <img id="plot-full" alt="Plot fullscreen" />
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div>Benchmark runs use <code>bench/run.py</code> and write to <code>out/</code>.</div>
+      <div class="footer-links">
+        <a href="./index.html">Overall</a>
+        <a href="./dataset.html">Dataset detail</a>
+      </div>
+    </footer>
+
+    <script src="./upload.js"></script>
+  </body>
+</html>

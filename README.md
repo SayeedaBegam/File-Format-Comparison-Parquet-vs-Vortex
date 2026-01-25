@@ -74,6 +74,32 @@ Check the latest report files for the full numbers:
 - `out/report_IGlocations1_1.md`
 - `out/report_MedPayment2_1.md`
 
+## Website (dashboard UI)
+The `website/` dashboard is a presentation layer for benchmark outputs in `out/`. It provides a clear, decision‑oriented view of storage trade‑offs (compression, size, and query latency), with an overall summary, per‑dataset drill‑downs, and interactive visualizations (metrics, selectivity curves, LIKE predicate performance). A local upload workflow is available via the Flask backend to generate fresh reports and plots from new CSV inputs.
+
+### Run the static pages (no upload)
+From the repo root:
+```bash
+python -m http.server 8000
+```
+Then open:
+- `http://localhost:8000/website/index.html`
+- `http://localhost:8000/website/dataset.html`
+
+### Run with upload + processing
+The upload flow needs the Flask backend in `website/server.py`:
+```bash
+python -m pip install -r website/requirements.txt
+python -m pip install -r bench/requirements.txt
+python website/server.py
+```
+Then open:
+- `http://localhost:5000/website/upload.html`
+
+Notes:
+- The upload pipeline writes new reports into `out/`.
+- GitHub Pages can host the static pages, but it cannot run the upload backend.
+
 ## Files and responsibilities
 - `bench/run.py`: main runner and CLI
 - `bench/utils_run.py`: helper functions (auto-pick logic, SQL formatting, timing, validation, markdown)

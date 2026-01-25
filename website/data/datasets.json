@@ -1,0 +1,36 @@
+{
+  "datasets": [
+    {
+      "name": "CityMaxCapita_1",
+      "report": "../out/report_CityMaxCapita_1.json"
+    },
+    {
+      "name": "Euro2016_1",
+      "report": "../out/report_Euro2016_1.json"
+    },
+    {
+      "name": "IGlocations1_1",
+      "report": "../out/report_IGlocations1_1.json"
+    },
+    {
+      "name": "MedPayment1_1",
+      "report": "../out/report_MedPayment1_1.json"
+    },
+    {
+      "name": "MedPayment2_1",
+      "report": "../out/report_MedPayment2_1.json"
+    },
+    {
+      "name": "NYC_1",
+      "report": "../out/report_NYC_1.json"
+    },
+    {
+      "name": "Physicians_1",
+      "report": "../out/report_Physicians_1.json"
+    },
+    {
+      "name": "Uberlandia_1",
+      "report": "../out/report_Uberlandia_1.json"
+    }
+  ]
+}

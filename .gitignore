@@ -4,3 +4,6 @@ Dataset/
 out_trains/
 out/parquet/
 out/vortex/
+out/parquet_snappy/
+out/parquet_zstd/
+out/parquet_uncompressed/

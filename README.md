@@ -28,10 +28,11 @@ This README documents:
 
 ### Query latency metrics (per format)
 All query latencies include:
-- **median_ms**
-- **p95_ms**
+- **median_ms** (typical run; robust to outliers)
+- **p95_ms** (tail latency; 95% of runs are faster)
 - **runs**
 - **cold_ms** (optional; one cold run before warmup)
+Markdown reports include cold timing when available (shown inline with median/p95).
 
 Queries:
 - **full_scan_min**: `min(min_col)` over the full table
@@ -161,15 +162,13 @@ python bench/run.py \
   --out out
 ```
 
-### With sorting + cold timings + baseline
+### With sorting (cold timings + baseline are on by default)
 ```bash
 python bench/run.py \
   --input data/my.csv \
   --input-type csv \
   --auto-cols \
   --sorted-by my_filter_column \
-  --include-cold \
-  --baseline-duckdb \
   --out out
 ```
 
@@ -199,8 +198,8 @@ python bench/run.py \
 - `--vortex-cast`, `--vortex-drop-cols`
 
 ### Diagnostics
-- `--include-cold`: record cold run time
-- `--baseline-duckdb`: include DuckDB table baseline
+- `--include-cold` / `--no-include-cold`: record cold run time (default: on)
+- `--baseline-duckdb` / `--no-baseline-duckdb`: include DuckDB table baseline (default: on)
 - `--sorted-by`: sort by a column before writing formats
 
 ---

@@ -66,8 +66,36 @@ def _load_overall_summary() -> dict | None:
   return json.loads(summary_path.read_text(encoding="utf-8"))
 
 
-def _escape_path(path: Path) -> str:
+def _escape_path(path: Path | str) -> str:
   return str(path).replace("'", "''")
+
+
+def _resolve_report_path(path: str) -> Path:
+  resolved = Path(path)
+  if not resolved.is_absolute():
+    resolved = REPO_ROOT / resolved
+  return resolved
+
+
+def _relative_to_repo(path: Path) -> str:
+  try:
+    return str(path.relative_to(REPO_ROOT).as_posix())
+  except ValueError:
+    return str(path)
+
+
+def _scan_expr_parquet(path: Path) -> str:
+  target = str(path)
+  if path.is_dir():
+    target = f"{target}/**/*.parquet"
+  return f"read_parquet('{_escape_path(target)}')"
+
+
+def _scan_expr_vortex(path: Path) -> str:
+  target = str(path)
+  if path.is_dir():
+    target = f"{target}/**/*.vortex"
+  return f"read_vortex('{_escape_path(target)}')"
 
 
 def _load_preview(input_path: Path, input_type: str) -> dict[str, list]:
@@ -219,6 +247,99 @@ def run_custom_query():
 
   result = _timed_query(con, sql, repeats=repeats, warmup=warmup)
   return jsonify(result)
+
+
+@app.route("/api/query-formats", methods=["POST"])
+def run_query_across_formats():
+  payload = request.get_json(silent=True) or {}
+  sql = (payload.get("sql") or "").strip()
+  repeats = int(payload.get("repeats") or 5)
+  warmup = int(payload.get("warmup") or 1)
+  formats_filter = payload.get("formats")
+
+  if not sql:
+    return jsonify({"error": "Missing SQL query."}), 400
+  sql_lower = sql.lstrip().lower()
+  if not (sql_lower.startswith("select") or sql_lower.startswith("with")):
+    return jsonify({"error": "Only SELECT queries are allowed."}), 400
+
+  report_path_value = payload.get("report_path")
+  if report_path_value:
+    report_path = _resolve_report_path(report_path_value)
+  else:
+    report_path = _latest_report()
+  if not report_path or not report_path.exists():
+    return jsonify({"error": "Report JSON not found."}), 404
+
+  report = json.loads(report_path.read_text(encoding="utf-8"))
+  formats = report.get("formats", {})
+  allowed = None
+  if isinstance(formats_filter, list):
+    allowed = {str(name) for name in formats_filter}
+
+  con = duckdb.connect(database=":memory:")
+  vortex_load_error = None
+  vortex_needed = any(
+    "vortex_path" in (body.get("write") or {})
+    for name, body in formats.items()
+    if not allowed or name in allowed
+  )
+  if vortex_needed:
+    try:
+      con.execute("LOAD vortex;")
+    except Exception as exc:
+      vortex_load_error = str(exc)
+
+  results: dict[str, dict] = {}
+  for name, body in formats.items():
+    if allowed and name not in allowed:
+      continue
+    write = body.get("write") or {}
+    scan_expr = None
+    data_path = None
+    if "parquet_path" in write:
+      data_path = _resolve_report_path(write["parquet_path"])
+      scan_expr = _scan_expr_parquet(data_path)
+    elif "vortex_path" in write:
+      if vortex_load_error:
+        results[name] = {"error": f"Vortex load failed: {vortex_load_error}"}
+        continue
+      data_path = _resolve_report_path(write["vortex_path"])
+      scan_expr = _scan_expr_vortex(data_path)
+    else:
+      continue
+
+    if data_path is None or not data_path.exists():
+      results[name] = {"error": f"Path not found: {data_path}"}
+      continue
+
+    try:
+      con.execute("DROP VIEW IF EXISTS data;")
+      con.execute(f"CREATE VIEW data AS SELECT * FROM {scan_expr};")
+      results[name] = _timed_query(con, sql, repeats=repeats, warmup=warmup)
+    except Exception as exc:
+      results[name] = {"error": str(exc)}
+
+  if not results:
+    return jsonify({"error": "No file formats found in report."}), 400
+
+  best_format = None
+  best_median = None
+  for name, result in results.items():
+    median = result.get("median_ms") if isinstance(result, dict) else None
+    if median is None:
+      continue
+    if best_median is None or median < best_median:
+      best_median = median
+      best_format = name
+
+  return jsonify(
+    {
+      "results": results,
+      "best_format": best_format,
+      "report_path": _relative_to_repo(report_path),
+    }
+  )
 
 
 @app.route("/")

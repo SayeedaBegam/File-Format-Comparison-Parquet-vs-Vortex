@@ -467,11 +467,20 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
     if recs:
         lines.append("- recommendations:")
         if recs.get("storage_first"):
-            lines.append(f"  - storage-first: `{recs['storage_first']}`")
+            item = recs["storage_first"]
+            lines.append(f"  - storage-first: `{item['name']}`")
+            if item.get("reason"):
+                lines.append(f"    - reason: {item['reason']}")
         if recs.get("read_latency_first"):
-            lines.append(f"  - read-latency-first: `{recs['read_latency_first']}`")
+            item = recs["read_latency_first"]
+            lines.append(f"  - read-latency-first: `{item['name']}`")
+            if item.get("reason"):
+                lines.append(f"    - reason: {item['reason']}")
         if recs.get("scan_first"):
-            lines.append(f"  - scan-first: `{recs['scan_first']}`")
+            item = recs["scan_first"]
+            lines.append(f"  - scan-first: `{item['name']}`")
+            if item.get("reason"):
+                lines.append(f"    - reason: {item['reason']}")
     lines.append("")
     for name, body in report["formats"].items():
         lines.append(f"## {name}")
@@ -495,13 +504,29 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
                 elif enc.get("note"):
                     lines.append(f"- encodings: {enc.get('note')}")
             q = body["queries"]
-            lines.append(f"- full_scan_min median_ms: **{q['full_scan_min']['median_ms']:.2f}**")
+            lines.append(
+                f"- full_scan_min median_ms: **{q['full_scan_min']['median_ms']:.2f}** "
+                f"(p95 **{q['full_scan_min']['p95_ms']:.2f}**"
+                f"{_format_cold(q['full_scan_min'])})"
+            )
             if "selective_predicate" in q:
-                lines.append(f"- selective_predicate median_ms: **{q['selective_predicate']['median_ms']:.2f}**")
+                lines.append(
+                    f"- selective_predicate median_ms: **{q['selective_predicate']['median_ms']:.2f}** "
+                    f"(p95 **{q['selective_predicate']['p95_ms']:.2f}**"
+                    f"{_format_cold(q['selective_predicate'])})"
+                )
             if "random_access" in q:
-                lines.append(f"- random_access median_ms: **{q['random_access']['median_ms']:.2f}**")
+                lines.append(
+                    f"- random_access median_ms: **{q['random_access']['median_ms']:.2f}** "
+                    f"(p95 **{q['random_access']['p95_ms']:.2f}**"
+                    f"{_format_cold(q['random_access'])})"
+                )
             elif "point_lookup" in q:
-                lines.append(f"- random_access median_ms: **{q['point_lookup']['median_ms']:.2f}**")
+                lines.append(
+                    f"- random_access median_ms: **{q['point_lookup']['median_ms']:.2f}** "
+                    f"(p95 **{q['point_lookup']['p95_ms']:.2f}**"
+                    f"{_format_cold(q['point_lookup'])})"
+                )
             if body.get("best_select_col"):
                 lines.append(
                     f"- best_select_col: `{body.get('best_select_col')}` "
@@ -573,15 +598,18 @@ def _null_count(con: duckdb.DuckDBPyConnection, from_expr: str, col: str) -> int
     return con.execute(f"SELECT COUNT(*) FROM {from_expr} WHERE {qcol} IS NULL;").fetchone()[0]
 
 
-def _recommendations(report: Dict[str, Any]) -> Dict[str, str]:
+def _recommendations(report: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
     best_storage = None
     best_storage_ratio = None
     best_read = None
     best_read_ms = None
+    best_read_metric = None
     best_scan = None
     best_scan_ms = None
 
     for name, body in report.get("formats", {}).items():
+        if name == "duckdb_table":
+            continue
         if "write" not in body or "queries" not in body:
             continue
         ratio = body.get("compression_ratio")
@@ -591,26 +619,39 @@ def _recommendations(report: Dict[str, Any]) -> Dict[str, str]:
 
         q = body["queries"]
         read_ms = q.get("random_access", {}).get("median_ms")
+        read_metric = "random_access"
         if read_ms is None:
             read_ms = q.get("point_lookup", {}).get("median_ms")
+            read_metric = "point_lookup"
         if read_ms is None:
             read_ms = q.get("selective_predicate", {}).get("median_ms")
+            read_metric = "selective_predicate"
         if read_ms is not None and (best_read_ms is None or read_ms < best_read_ms):
             best_read_ms = read_ms
             best_read = name
+            best_read_metric = read_metric
 
         scan_ms = q.get("full_scan_min", {}).get("median_ms")
         if scan_ms is not None and (best_scan_ms is None or scan_ms < best_scan_ms):
             best_scan_ms = scan_ms
             best_scan = name
 
-    out: Dict[str, str] = {}
+    out: Dict[str, Dict[str, str]] = {}
     if best_storage:
-        out["storage_first"] = best_storage
+        out["storage_first"] = {
+            "name": best_storage,
+            "reason": f"highest compression_ratio {best_storage_ratio:.3f}",
+        }
     if best_read:
-        out["read_latency_first"] = best_read
+        out["read_latency_first"] = {
+            "name": best_read,
+            "reason": f"lowest {best_read_metric} median_ms {best_read_ms:.2f}",
+        }
     if best_scan:
-        out["scan_first"] = best_scan
+        out["scan_first"] = {
+            "name": best_scan,
+            "reason": f"lowest full_scan_min median_ms {best_scan_ms:.2f}",
+        }
     return out
 
 
@@ -626,6 +667,13 @@ def _format_mb(val: Any) -> str:
         return f"{(float(val) / (1024 * 1024)):.2f}"
     except Exception:
         return "n/a"
+
+
+def _format_cold(qmeta: Dict[str, Any]) -> str:
+    cold_ms = qmeta.get("cold_ms")
+    if cold_ms is None:
+        return ""
+    return f", cold **{cold_ms:.2f}**"
 
 
 _LIKE_ESCAPE_CHAR = "!"

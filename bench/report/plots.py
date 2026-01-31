@@ -15,6 +15,8 @@ def _ensure_dir(path: Path) -> None:
 def _formats_with_write(report: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
     out = []
     for name, body in report.get("formats", {}).items():
+        if name == "duckdb_table":
+            continue
         if "write" in body and "queries" in body:
             out.append((name, body))
     return out

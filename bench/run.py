@@ -92,9 +92,19 @@ def main() -> None:
         help="Enable/disable validation (default: true)",
     )
     ap.add_argument("--threads", type=int, default=None)
-    ap.add_argument("--include-cold", action="store_true", help="Include a cold-run timing per query")
+    ap.add_argument(
+        "--include-cold",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include a cold-run timing per query (default: true)",
+    )
     ap.add_argument("--sorted-by", default=None, help="Optional column name to sort data before writing")
-    ap.add_argument("--baseline-duckdb", action="store_true", help="Include DuckDB table baseline timings")
+    ap.add_argument(
+        "--baseline-duckdb",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include DuckDB table baseline timings (default: true)",
+    )
     args = ap.parse_args()
 
     out_dir = Path(args.out)
@@ -221,23 +231,110 @@ def main() -> None:
         source_table = sorted_table
 
     if args.baseline_duckdb:
+        duckdb_meta = {
+            "format": "duckdb_table",
+            "compression_time_s": 0.0,
+            "output_size_bytes": input_size_bytes,
+            "note": "Baseline: queries run directly on DuckDB table (no external file scan).",
+        }
+        duckdb_ratio = None
+        if input_size_bytes:
+            duckdb_ratio = input_size_bytes / input_size_bytes
+
         q_full_base = f"SELECT min({args.min_col}) FROM {args.table};"
         q_sel_pred_base = f"SELECT min({args.min_col}) FROM {args.table} WHERE {args.filter_col} = {filter_val_sql};"
         m_full_base = _time(q_full_base)
         m_sel_pred_base = _time(q_sel_pred_base)
+
         m_random_base = None
         if random_access_col and random_access_val is not None:
             q_pl_col = _quote_ident(random_access_col)
             pl_val_sql = format_value_sql(random_access_val)
             q_point = f"SELECT * FROM {args.table} WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
             m_random_base = _time(q_point)
+
+        sel_results_by_col_table: Dict[str, List[Dict[str, Any]]] = {}
+        avg_selectivity_ms_table: Dict[str, float] = {}
+        for sel_col in select_cols:
+            thresholds = quantile_thresholds(con, args.table, sel_col, ps)
+            sel_results = []
+            for p, thr in thresholds:
+                thr_sql = format_value_sql(thr)
+                q_sel = f"SELECT min({args.min_col}) FROM {args.table} WHERE {sel_col} <= {thr_sql};"
+                m_sel = _time(q_sel)
+                sel_results.append({"p": p, "threshold": thr, **m_sel})
+                rows_csv.append(
+                    _row(
+                        args,
+                        "duckdb",
+                        "duckdb_table",
+                        "selectivity",
+                        p,
+                        duckdb_meta,
+                        m_sel,
+                        select_col=sel_col,
+                    )
+                )
+            sel_results_by_col_table[sel_col] = sel_results
+            ms_values = [r["median_ms"] for r in sel_results if r.get("median_ms") is not None]
+            if ms_values:
+                avg_selectivity_ms_table[sel_col] = sum(ms_values) / len(ms_values)
+
+        rows_csv.append(_row(args, "duckdb", "duckdb_table", "full_scan_min", None, duckdb_meta, m_full_base))
+        rows_csv.append(
+            _row(args, "duckdb", "duckdb_table", "selective_predicate", None, duckdb_meta, m_sel_pred_base)
+        )
+        if m_random_base:
+            rows_csv.append(_row(args, "duckdb", "duckdb_table", "random_access", None, duckdb_meta, m_random_base))
+
+        like_results_by_col_table: Dict[str, List[Dict[str, Any]]] = {}
+        for col, specs in like_specs_by_col.items():
+            qcol = _quote_ident(col)
+            for spec in specs:
+                pattern_sql = format_value_sql(spec["pattern"])
+                q_like = f"SELECT COUNT(*) FROM {args.table} WHERE {qcol} LIKE {pattern_sql} ESCAPE '!';"
+                m_like = _time(q_like)
+                match_count = m_like.get("result_value")
+                sel = (match_count / rowcount) if rowcount else None
+                item = {**spec, "match_count": match_count, "selectivity": sel, **m_like}
+                like_results_by_col_table.setdefault(col, []).append(item)
+                targets = spec.get("target_selectivities")
+                targets_str = ",".join([str(t) for t in targets]) if isinstance(targets, list) else None
+                rows_csv.append(
+                    _row(
+                        args,
+                        "duckdb",
+                        "duckdb_table",
+                        "like_predicate",
+                        sel,
+                        duckdb_meta,
+                        m_like,
+                        select_col=col,
+                        extras={
+                            "pattern_type": spec["pattern_type"],
+                            "pattern": spec["pattern"],
+                            "target_selectivities": targets_str,
+                            "match_count": match_count,
+                        },
+                    )
+                )
+
+        best_select_col_table = None
+        if avg_selectivity_ms_table:
+            best_select_col_table = min(avg_selectivity_ms_table.items(), key=lambda kv: kv[1])
+
         report["formats"]["duckdb_table"] = {
-            "note": "Baseline DuckDB table (no external format).",
+            "write": duckdb_meta,
+            "compression_ratio": duckdb_ratio,
             "queries": {
                 "full_scan_min": m_full_base,
                 "selective_predicate": m_sel_pred_base,
                 "random_access": m_random_base,
+                "selectivity_by_col": sel_results_by_col_table,
+                "like_by_col": like_results_by_col_table,
             },
+            "best_select_col": best_select_col_table[0] if best_select_col_table else None,
+            "best_select_col_avg_median_ms": best_select_col_table[1] if best_select_col_table else None,
         }
 
     if args.validate_io:

@@ -67,6 +67,7 @@
         <div class="panel-header">
           <h2>Geomean format metrics</h2>
           <p>Compression ratio, output size, compression time, and query medians.</p>
+          <div class="panel-note">* indicates median. P95 shown when available.</div>
         </div>
         <div id="format-grid" class="format-grid"></div>
       </section>
@@ -92,6 +93,13 @@
           <div id="overall-chart" class="chart"></div>
           <div class="chart-note">Dot size encodes dataset rows. Time values are shown in ms or s.</div>
         </div>
+        <div class="chart-card">
+          <div class="chart-title">3D view (metric × dataset × rows/columns)</div>
+          <div id="overall-3d-chart" class="chart"></div>
+          <div class="chart-note">
+            X = dataset, Y = rows/columns, Z = selected metric. Rotate to inspect clusters.
+          </div>
+        </div>
       </section>
 
       <section class="panel">
@@ -113,5 +121,6 @@
     </footer>
 
     <script src="./app.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
   </body>
 </html>

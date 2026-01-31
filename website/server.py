@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -9,6 +10,11 @@ from pathlib import Path
 import duckdb
 from flask import Flask, jsonify, request
 from werkzeug.utils import secure_filename
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from bench.report.plots import generate_overall_plots
+from bench.report.summary import generate_overall_summary
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "out"
@@ -47,7 +53,13 @@ def _update_manifest(dataset_name: str, report_path: Path) -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
   datasets = manifest.get("datasets", [])
   rel_report = report_path.relative_to(REPO_ROOT).as_posix()
-  if not any(d.get("name") == dataset_name for d in datasets):
+  updated = False
+  for item in datasets:
+    if item.get("name") == dataset_name:
+      item["report"] = f"./{rel_report}"
+      updated = True
+      break
+  if not updated:
     datasets.append({"name": dataset_name, "report": f"./{rel_report}"})
   manifest["datasets"] = datasets
   MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
@@ -82,6 +94,25 @@ def _relative_to_repo(path: Path) -> str:
     return str(path.relative_to(REPO_ROOT).as_posix())
   except ValueError:
     return str(path)
+
+
+def _is_within(path: Path, root: Path) -> bool:
+  try:
+    path.resolve().relative_to(root.resolve())
+    return True
+  except ValueError:
+    return False
+
+
+def _safe_remove(path: Path) -> None:
+  if not path.exists():
+    return
+  if not _is_within(path, REPO_ROOT):
+    return
+  if path.is_dir():
+    shutil.rmtree(path, ignore_errors=True)
+  else:
+    path.unlink(missing_ok=True)
 
 
 def _scan_expr_parquet(path: Path) -> str:
@@ -139,14 +170,14 @@ def run_benchmark():
     return jsonify({"error": "Missing dataset file"}), 400
 
   safe_name = secure_filename(upload.filename or "dataset")
-  timestamp = int(time.time())
-  filename = f"{timestamp}_{safe_name}"
+  dataset_label = Path(safe_name).stem
+  filename = safe_name
   input_path = UPLOAD_DIR / filename
   upload.save(input_path)
   schema_path = None
   if schema_upload and schema_upload.filename:
     schema_name = secure_filename(schema_upload.filename or "schema.sql")
-    schema_path = UPLOAD_DIR / f"{timestamp}_{schema_name}"
+    schema_path = UPLOAD_DIR / f"{dataset_label}_schema.sql"
     schema_upload.save(schema_path)
 
   input_type = "parquet" if safe_name.lower().endswith(".parquet") else "csv"
@@ -171,6 +202,12 @@ def run_benchmark():
     cmd.extend(["--sorted-by", sort_col])
   if schema_path is not None:
     cmd.extend(["--schema", str(schema_path)])
+
+  # Remove previous outputs for this dataset label so the new run replaces them.
+  for suffix in [".json", ".md", ".csv"]:
+    _safe_remove(OUT_DIR / f"report_{dataset_label}{suffix}")
+    _safe_remove(OUT_DIR / f"results_{dataset_label}{suffix}")
+  _safe_remove(OUT_DIR / "plots" / dataset_label)
 
   result = subprocess.run(
     cmd,
@@ -340,6 +377,62 @@ def run_query_across_formats():
       "report_path": _relative_to_repo(report_path),
     }
   )
+
+
+@app.route("/api/delete-upload", methods=["POST"])
+def delete_upload():
+  payload = request.get_json(silent=True) or {}
+  dataset_name = (payload.get("dataset") or "").strip()
+  if not dataset_name:
+    return jsonify({"error": "Missing dataset name."}), 400
+
+  manifest = _load_manifest()
+  datasets = manifest.get("datasets", [])
+  match = next((d for d in datasets if d.get("name") == dataset_name), None)
+  if not match:
+    return jsonify({"error": "Dataset not found in manifest."}), 404
+
+  report_path = _resolve_report_path(str(match.get("report", "")).lstrip("./"))
+  if report_path.exists():
+    try:
+      report = json.loads(report_path.read_text(encoding="utf-8"))
+    except Exception:
+      report = {}
+  else:
+    report = {}
+
+  dataset_label = report_path.stem.replace("report_", "")
+  _safe_remove(report_path)
+  _safe_remove(report_path.with_suffix(".md"))
+  _safe_remove(OUT_DIR / f"results_{dataset_label}.csv")
+  _safe_remove(OUT_DIR / "plots" / dataset_label)
+
+  input_path_value = report.get("dataset", {}).get("input")
+  if input_path_value:
+    input_path = _resolve_report_path(str(input_path_value))
+    if _is_within(input_path, UPLOAD_DIR):
+      _safe_remove(input_path)
+
+  for _, body in (report.get("formats") or {}).items():
+    write = body.get("write") or {}
+    for key in ("parquet_path", "vortex_path"):
+      if key in write:
+        target = _resolve_report_path(str(write[key]))
+        _safe_remove(target)
+
+  manifest["datasets"] = [d for d in datasets if d.get("name") != dataset_name]
+  MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+  reports_left = list(OUT_DIR.glob("report_*.json"))
+  if reports_left:
+    generate_overall_plots(OUT_DIR / "plots" / "overall", OUT_DIR)
+    generate_overall_summary(OUT_DIR, OUT_DIR)
+  else:
+    _safe_remove(OUT_DIR / "overall_summary.json")
+    _safe_remove(OUT_DIR / "overall_summary.md")
+    _safe_remove(OUT_DIR / "plots" / "overall")
+
+  return jsonify({"manifest": _load_manifest(), "summary": _load_overall_summary(), "deleted": dataset_name})
 
 
 @app.route("/")

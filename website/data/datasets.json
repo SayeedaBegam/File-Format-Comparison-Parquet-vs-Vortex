@@ -1,14 +1,6 @@
 {
   "datasets": [
     {
-      "name": "CityMaxCapita_1",
-      "report": "../out/report_CityMaxCapita_1.json"
-    },
-    {
-      "name": "Euro2016_1",
-      "report": "../out/report_Euro2016_1.json"
-    },
-    {
       "name": "IGlocations1_1",
       "report": "../out/report_IGlocations1_1.json"
     },
@@ -33,8 +25,8 @@
       "report": "../out/report_Uberlandia_1.json"
     },
     {
-      "name": "1769863055_Hatred_1",
-      "report": "./out/report_1769863055_Hatred_1.json"
+      "name": "Hatred_1",
+      "report": "./out/report_Hatred_1.json"
     }
   ]
 }

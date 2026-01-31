@@ -27,20 +27,10 @@
         <section class="panel">
           <div class="panel-header">
             <h2>Select a dataset</h2>
-            <p>Pick a dataset or upload a report JSON to summarize.</p>
           </div>
           <div class="selector-row">
             <select id="dataset-select" class="select"></select>
             <button id="load-dataset" class="button primary">Load dataset</button>
-          </div>
-          <div class="upload-card">
-            <label class="upload-label" for="upload-json">
-              Upload report JSON
-            </label>
-            <input id="upload-json" type="file" accept=".json,application/json" />
-            <div class="upload-hint">
-              Supported: report_*.json or overall_summary.json
-            </div>
           </div>
         </section>
 
@@ -67,14 +57,6 @@
               <div class="stat-value" id="ds-cols">--</div>
             </div>
           </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <h2>Format performance</h2>
-            <p>Compression, compression time, and query medians by format.</p>
-          </div>
-          <div id="format-detail-grid" class="format-grid"></div>
         </section>
 
         <section class="panel">
@@ -121,6 +103,10 @@
               <div class="selector-row">
                 <select id="like-select" class="select"></select>
                 <select id="like-column-select" class="select"></select>
+                <select id="like-scale" class="select">
+                  <option value="capped">Capped scale</option>
+                  <option value="log">Log scale</option>
+                </select>
               </div>
               <div class="chart-card">
                 <div class="chart-title">Pattern type latency</div>
@@ -130,6 +116,26 @@
               <div id="like-table" class="like-table"></div>
             </div>
           </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>3D format view</h2>
+            <p>3D line plot across formats for the selected metric.</p>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Formats × metric × output size</div>
+            <div id="dataset-3d-chart" class="chart"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Format performance</h2>
+            <p>Compression, compression time, and query medians by format.</p>
+            <div class="panel-note">* indicates median. P95 shown when available.</div>
+          </div>
+          <div id="format-detail-grid" class="format-grid"></div>
         </section>
 
         <section class="panel" id="diagnostics-panel">
@@ -188,13 +194,6 @@
           </div>
         </section>
 
-        <section class="panel" id="upload-summary">
-          <div class="panel-header">
-            <h2>Upload summary</h2>
-            <p id="upload-caption">Upload a JSON report to populate this section.</p>
-          </div>
-          <div id="upload-output" class="format-grid"></div>
-        </section>
       </div>
     </main>
 
@@ -207,6 +206,7 @@
       </div>
     </footer>
 
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
     <script src="./dataset.js"></script>
   </body>
 </html>

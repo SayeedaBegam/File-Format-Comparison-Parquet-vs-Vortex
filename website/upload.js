@@ -23,6 +23,13 @@ const formatMs = (ms) => {
   return `${ms.toFixed(2)} ms`;
 };
 
+const formatMsWithP95 = (medianMs, p95Ms) => {
+  const median = formatMs(medianMs);
+  if (!Number.isFinite(p95Ms)) return median;
+  const p95 = formatMs(p95Ms);
+  return `${median}<span class="kv-sub">p95 ${p95}</span>`;
+};
+
 const formatColors = {
   parquet_zstd: "#2f4a36",
   parquet_snappy: "#e38b2c",
@@ -34,6 +41,8 @@ const getFormatColor = (label) => formatColors[label] || "#6b6358";
 
 let currentReport = null;
 let lastUploadInfo = null;
+let selectedDatasetFile = null;
+let selectedSchemaFile = null;
 
 const _shortLineLabel = (label) => {
   const text = String(label).replace("parquet_", "pq_");
@@ -278,14 +287,26 @@ const _shortLabel = (label) => {
     .replace("vortex_error", "vortex_err");
 };
 
-const createGroupedBarChart = (container, categories, series, valueFormatter) => {
+const _computeAxisMax = (values) => {
+  const cleaned = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!cleaned.length) return 1;
+  const max = cleaned[cleaned.length - 1];
+  const p95 = cleaned[Math.floor((cleaned.length - 1) * 0.95)];
+  if (p95 > 0 && max > p95 * 3) {
+    return p95 * 1.2;
+  }
+  return max;
+};
+
+const createGroupedBarChart = (container, categories, series, valueFormatter, options = {}) => {
   container.innerHTML = "";
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, categories.length * 90);
   const height = 420;
   const padding = { top: 18, right: 40, bottom: 140, left: 64 };
   const allValues = series.flatMap((item) => item.values);
-  const maxValue = Math.max(...allValues.filter(Number.isFinite), 1);
+  const rawMax = Math.max(...allValues.filter(Number.isFinite), 1);
+  const maxValue = Math.max(options.yMax || 0, rawMax, 1);
   const ticks = 4;
   const step = maxValue / ticks;
   const shouldRotate = false;
@@ -354,7 +375,8 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
 
     series.forEach((item, seriesIndex) => {
       const value = item.values[index] || 0;
-      const barHeight = (value / maxValue) * chartHeight;
+      const capped = Math.min(value, maxValue);
+      const barHeight = (capped / maxValue) * chartHeight;
       const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
       rect.setAttribute("x", xStart + seriesIndex * barWidth);
       rect.setAttribute("y", padding.top + chartHeight - barHeight);
@@ -398,6 +420,78 @@ const setError = (message) => {
     box.textContent = "";
     box.hidden = true;
   }
+};
+
+const loadDeleteOptions = async () => {
+  const select = document.getElementById("delete-dataset");
+  const button = document.getElementById("delete-button");
+  if (!select || !button) return;
+  select.innerHTML = "";
+  try {
+    const resp = await fetch("./data/datasets.json");
+    const manifest = await resp.json();
+    const datasets = manifest.datasets || [];
+    datasets.forEach((item) => {
+      const option = document.createElement("option");
+      option.value = item.name;
+      option.textContent = item.name;
+      select.appendChild(option);
+    });
+    button.disabled = datasets.length === 0;
+    if (datasets.length === 0) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "No uploads yet";
+      select.appendChild(option);
+    }
+  } catch (err) {
+    button.disabled = true;
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Manifest unavailable";
+    select.appendChild(option);
+  }
+};
+
+const initDeleteUpload = () => {
+  const select = document.getElementById("delete-dataset");
+  const button = document.getElementById("delete-button");
+  if (!select || !button) return;
+
+  button.addEventListener("click", async () => {
+    if (!select.value) return;
+    const confirmed = window.confirm(`Delete upload "${select.value}"? This cannot be undone.`);
+    if (!confirmed) return;
+    button.disabled = true;
+    try {
+      const response = await fetch("/api/delete-upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataset: select.value }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Delete failed");
+      }
+      const data = await response.json();
+      if (data.manifest) {
+        localStorage.setItem("latestManifest", JSON.stringify(data.manifest));
+      }
+      if (data.summary) {
+        localStorage.setItem("latestSummary", JSON.stringify(data.summary));
+      } else {
+        localStorage.removeItem("latestSummary");
+      }
+      setStatus(`Deleted ${data.deleted || select.value}.`, "");
+      setError("");
+      await loadDeleteOptions();
+    } catch (err) {
+      setStatus("Delete failed.", "is-error");
+      setError(err.message || "Delete failed");
+    } finally {
+      button.disabled = false;
+    }
+  });
 };
 
 const fillRunSummary = (dataset) => {
@@ -459,7 +553,7 @@ const renderDiagnostics = (report) => {
   head.innerHTML = "";
   body.innerHTML = "";
   const headerRow = document.createElement("tr");
-  ["Format", "Full scan (ms)", "Cold (ms)", "Row groups", "Note"].forEach((label) => {
+  ["Format", "Full scan (ms)", "Cold (ms)", "Note"].forEach((label) => {
     const th = document.createElement("th");
     th.textContent = label;
     headerRow.appendChild(th);
@@ -470,9 +564,8 @@ const renderDiagnostics = (report) => {
     const tr = document.createElement("tr");
     const full = data.queries?.full_scan_min?.median_ms;
     const cold = data.queries?.full_scan_min?.cold_ms;
-    const rowGroups = data.write?.row_group_count;
     const note = data.note || "";
-    [name, formatMs(full), formatMs(cold), rowGroups ?? "--", note].forEach((val) => {
+    [name, formatMs(full), formatMs(cold), note].forEach((val) => {
       const td = document.createElement("td");
       td.textContent = String(val ?? "--");
       tr.appendChild(td);
@@ -510,15 +603,25 @@ const renderDiagnostics = (report) => {
 const buildFormatCard = (name, data, isOverall, best) => {
   const card = document.createElement("div");
   card.className = "format-card";
+  const displayName =
+    name === "duckdb_table"
+      ? "duckdb_table (baseline)"
+      : name === "vortex_default"
+        ? "vortex default"
+        : name === "vortex_error"
+          ? "vortex default (error)"
+          : name;
+  const allowBest = name !== "duckdb_table";
   const epsilon = 1e-9;
   const isBestMax = (value, target) =>
     Number.isFinite(value) && Number.isFinite(target) && value >= target - epsilon;
   const isBestMin = (value, target) =>
     Number.isFinite(value) && Number.isFinite(target) && value <= target + epsilon;
+  const errorNote = data.note ? `<div class="kv"><span>Note</span><strong>${data.note}</strong></div>` : "";
 
   if (isOverall) {
     card.innerHTML = `
-      <h3>${name}</h3>
+      <h3>${displayName}</h3>
       <div class="kv"><span>Compression ratio</span><strong>${formatNumber(
         data.compression_ratio_geomean,
         2
@@ -530,31 +633,41 @@ const buildFormatCard = (name, data, isOverall, best) => {
         data.compression_time_s_geomean,
         2
       )} s</strong></div>
-      <div class="kv"><span>Full scan median</span><strong>${formatMs(
-        data.query_median_ms_geomean?.full_scan_min
+      <div class="kv"><span>Full scan*</span><strong>${formatMsWithP95(
+        data.query_median_ms_geomean?.full_scan_min,
+        undefined
       )}</strong></div>
-      <div class="kv"><span>Random access median</span><strong>${formatMs(
-        data.query_median_ms_geomean?.random_access
+      <div class="kv"><span>Random access*</span><strong>${formatMsWithP95(
+        data.query_median_ms_geomean?.random_access,
+        undefined
       )}</strong></div>
+      ${errorNote}
     `;
   } else {
     card.innerHTML = `
-      <h3>${name}</h3>
-      <div class="kv ${isBestMax(data.compression_ratio, best.compression_ratio) ? "is-best" : ""}">
+      <h3>${displayName}</h3>
+      <div class="kv ${allowBest && isBestMax(data.compression_ratio, best.compression_ratio) ? "is-best" : ""}">
         <span>Compression ratio</span><strong>${formatNumber(data.compression_ratio, 2)}</strong>
       </div>
-      <div class="kv ${isBestMin(data.write?.output_size_bytes, best.output_size_bytes) ? "is-best" : ""}">
+      <div class="kv ${allowBest && isBestMin(data.write?.output_size_bytes, best.output_size_bytes) ? "is-best" : ""}">
         <span>Output size</span><strong>${formatBytes(data.write?.output_size_bytes)}</strong>
       </div>
-      <div class="kv ${isBestMin(data.write?.compression_time_s, best.write_time) ? "is-best" : ""}">
+      <div class="kv ${allowBest && isBestMin(data.write?.compression_time_s, best.write_time) ? "is-best" : ""}">
         <span>Compression time</span><strong>${formatNumber(data.write?.compression_time_s, 2)} s</strong>
       </div>
-      <div class="kv ${isBestMin(data.queries?.full_scan_min?.median_ms, best.full_scan) ? "is-best" : ""}">
-        <span>Full scan median</span><strong>${formatMs(data.queries?.full_scan_min?.median_ms)}</strong>
+      <div class="kv ${allowBest && isBestMin(data.queries?.full_scan_min?.median_ms, best.full_scan) ? "is-best" : ""}">
+        <span>Full scan*</span><strong>${formatMsWithP95(
+          data.queries?.full_scan_min?.median_ms,
+          data.queries?.full_scan_min?.p95_ms
+        )}</strong>
       </div>
-      <div class="kv ${isBestMin(data.queries?.random_access?.median_ms, best.random_access) ? "is-best" : ""}">
-        <span>Random access median</span><strong>${formatMs(data.queries?.random_access?.median_ms)}</strong>
+      <div class="kv ${allowBest && isBestMin(data.queries?.random_access?.median_ms, best.random_access) ? "is-best" : ""}">
+        <span>Random access*</span><strong>${formatMsWithP95(
+          data.queries?.random_access?.median_ms,
+          data.queries?.random_access?.p95_ms
+        )}</strong>
       </div>
+      ${errorNote}
     `;
   }
 
@@ -562,7 +675,9 @@ const buildFormatCard = (name, data, isOverall, best) => {
 };
 
 const computeBestMetrics = (formats) => {
-  const values = Object.values(formats || {});
+  const values = Object.entries(formats || {})
+    .filter(([name]) => name !== "duckdb_table")
+    .map(([, data]) => data);
   const getNums = (fn) =>
     values.map(fn).filter((value) => Number.isFinite(value));
   const min = (list) => (list.length ? Math.min(...list) : null);
@@ -583,9 +698,11 @@ const renderReportPreview = (data) => {
   output.innerHTML = "";
 
   if (data.dataset_count && data.formats) {
-    Object.entries(data.formats).forEach(([name, format]) => {
-      output.appendChild(buildFormatCard(name, format, true));
-    });
+    Object.entries(data.formats)
+      .filter(([name]) => name !== "vortex_error")
+      .forEach(([name, format]) => {
+        output.appendChild(buildFormatCard(name, format, true));
+      });
     return;
   }
 
@@ -593,9 +710,11 @@ const renderReportPreview = (data) => {
     currentReport = data;
     fillRunSummary(data.dataset);
     const best = computeBestMetrics(data.formats || {});
-    Object.entries(data.formats).forEach(([name, format]) => {
-      output.appendChild(buildFormatCard(name, format, false, best));
-    });
+    Object.entries(data.formats)
+      .filter(([name]) => name !== "vortex_error")
+      .forEach(([name, format]) => {
+        output.appendChild(buildFormatCard(name, format, false, best));
+      });
     renderUploadSelectivity(data.formats || {});
     renderUploadEncodings(data.formats || {});
     initUploadLikeSelect(data.formats || {});
@@ -637,8 +756,7 @@ const renderPlots = (plots) => {
 };
 
 async function runBenchmark(file) {
-  const schemaInput = document.getElementById("schema-file");
-  const schemaFile = schemaInput?.files?.[0] || null;
+  const schemaFile = selectedSchemaFile || null;
   if (!file) {
     setStatus("Select a dataset file first.", "is-error");
     setError("");
@@ -700,6 +818,7 @@ async function runBenchmark(file) {
     if (data.summary) {
       localStorage.setItem("latestSummary", JSON.stringify(data.summary));
     }
+    await loadDeleteOptions();
     setStatus("Benchmark complete. Results loaded.", "");
     setError("");
   } catch (error) {
@@ -717,18 +836,30 @@ async function runBenchmark(file) {
 
 const initDatasetUpload = () => {
   const input = document.getElementById("dataset-file");
+  const schemaInput = document.getElementById("schema-file");
+  const runButton = document.getElementById("run-benchmark");
   if (!input) return;
 
   input.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
+    if (!file) {
+      selectedDatasetFile = null;
+      return;
+    }
+    selectedDatasetFile = file;
     document.getElementById("file-name").textContent = file.name;
     document.getElementById("file-size").textContent = formatBytes(file.size);
     document.getElementById("file-type").textContent = "CSV";
-
     setStatus("Ready to run.", "");
-    runBenchmark(file);
+  });
+
+  schemaInput?.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    selectedSchemaFile = file || null;
+  });
+
+  runButton?.addEventListener("click", () => {
+    runBenchmark(selectedDatasetFile);
   });
 };
 
@@ -897,6 +1028,10 @@ const renderUploadEncodings = (formats) => {
           more > 0
             ? `<button class="encoding-more" type="button">+${more} more columns</button>`
             : ""
+        }${
+          showAll && columns.length > 8
+            ? `<button class="encoding-less" type="button">Show fewer</button>`
+            : ""
         }</div>
       </div>
     `;
@@ -904,6 +1039,13 @@ const renderUploadEncodings = (formats) => {
     if (moreButton) {
       moreButton.addEventListener("click", () => {
         expanded.add(name);
+        renderFormat(name, data);
+      });
+    }
+    const lessButton = container.querySelector(".encoding-less");
+    if (lessButton) {
+      lessButton.addEventListener("click", () => {
+        expanded.delete(name);
         renderFormat(name, data);
       });
     }
@@ -927,6 +1069,8 @@ const renderUploadEncodings = (formats) => {
 
 const renderUploadLikeChart = (formatName, format, column) => {
   const container = document.getElementById("upload-like-chart");
+  const scaleSelect = document.getElementById("upload-like-scale");
+  const scale = scaleSelect?.value || "capped";
   if (!container) return;
   const likeByCol = format?.queries?.like_by_col || {};
   const rows = [];
@@ -951,14 +1095,30 @@ const renderUploadLikeChart = (formatName, format, column) => {
   }, {});
 
   const categories = ["prefix", "suffix", "contains"];
+  const rawValues = rows.map((item) => item.median_ms || 0);
+  const transform = (value) => (scale === "log" ? Math.log10(value + 1) : value);
+  const axisMax =
+    scale === "log"
+      ? Math.max(...rawValues.map(transform).filter(Number.isFinite), 1)
+      : _computeAxisMax(rawValues);
   const series = [
     {
       label: formatName,
       color: getFormatColor(formatName),
-      values: categories.map((key) => byType[key]?.total / byType[key]?.count || 0),
+      values: categories.map((key) =>
+        transform(byType[key]?.total / byType[key]?.count || 0)
+      ),
     },
   ];
-  createGroupedBarChart(container, categories, series, (value) => formatMs(value));
+  createGroupedBarChart(
+    container,
+    categories,
+    series,
+    (value) => formatMs(scale === "log" ? Math.pow(10, value) - 1 : value),
+    {
+      yMax: axisMax,
+    }
+  );
 };
 
 const renderUploadLikeSummary = (formats, activeFormat, activeColumn) => {
@@ -998,6 +1158,7 @@ const renderUploadLikeSummary = (formats, activeFormat, activeColumn) => {
 const initUploadLikeSelect = (formats) => {
   const select = document.getElementById("upload-like-select");
   const columnSelect = document.getElementById("upload-like-column-select");
+  const scaleSelect = document.getElementById("upload-like-scale");
   if (!select || !columnSelect) return;
   select.innerHTML = "";
   const entries = Object.entries(formats || {});
@@ -1029,6 +1190,7 @@ const initUploadLikeSelect = (formats) => {
   render();
   select.addEventListener("change", render);
   columnSelect.addEventListener("change", render);
+  scaleSelect?.addEventListener("change", render);
 };
 
 const initPlotModal = () => {
@@ -1061,6 +1223,8 @@ const initPlotModal = () => {
 initDatasetUpload();
 initPlotModal();
 initCustomQuery();
+loadDeleteOptions();
+initDeleteUpload();
 
 const metricSelect = document.getElementById("upload-metric");
 if (metricSelect) {

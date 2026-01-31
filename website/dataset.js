@@ -34,6 +34,13 @@ const formatMs = (ms) => {
   return `${ms.toFixed(2)} ms`;
 };
 
+const formatMsWithP95 = (medianMs, p95Ms) => {
+  const median = formatMs(medianMs);
+  if (!Number.isFinite(p95Ms)) return median;
+  const p95 = formatMs(p95Ms);
+  return `${median}<span class="kv-sub">p95 ${p95}</span>`;
+};
+
 let currentReport = null;
 
 const _shortLineLabel = (label) => {
@@ -405,6 +412,14 @@ const buildFormatCard = (name, data, best) => {
   const write = data.write || {};
   const queries = data.queries || {};
   const validation = data.validation || {};
+  const displayName =
+    name === "duckdb_table"
+      ? "duckdb_table (baseline)"
+      : name === "vortex_default"
+        ? "vortex default"
+        : name === "vortex_error"
+          ? "vortex default (error)"
+          : name;
   const epsilon = 1e-9;
   const isBestMax = (value, target) =>
     Number.isFinite(value) && Number.isFinite(target) && value >= target - epsilon;
@@ -413,8 +428,9 @@ const buildFormatCard = (name, data, best) => {
 
   const card = document.createElement("div");
   card.className = "format-card";
+  const errorNote = data.note ? `<div class="kv"><span>Note</span><strong>${data.note}</strong></div>` : "";
   card.innerHTML = `
-    <h3>${name}</h3>
+      <h3>${displayName}</h3>
     <div class="kv ${isBestMax(data.compression_ratio, best.compression_ratio) ? "is-best" : ""}">
       <span>Compression ratio</span><strong>${formatNumber(data.compression_ratio, 2)}</strong>
     </div>
@@ -425,13 +441,22 @@ const buildFormatCard = (name, data, best) => {
       <span>Compression time</span><strong>${formatNumber(write.compression_time_s, 2)} s</strong>
     </div>
     <div class="kv ${isBestMin(queries.full_scan_min?.median_ms, best.full_scan) ? "is-best" : ""}">
-      <span>Full scan median</span><strong>${formatMs(queries.full_scan_min?.median_ms)}</strong>
+      <span>Full scan*</span><strong>${formatMsWithP95(
+        queries.full_scan_min?.median_ms,
+        queries.full_scan_min?.p95_ms
+      )}</strong>
     </div>
     <div class="kv ${isBestMin(queries.selective_predicate?.median_ms, best.selective) ? "is-best" : ""}">
-      <span>Selective median</span><strong>${formatMs(queries.selective_predicate?.median_ms)}</strong>
+      <span>Selective predicate*</span><strong>${formatMsWithP95(
+        queries.selective_predicate?.median_ms,
+        queries.selective_predicate?.p95_ms
+      )}</strong>
     </div>
     <div class="kv ${isBestMin(queries.random_access?.median_ms, best.random_access) ? "is-best" : ""}">
-      <span>Random access median</span><strong>${formatMs(queries.random_access?.median_ms)}</strong>
+      <span>Random access*</span><strong>${formatMsWithP95(
+        queries.random_access?.median_ms,
+        queries.random_access?.p95_ms
+      )}</strong>
     </div>
     <div class="kv"><span>Validation</span><strong>${
       validation.count_match === false ||
@@ -440,12 +465,15 @@ const buildFormatCard = (name, data, best) => {
         ? "Mismatch"
         : "OK"
     }</strong></div>
+    ${errorNote}
   `;
   return card;
 };
 
 const computeBestMetrics = (formats) => {
-  const values = Object.values(formats || {});
+  const values = Object.entries(formats || {})
+    .filter(([name]) => name !== "duckdb_table")
+    .map(([, data]) => data);
   const getNums = (fn) =>
     values.map(fn).filter((value) => Number.isFinite(value));
   const min = (list) => (list.length ? Math.min(...list) : null);
@@ -474,13 +502,98 @@ const renderDatasetReport = (report) => {
   grid.innerHTML = "";
 
   const best = computeBestMetrics(report.formats || {});
-  Object.entries(report.formats || {}).forEach(([name, data]) => {
-    grid.appendChild(buildFormatCard(name, data, best));
-  });
+  Object.entries(report.formats || {})
+    .filter(([name]) => name !== "vortex_error")
+    .forEach(([name, data]) => {
+      grid.appendChild(buildFormatCard(name, data, best));
+    });
 
-  renderDatasetChart(report, document.getElementById("dataset-metric")?.value);
+  const metric = document.getElementById("dataset-metric")?.value;
+  renderDatasetChart(report, metric);
   renderDetails(report);
   renderDiagnostics(report);
+  renderDataset3D(report, metric);
+};
+
+const renderDataset3D = (report, metric) => {
+  const container = document.getElementById("dataset-3d-chart");
+  if (!container) return;
+  if (!window.Plotly) {
+    container.textContent = "3D chart unavailable (Plotly not loaded).";
+    return;
+  }
+  if (!report?.formats || !Object.keys(report.formats).length) {
+    container.textContent = "3D chart unavailable (no format data).";
+    return;
+  }
+  const metricMap = {
+    compression_ratio: { label: "Compression ratio", get: (b) => b.compression_ratio },
+    output_size: {
+      label: "Output size (MB)",
+      get: (b) => (b.write?.output_size_bytes ?? 0) / (1024 * 1024),
+    },
+    write_time: {
+      label: "Compression time (s)",
+      get: (b) => b.write?.compression_time_s,
+    },
+    full_scan: {
+      label: "Full scan (ms)",
+      get: (b) => b.queries?.full_scan_min?.median_ms,
+    },
+    selective: {
+      label: "Selective predicate (ms)",
+      get: (b) => b.queries?.selective_predicate?.median_ms,
+    },
+    random_access: {
+      label: "Random access (ms)",
+      get: (b) => b.queries?.random_access?.median_ms,
+    },
+  };
+  const chosen = metricMap[metric] || metricMap.compression_ratio;
+
+  const traces = [
+    {
+      type: "scatter3d",
+      mode: "lines+markers",
+      x: [],
+      y: [],
+      z: [],
+      text: [],
+      hoverinfo: "text",
+      line: { color: "#2f4a36", width: 3 },
+      marker: { size: 5, color: "#2f4a36" },
+      name: chosen.label,
+    },
+  ];
+
+  Object.entries(report.formats || {}).forEach(([name, body], idx) => {
+    const metricValue = chosen.get(body) ?? 0;
+    const outputSizeMb = (body.write?.output_size_bytes ?? 0) / (1024 * 1024);
+    const altZ =
+      metric === "output_size"
+        ? body.write?.compression_time_s ?? 0
+        : outputSizeMb;
+    traces[0].x.push(idx + 1);
+    traces[0].y.push(metricValue);
+    traces[0].z.push(altZ);
+    traces[0].text.push(
+      `${name}<br>${chosen.label}: ${formatNumber(metricValue, 2)}<br>` +
+        `Output size: ${formatNumber(outputSizeMb, 2)} MB`
+    );
+  });
+
+  const layout = {
+    margin: { l: 0, r: 0, b: 0, t: 10 },
+    scene: {
+      xaxis: { title: "Format (index)" },
+      yaxis: { title: chosen.label },
+      zaxis: { title: metric === "output_size" ? "Compression time (s)" : "Output size (MB)" },
+    },
+    paper_bgcolor: "transparent",
+    plot_bgcolor: "transparent",
+  };
+
+  Plotly.newPlot(container, traces, layout, { displayModeBar: false, responsive: true });
 };
 
 const renderColumnTypes = (dataset) => {
@@ -884,7 +997,7 @@ const renderDiagnostics = (report) => {
   head.innerHTML = "";
   body.innerHTML = "";
   const headerRow = document.createElement("tr");
-  ["Format", "Full scan (ms)", "Cold (ms)", "Row groups", "Note"].forEach((label) => {
+  ["Format", "Full scan (ms)", "Cold (ms)", "Note"].forEach((label) => {
     const th = document.createElement("th");
     th.textContent = label;
     headerRow.appendChild(th);
@@ -895,9 +1008,8 @@ const renderDiagnostics = (report) => {
     const tr = document.createElement("tr");
     const full = data.queries?.full_scan_min?.median_ms;
     const cold = data.queries?.full_scan_min?.cold_ms;
-    const rowGroups = data.write?.row_group_count;
     const note = data.note || "";
-    [name, formatMs(full), formatMs(cold), rowGroups ?? "--", note].forEach((val) => {
+    [name, formatMs(full), formatMs(cold), note].forEach((val) => {
       const td = document.createElement("td");
       td.textContent = String(val ?? "--");
       tr.appendChild(td);
@@ -1036,12 +1148,47 @@ const renderOverallUpload = (summary) => {
   });
 };
 
+const resolveReportUrl = (reportPath) => {
+  if (!reportPath) return null;
+  if (reportPath.startsWith("./out/")) {
+    return reportPath.replace("./out/", "../out/");
+  }
+  return reportPath;
+};
+
 const loadDataset = async (datasetName, manifest) => {
   const entry = manifest.datasets.find((item) => item.name === datasetName);
   if (!entry) return;
-  const response = await fetch(entry.report);
-  const report = await response.json();
-  renderDatasetReport(report);
+  const cacheBust = `?t=${Date.now()}`;
+  const reportUrl = resolveReportUrl(entry.report);
+  if (!reportUrl) return;
+  const caption = document.getElementById("dataset-caption");
+  const chart3d = document.getElementById("dataset-3d-chart");
+  if (caption) {
+    caption.textContent = `Loading ${datasetName}...`;
+  }
+  if (chart3d) {
+    chart3d.textContent = "Loading 3D chart...";
+  }
+  try {
+    const response = await fetch(`${reportUrl}${cacheBust}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load report (${response.status})`);
+    }
+    const report = await response.json();
+    renderDatasetReport(report);
+    const params = new URLSearchParams(window.location.search);
+    params.set("name", datasetName);
+    history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  } catch (err) {
+    if (caption) {
+      caption.textContent = `Failed to load ${datasetName}. Check console for details.`;
+    }
+    if (chart3d) {
+      chart3d.textContent = "3D chart unavailable for this dataset.";
+    }
+    console.error("Failed to load dataset report", reportUrl, err);
+  }
 };
 
 const getQueryDataset = () => {
@@ -1109,11 +1256,13 @@ const init = async () => {
     metricSelect.addEventListener("change", () => {
       if (currentReport) {
         renderDatasetChart(currentReport, metricSelect.value);
+        renderDataset3D(currentReport, metricSelect.value);
       }
     });
     window.addEventListener("resize", () => {
       if (currentReport) {
         renderDatasetChart(currentReport, metricSelect.value);
+        renderDataset3D(currentReport, metricSelect.value);
       }
     });
   }

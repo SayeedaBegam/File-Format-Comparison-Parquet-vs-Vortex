@@ -158,7 +158,15 @@ def _timed_query(con: duckdb.DuckDBPyConnection, sql: str, repeats: int, warmup:
   times_sorted = sorted(times)
   median = times_sorted[len(times_sorted) // 2]
   p95 = times_sorted[int(0.95 * (len(times_sorted) - 1))]
-  return {"median_ms": median, "p95_ms": p95, "runs": len(times), "result_value": result_value}
+  return {
+    "median_ms": median,
+    "p95_ms": p95,
+    "avg_ms": sum(times) / len(times),
+    "min_ms": min(times),
+    "max_ms": max(times),
+    "runs": len(times),
+    "result_value": result_value,
+  }
 
 
 @app.route("/api/run", methods=["POST"])

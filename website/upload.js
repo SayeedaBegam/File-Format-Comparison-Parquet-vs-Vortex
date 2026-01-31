@@ -912,9 +912,11 @@ const initCustomQuery = () => {
         throw new Error(err.error || "Query failed");
       }
       const data = await response.json();
-      output.textContent = `Median: ${formatMs(data.median_ms)} · P95: ${formatMs(
-        data.p95_ms
-      )} · Result: ${data.result_value ?? "--"}`;
+      output.textContent = `Avg: ${formatMs(data.avg_ms)} · Min: ${formatMs(
+        data.min_ms
+      )} · Max: ${formatMs(data.max_ms)} · Runs: ${data.runs} · Result: ${
+        data.result_value ?? "--"
+      }`;
     } catch (err) {
       output.textContent = err.message || "Query failed";
     }

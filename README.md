@@ -40,10 +40,20 @@ Queries:
 - **selectivity**: `min(min_col)` with `select_col <= threshold` at 1%, 10%, 25%, 50%, 90%
 - **LIKE predicates** (if enabled): prefix/suffix/contains patterns on text columns
 
+### Encoding metadata (format-specific)
+- **Parquet encodings**: extracted from Parquet metadata (via DuckDB/Parquet metadata inspection)
+- **Vortex encodings**: best-effort (exposed as notes if available)
+
 ### Data profiling
 - **NDV ratio** per column and by type (NDV / rows)
 - **column_type_counts** (numeric/text/date/bool/other)
 - **dropped_rows** + drop notes when CSV parsing skips malformed rows
+- **input_rows** and **input_size_bytes** (raw CSV stats, when available)
+
+### LIKE predicate metrics (text columns)
+- Patterns: **prefix**, **suffix**, **contains**
+- For each: **median_ms**, **p95_ms**, **runs**, **result_value**, and **selectivity**
+- Summaries are shown per column and aggregated by pattern type
 
 ### Validation (optional, default on)
 Compares row count, min(), filtered counts, and null counts between base table and each format.
@@ -54,6 +64,13 @@ These are critical to explain surprising results:
 - **duckdb_table** baseline: same queries directly on the DuckDB table
 - **row_group_count** (Parquet): a proxy for block-level reads
 - **sorted_by** (dataset metadata): indicates if data was sorted before writing
+
+### Additional report fields
+- **best_select_col** and **best_select_col_avg_median_ms** per format
+- **random_access_col** and **random_access_val** used for point lookups
+- **match_count** and **target_selectivities** for LIKE patterns
+- **validation** details: base vs format row counts, mins, filtered counts, null counts
+- **recommendations**: storage‑first, read‑latency‑first, scan‑first (overall summary)
 
 ---
 

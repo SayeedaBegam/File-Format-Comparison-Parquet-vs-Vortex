@@ -62,6 +62,16 @@ def write(con: duckdb.DuckDBPyConnection, table_name: str, out_path: str, option
     t1 = time.perf_counter()
 
     size = _dir_size_bytes(out)
+    row_group_count = None
+    try:
+        rel = con.execute(f"PRAGMA parquet_metadata('{str(out)}')")
+        cols = [d[0] for d in rel.description]
+        rows = rel.fetchall()
+        if "row_group_id" in cols:
+            idx = cols.index("row_group_id")
+            row_group_count = len({r[idx] for r in rows})
+    except Exception:
+        row_group_count = None
 
     return {
         "compression_time_s": t1 - t0,
@@ -70,6 +80,7 @@ def write(con: duckdb.DuckDBPyConnection, table_name: str, out_path: str, option
         "row_group_size": opts.row_group_size,
         "compression_level": opts.compression_level,
         "parquet_path": str(out),
+        "row_group_count": row_group_count,
     }
 
 

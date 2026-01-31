@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import platform
+import time
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -91,6 +92,9 @@ def main() -> None:
         help="Enable/disable validation (default: true)",
     )
     ap.add_argument("--threads", type=int, default=None)
+    ap.add_argument("--include-cold", action="store_true", help="Include a cold-run timing per query")
+    ap.add_argument("--sorted-by", default=None, help="Optional column name to sort data before writing")
+    ap.add_argument("--baseline-duckdb", action="store_true", help="Include DuckDB table baseline timings")
     args = ap.parse_args()
 
     out_dir = Path(args.out)
@@ -177,6 +181,7 @@ def main() -> None:
             "input_size_bytes": input_size_bytes,
             "column_type_counts": col_type_counts,
             "ndv_ratio_by_type": ndv_by_type,
+            "sorted_by": args.sorted_by,
         },
         "columns": {
             "min_col": args.min_col,
@@ -198,6 +203,43 @@ def main() -> None:
 
     filter_val_sql = _format_filter_value(con, args.table, args.filter_col, args.filter_val)
 
+    def _time(sql: str) -> Dict[str, Any]:
+        return timed_query(
+            con,
+            sql,
+            repeats=args.repeats,
+            warmup=args.warmup,
+            include_cold=args.include_cold,
+        )
+
+    source_table = args.table
+    if args.sorted_by:
+        sorted_table = f"{args.table}_sorted"
+        con.execute(
+            f"CREATE OR REPLACE TABLE {sorted_table} AS SELECT * FROM {args.table} ORDER BY {args.sorted_by};"
+        )
+        source_table = sorted_table
+
+    if args.baseline_duckdb:
+        q_full_base = f"SELECT min({args.min_col}) FROM {args.table};"
+        q_sel_pred_base = f"SELECT min({args.min_col}) FROM {args.table} WHERE {args.filter_col} = {filter_val_sql};"
+        m_full_base = _time(q_full_base)
+        m_sel_pred_base = _time(q_sel_pred_base)
+        m_random_base = None
+        if random_access_col and random_access_val is not None:
+            q_pl_col = _quote_ident(random_access_col)
+            pl_val_sql = format_value_sql(random_access_val)
+            q_point = f"SELECT * FROM {args.table} WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
+            m_random_base = _time(q_point)
+        report["formats"]["duckdb_table"] = {
+            "note": "Baseline DuckDB table (no external format).",
+            "queries": {
+                "full_scan_min": m_full_base,
+                "selective_predicate": m_sel_pred_base,
+                "random_access": m_random_base,
+            },
+        }
+
     if args.validate_io:
         base_count = con.execute(f"SELECT COUNT(*) FROM {args.table};").fetchone()[0]
         base_min = con.execute(f"SELECT min({args.min_col}) FROM {args.table};").fetchone()[0]
@@ -207,11 +249,14 @@ def main() -> None:
             f"SELECT COUNT(*) FROM {args.table} WHERE {args.filter_col} = {filter_val_sql};"
         ).fetchone()[0]
 
+    dataset_label = _dataset_label(args.input)
+    run_tag = f"{dataset_label}_{int(time.time())}"
+
     for codec in parquet_codecs:
-        parquet_out = str(out_dir / f"parquet_{codec}")
+        parquet_out = str(out_dir / f"parquet_{codec}_{run_tag}.parquet")
         parquet_meta = parquet_backend.write(
             con,
-            args.table,
+            source_table,
             parquet_out,
             options={"codec": codec, "row_group_size": args.parquet_row_group_size},
         )
@@ -219,15 +264,15 @@ def main() -> None:
 
         q_full = f"SELECT min({args.min_col}) FROM {parquet_scan};"
         q_sel_pred = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
-        m_full = timed_query(con, q_full, repeats=args.repeats, warmup=args.warmup)
-        m_sel_pred = timed_query(con, q_sel_pred, repeats=args.repeats, warmup=args.warmup)
+        m_full = _time(q_full)
+        m_sel_pred = _time(q_sel_pred)
 
         m_random = None
         if random_access_col and random_access_val is not None:
             q_pl_col = _quote_ident(random_access_col)
             pl_val_sql = format_value_sql(random_access_val)
             q_point = f"SELECT * FROM {parquet_scan} WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
-            m_random = timed_query(con, q_point, repeats=args.repeats, warmup=args.warmup)
+            m_random = _time(q_point)
 
         sel_results_by_col: Dict[str, List[Dict[str, Any]]] = {}
         avg_selectivity_ms: Dict[str, float] = {}
@@ -237,7 +282,7 @@ def main() -> None:
             for p, thr in thresholds:
                 thr_sql = format_value_sql(thr)
                 q_sel = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {sel_col} <= {thr_sql};"
-                m_sel = timed_query(con, q_sel, repeats=args.repeats, warmup=args.warmup)
+                m_sel = _time(q_sel)
                 sel_results.append({"p": p, "threshold": thr, **m_sel})
                 rows_csv.append(_row(args, "parquet", f"parquet_{codec}", "selectivity", p, parquet_meta, m_sel, select_col=sel_col))
             sel_results_by_col[sel_col] = sel_results
@@ -256,7 +301,7 @@ def main() -> None:
             for spec in specs:
                 pattern_sql = format_value_sql(spec["pattern"])
                 q_like = f"SELECT COUNT(*) FROM {parquet_scan} WHERE {qcol} LIKE {pattern_sql} ESCAPE '!';"
-                m_like = timed_query(con, q_like, repeats=args.repeats, warmup=args.warmup)
+                m_like = _time(q_like)
                 match_count = m_like.get("result_value")
                 sel = (match_count / rowcount) if rowcount else None
                 item = {**spec, "match_count": match_count, "selectivity": sel, **m_like}
@@ -333,7 +378,7 @@ def main() -> None:
     if _VORTEX_AVAILABLE:
         try:
             vortex_out = str(out_dir / "vortex")
-            vortex_table = args.table
+            vortex_table = source_table
             cast_map = _parse_casts(args.vortex_cast)
             drop_cols = _parse_list(args.vortex_drop_cols)
             if cast_map or drop_cols:
@@ -370,15 +415,15 @@ def main() -> None:
 
             q_full_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset;"
             q_sel_pred_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset WHERE {args.filter_col} = {filter_val_sql_vx};"
-            m_full_vx = timed_query(con, q_full_vx, repeats=args.repeats, warmup=args.warmup)
-            m_sel_pred_vx = timed_query(con, q_sel_pred_vx, repeats=args.repeats, warmup=args.warmup)
+            m_full_vx = _time(q_full_vx)
+            m_sel_pred_vx = _time(q_sel_pred_vx)
 
             m_random_vx = None
             if random_access_col and random_access_val is not None:
                 q_pl_col = _quote_ident(random_access_col)
                 pl_val_sql = format_value_sql(random_access_val)
                 q_point_vx = f"SELECT * FROM vortex_dataset WHERE {q_pl_col} = {pl_val_sql} LIMIT 1;"
-                m_random_vx = timed_query(con, q_point_vx, repeats=args.repeats, warmup=args.warmup)
+                m_random_vx = _time(q_point_vx)
 
             sel_results_by_col_vx: Dict[str, List[Dict[str, Any]]] = {}
             avg_selectivity_ms_vx: Dict[str, float] = {}
@@ -391,7 +436,7 @@ def main() -> None:
                         f"SELECT min({min_col_expr_vx}) FROM vortex_dataset "
                         f"WHERE {sel_col_exprs_vx[sel_col]} <= {thr_sql};"
                     )
-                    m_sel = timed_query(con, q_sel, repeats=args.repeats, warmup=args.warmup)
+                    m_sel = _time(q_sel)
                     sel_results.append({"p": p, "threshold": thr, **m_sel})
                     rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "selectivity", p, vortex_meta, m_sel, select_col=sel_col))
                 sel_results_by_col_vx[sel_col] = sel_results
@@ -412,7 +457,7 @@ def main() -> None:
                 for spec in specs:
                     pattern_sql = format_value_sql(spec["pattern"])
                     q_like = f"SELECT COUNT(*) FROM vortex_dataset WHERE {qcol} LIKE {pattern_sql} ESCAPE '!';"
-                    m_like = timed_query(con, q_like, repeats=args.repeats, warmup=args.warmup)
+                    m_like = _time(q_like)
                     match_count = m_like.get("result_value")
                     sel = (match_count / rowcount) if rowcount else None
                     item = {**spec, "match_count": match_count, "selectivity": sel, **m_like}
@@ -502,7 +547,6 @@ def main() -> None:
             "note": "Vortex backend unavailable (missing dependencies or import error).",
         }
 
-    dataset_label = _dataset_label(args.input)
     results_path = out_dir / f"results_{dataset_label}.csv"
     report_json_path = out_dir / f"report_{dataset_label}.json"
     report_md_path = out_dir / f"report_{dataset_label}.md"

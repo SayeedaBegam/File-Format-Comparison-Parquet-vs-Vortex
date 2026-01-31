@@ -10,23 +10,43 @@ from typing import Any, Dict, List, Optional, Tuple
 import duckdb
 
 
-def timed_query(con: duckdb.DuckDBPyConnection, sql: str, repeats: int, warmup: int) -> Dict[str, Any]:
+def timed_query(
+    con: duckdb.DuckDBPyConnection,
+    sql: str,
+    repeats: int,
+    warmup: int,
+    include_cold: bool = False,
+) -> Dict[str, Any]:
+    cold_ms = None
+    if include_cold:
+        t0 = time.perf_counter()
+        res = con.execute(sql).fetchone()
+        t1 = time.perf_counter()
+        cold_ms = (t1 - t0) * 1000.0
+        result_value = res[0] if res else None
+    else:
+        result_value = None
     for _ in range(warmup):
         con.execute(sql).fetchall()
 
     times_ms: List[float] = []
-    result_value = None
     for _ in range(repeats):
         t0 = time.perf_counter()
         res = con.execute(sql).fetchone()
         t1 = time.perf_counter()
         times_ms.append((t1 - t0) * 1000.0)
-        result_value = res[0] if res else None
+        result_value = res[0] if res else result_value
 
     times_ms_sorted = sorted(times_ms)
     median = statistics.median(times_ms_sorted)
     p95 = times_ms_sorted[int(0.95 * (len(times_ms_sorted) - 1))]
-    return {"median_ms": median, "p95_ms": p95, "runs": repeats, "result_value": result_value}
+    return {
+        "median_ms": median,
+        "p95_ms": p95,
+        "runs": repeats,
+        "result_value": result_value,
+        "cold_ms": cold_ms,
+    }
 
 
 def quantile_thresholds(

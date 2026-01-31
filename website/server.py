@@ -48,7 +48,7 @@ def _update_manifest(dataset_name: str, report_path: Path) -> None:
   datasets = manifest.get("datasets", [])
   rel_report = report_path.relative_to(REPO_ROOT).as_posix()
   if not any(d.get("name") == dataset_name for d in datasets):
-    datasets.append({"name": dataset_name, "report": f"./{rel_report}"})
+    datasets.append({"name": dataset_name, "report": f"../{rel_report}"})
   manifest["datasets"] = datasets
   MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
@@ -113,21 +113,71 @@ def _load_preview(input_path: Path, input_type: str) -> dict[str, list]:
   }
 
 
-def _timed_query(con: duckdb.DuckDBPyConnection, sql: str, repeats: int, warmup: int) -> dict:
+def _jsonify_value(value) -> object:
+  if value is None or isinstance(value, (bool, int, float, str)):
+    return value
+  if isinstance(value, bytes):
+    return value.decode("utf-8", errors="replace")
+  if hasattr(value, "isoformat"):
+    try:
+      return value.isoformat()
+    except Exception:
+      return str(value)
+  return str(value)
+
+
+def _jsonify_rows(rows: list[tuple]) -> list[list]:
+  return [[_jsonify_value(v) for v in row] for row in rows]
+
+
+def _timed_query(
+  con: duckdb.DuckDBPyConnection,
+  sql: str,
+  repeats: int,
+  warmup: int,
+  return_rows: bool = False,
+) -> dict:
+  fetch_all = return_rows
   for _ in range(max(0, warmup)):
-    con.execute(sql).fetchall()
+    if fetch_all:
+      con.execute(sql).fetchall()
+    else:
+      con.execute(sql).fetchone()
   times = []
   result_value = None
-  for _ in range(max(1, repeats)):
+  result_rows = None
+  result_cols = None
+  runs = max(1, repeats)
+  for idx in range(runs):
     t0 = time.perf_counter()
-    res = con.execute(sql).fetchone()
+    rel = con.execute(sql)
+    if fetch_all:
+      rows = rel.fetchall()
+      cols = [col[0] for col in rel.description or []]
+      if idx == runs - 1:
+        result_rows = rows
+        result_cols = cols
+      if rows and len(rows[0]) > 0:
+        result_value = rows[0][0]
+    else:
+      res = rel.fetchone()
+      result_value = res[0] if res else None
     t1 = time.perf_counter()
     times.append((t1 - t0) * 1000.0)
-    result_value = res[0] if res else None
+
   times_sorted = sorted(times)
   median = times_sorted[len(times_sorted) // 2]
   p95 = times_sorted[int(0.95 * (len(times_sorted) - 1))]
-  return {"median_ms": median, "p95_ms": p95, "runs": len(times), "result_value": result_value}
+  payload = {
+    "median_ms": median,
+    "p95_ms": p95,
+    "runs": len(times),
+    "result_value": _jsonify_value(result_value),
+  }
+  if return_rows:
+    payload["columns"] = result_cols or []
+    payload["rows"] = _jsonify_rows(result_rows or [])
+  return payload
 
 
 @app.route("/api/run", methods=["POST"])
@@ -161,7 +211,6 @@ def run_benchmark():
     "--csv-sample-size",
     "-1",
     "--csv-ignore-errors",
-    "--no-like-tests",
     "--out",
     "out",
     "--include-cold",
@@ -245,7 +294,7 @@ def run_custom_query():
   else:
     con.execute(f"CREATE VIEW data AS SELECT * FROM read_csv_auto('{escaped}');")
 
-  result = _timed_query(con, sql, repeats=repeats, warmup=warmup)
+  result = _timed_query(con, sql, repeats=repeats, warmup=warmup, return_rows=True)
   return jsonify(result)
 
 
@@ -316,7 +365,7 @@ def run_query_across_formats():
     try:
       con.execute("DROP VIEW IF EXISTS data;")
       con.execute(f"CREATE VIEW data AS SELECT * FROM {scan_expr};")
-      results[name] = _timed_query(con, sql, repeats=repeats, warmup=warmup)
+      results[name] = _timed_query(con, sql, repeats=repeats, warmup=warmup, return_rows=True)
     except Exception as exc:
       results[name] = {"error": str(exc)}
 
@@ -348,4 +397,4 @@ def root():
 
 
 if __name__ == "__main__":
-  app.run(host="0.0.0.0", port=5000, debug=True)
+  app.run(host="0.0.0.0", port=5000, debug=False)

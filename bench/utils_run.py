@@ -471,6 +471,16 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
             lines.append(f"  - storage-first: `{item['name']}`")
             if item.get("reason"):
                 lines.append(f"    - reason: {item['reason']}")
+        if recs.get("compression_speed_first"):
+            item = recs["compression_speed_first"]
+            lines.append(f"  - compression-speed-first: `{item['name']}`")
+            if item.get("reason"):
+                lines.append(f"    - reason: {item['reason']}")
+        if recs.get("decompression_speed_first"):
+            item = recs["decompression_speed_first"]
+            lines.append(f"  - decompression-speed-first: `{item['name']}`")
+            if item.get("reason"):
+                lines.append(f"    - reason: {item['reason']}")
         if recs.get("read_latency_first"):
             item = recs["read_latency_first"]
             lines.append(f"  - read-latency-first: `{item['name']}`")
@@ -489,6 +499,12 @@ def _markdown_summary(report: Dict[str, Any]) -> str:
             if w.get("output_size_bytes") is not None:
                 lines.append(f"- size_mb: **{_format_mb(w.get('output_size_bytes'))}**")
             lines.append(f"- compression_time_s: **{w.get('compression_time_s'):.3f}**")
+            if w.get("compression_speed_mb_s") is not None:
+                lines.append(f"- compression_speed_mb_s: **{w.get('compression_speed_mb_s'):.3f}**")
+            if w.get("decompression_time_s") is not None:
+                lines.append(f"- decompression_time_s: **{w.get('decompression_time_s'):.3f}**")
+            if w.get("decompression_speed_mb_s") is not None:
+                lines.append(f"- decompression_speed_mb_s: **{w.get('decompression_speed_mb_s'):.3f}**")
             if body.get("compression_ratio") is not None:
                 lines.append(f"- compression_ratio: **{body.get('compression_ratio'):.3f}**")
             enc = body.get("encodings")
@@ -601,6 +617,10 @@ def _null_count(con: duckdb.DuckDBPyConnection, from_expr: str, col: str) -> int
 def _recommendations(report: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
     best_storage = None
     best_storage_ratio = None
+    best_comp_speed = None
+    best_comp_speed_val = None
+    best_decomp_speed = None
+    best_decomp_speed_val = None
     best_read = None
     best_read_ms = None
     best_read_metric = None
@@ -616,6 +636,16 @@ def _recommendations(report: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
         if ratio is not None and (best_storage_ratio is None or ratio > best_storage_ratio):
             best_storage_ratio = ratio
             best_storage = name
+
+        comp_speed = body.get("write", {}).get("compression_speed_mb_s")
+        if comp_speed is not None and (best_comp_speed_val is None or comp_speed > best_comp_speed_val):
+            best_comp_speed_val = comp_speed
+            best_comp_speed = name
+
+        decomp_speed = body.get("write", {}).get("decompression_speed_mb_s")
+        if decomp_speed is not None and (best_decomp_speed_val is None or decomp_speed > best_decomp_speed_val):
+            best_decomp_speed_val = decomp_speed
+            best_decomp_speed = name
 
         q = body["queries"]
         read_ms = q.get("random_access", {}).get("median_ms")
@@ -641,6 +671,16 @@ def _recommendations(report: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
         out["storage_first"] = {
             "name": best_storage,
             "reason": f"highest compression_ratio {best_storage_ratio:.3f}",
+        }
+    if best_comp_speed:
+        out["compression_speed_first"] = {
+            "name": best_comp_speed,
+            "reason": f"highest compression_speed_mb_s {best_comp_speed_val:.2f}",
+        }
+    if best_decomp_speed:
+        out["decompression_speed_first"] = {
+            "name": best_decomp_speed,
+            "reason": f"highest decompression_speed_mb_s {best_decomp_speed_val:.2f}",
         }
     if best_read:
         out["read_latency_first"] = {
@@ -720,9 +760,12 @@ def _like_pattern_specs_for_col(
         suffix = esc[-use_len:]
         mid_start = max((len(esc) - use_len) // 2, 0)
         mid = esc[mid_start:mid_start + use_len]
-        patterns_by_type["prefix"].add(prefix + "%")
-        patterns_by_type["suffix"].add("%" + suffix)
-        patterns_by_type["contains"].add("%" + mid + "%")
+        if not prefix.endswith(_LIKE_ESCAPE_CHAR):
+            patterns_by_type["prefix"].add(prefix + "%")
+        if not suffix.endswith(_LIKE_ESCAPE_CHAR):
+            patterns_by_type["suffix"].add("%" + suffix)
+        if not mid.endswith(_LIKE_ESCAPE_CHAR):
+            patterns_by_type["contains"].add("%" + mid + "%")
 
     specs_map: Dict[Tuple[str, str], Dict[str, Any]] = {}
     for pattern_type, patterns in patterns_by_type.items():

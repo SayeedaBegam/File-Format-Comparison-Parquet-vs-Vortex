@@ -222,6 +222,18 @@ def main() -> None:
             include_cold=args.include_cold,
         )
 
+    decomp_counter = 0
+
+    def _time_decompress(scan_expr: str) -> float:
+        nonlocal decomp_counter
+        decomp_counter += 1
+        tmp_name = f"decomp_{decomp_counter}"
+        t0 = time.perf_counter()
+        con.execute(f"CREATE OR REPLACE TEMP TABLE {tmp_name} AS SELECT * FROM {scan_expr};")
+        t1 = time.perf_counter()
+        con.execute(f"DROP TABLE {tmp_name};")
+        return t1 - t0
+
     source_table = args.table
     if args.sorted_by:
         sorted_table = f"{args.table}_sorted"
@@ -234,6 +246,7 @@ def main() -> None:
         duckdb_meta = {
             "format": "duckdb_table",
             "compression_time_s": 0.0,
+            "compression_speed_mb_s": None,
             "output_size_bytes": input_size_bytes,
             "note": "Baseline: queries run directly on DuckDB table (no external file scan).",
         }
@@ -357,6 +370,11 @@ def main() -> None:
             parquet_out,
             options={"codec": codec, "row_group_size": args.parquet_row_group_size},
         )
+        if input_size_bytes and parquet_meta.get("compression_time_s"):
+            ctime = parquet_meta.get("compression_time_s")
+            parquet_meta["compression_speed_mb_s"] = (input_size_bytes / (1024 * 1024)) / ctime if ctime else None
+        else:
+            parquet_meta["compression_speed_mb_s"] = None
         parquet_scan = parquet_backend.scan_expr(parquet_meta.get("parquet_path", parquet_out))
 
         q_full = f"SELECT min({args.min_col}) FROM {parquet_scan};"
@@ -427,6 +445,15 @@ def main() -> None:
         best_select_col = None
         if avg_selectivity_ms:
             best_select_col = min(avg_selectivity_ms.items(), key=lambda kv: kv[1])
+
+        decomp_time_s = _time_decompress(parquet_scan)
+        parquet_meta["decompression_time_s"] = decomp_time_s
+        if parquet_meta.get("output_size_bytes") and decomp_time_s:
+            parquet_meta["decompression_speed_mb_s"] = (
+                (parquet_meta["output_size_bytes"] / (1024 * 1024)) / decomp_time_s
+            )
+        else:
+            parquet_meta["decompression_speed_mb_s"] = None
 
         parquet_ratio = None
         if input_size_bytes and parquet_meta.get("output_size_bytes"):
@@ -501,6 +528,11 @@ def main() -> None:
                 vortex_out,
                 options={"compact": args.vortex_compact},
             )
+            if input_size_bytes and vortex_meta.get("compression_time_s"):
+                ctime = vortex_meta.get("compression_time_s")
+                vortex_meta["compression_speed_mb_s"] = (input_size_bytes / (1024 * 1024)) / ctime if ctime else None
+            else:
+                vortex_meta["compression_speed_mb_s"] = None
 
             vortex_expr = vortex_backend.scan_expr(vortex_meta.get("vortex_path", vortex_out))
             con.execute(f"CREATE OR REPLACE TEMP VIEW vortex_dataset AS SELECT * FROM {vortex_expr}")
@@ -584,6 +616,15 @@ def main() -> None:
             if avg_selectivity_ms_vx:
                 best_select_col_vx = min(avg_selectivity_ms_vx.items(), key=lambda kv: kv[1])
 
+            decomp_time_s = _time_decompress(vortex_expr)
+            vortex_meta["decompression_time_s"] = decomp_time_s
+            if vortex_meta.get("output_size_bytes") and decomp_time_s:
+                vortex_meta["decompression_speed_mb_s"] = (
+                    (vortex_meta["output_size_bytes"] / (1024 * 1024)) / decomp_time_s
+                )
+            else:
+                vortex_meta["decompression_speed_mb_s"] = None
+
             vortex_ratio = None
             if input_size_bytes and vortex_meta.get("output_size_bytes"):
                 vortex_ratio = input_size_bytes / vortex_meta.get("output_size_bytes")
@@ -647,7 +688,7 @@ def main() -> None:
     results_path = out_dir / f"results_{dataset_label}.csv"
     report_json_path = out_dir / f"report_{dataset_label}.json"
     report_md_path = out_dir / f"report_{dataset_label}.md"
-    write_csv(rows_csv, str(results_path))
+    # write_csv(rows_csv, str(results_path))
     write_json(report, str(report_json_path))
     write_markdown(_markdown_summary(report), str(report_md_path))
     generate_dataset_plots(report, out_dir / "plots" / dataset_label, max_cols=10)

@@ -1,115 +1,49 @@
 {
-  "dataset_count": 15,
+  "dataset_count": 13,
   "datasets": [
     {
       "column_type_counts": {
         "bool": 0,
-        "date": 0,
-        "numeric": 39,
+        "date": 1,
+        "numeric": 6,
         "other": 0,
-        "text": 29
+        "text": 4
       },
       "dropped_rows": 0,
-      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/1769877051_MLB_18.csv",
-      "input_rows": 173622,
-      "input_size_bytes": 44809758,
-      "name": "1769877051_MLB_18",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Arade_1.csv",
+      "input_rows": 9888775,
+      "input_size_bytes": 850765145,
+      "name": "Arade_1",
       "ndv_ratio_by_type": {
         "bool": null,
-        "date": null,
-        "numeric": 0.0007991129565584415,
+        "date": 0.01127682650277714,
+        "numeric": 0.27851604470725644,
         "other": null,
-        "text": 0.004357464630852837
+        "text": 2.6039625737262702e-06
       },
-      "rows": 173622
+      "rows": 9888775
     },
     {
       "column_type_counts": {
         "bool": 0,
         "date": 0,
-        "numeric": 39,
+        "numeric": 12,
         "other": 0,
-        "text": 29
+        "text": 0
       },
       "dropped_rows": 0,
-      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/1769877075_MLB_18.csv",
-      "input_rows": 173622,
-      "input_size_bytes": 44809758,
-      "name": "1769877075_MLB_18",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Bimbo_1.csv",
+      "input_rows": 74180464,
+      "input_size_bytes": 3185487013,
+      "name": "Bimbo_1",
       "ndv_ratio_by_type": {
         "bool": null,
         "date": null,
-        "numeric": 0.0007991129565584415,
+        "numeric": 0.0010999021251740888,
         "other": null,
-        "text": 0.004357464630852837
+        "text": null
       },
-      "rows": 173622
-    },
-    {
-      "column_type_counts": {
-        "bool": 0,
-        "date": 0,
-        "numeric": 39,
-        "other": 0,
-        "text": 29
-      },
-      "dropped_rows": 0,
-      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/1769877242_MLB_18.csv",
-      "input_rows": 173622,
-      "input_size_bytes": 44809758,
-      "name": "1769877242_MLB_18",
-      "ndv_ratio_by_type": {
-        "bool": null,
-        "date": null,
-        "numeric": 0.0007991129565584415,
-        "other": null,
-        "text": 0.004357464630852837
-      },
-      "rows": 173622
-    },
-    {
-      "column_type_counts": {
-        "bool": 1,
-        "date": 0,
-        "numeric": 2,
-        "other": 0,
-        "text": 1
-      },
-      "dropped_rows": 1,
-      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/1769877427_dummy.csv",
-      "input_rows": 4,
-      "input_size_bytes": 71,
-      "name": "1769877427_dummy",
-      "ndv_ratio_by_type": {
-        "bool": 0.6666666666666666,
-        "date": null,
-        "numeric": 1.0,
-        "other": null,
-        "text": 1.0
-      },
-      "rows": 3
-    },
-    {
-      "column_type_counts": {
-        "bool": 0,
-        "date": 0,
-        "numeric": 39,
-        "other": 0,
-        "text": 29
-      },
-      "dropped_rows": 0,
-      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/1769881248_MLB_18.csv",
-      "input_rows": 173622,
-      "input_size_bytes": 44809758,
-      "name": "1769881248_MLB_18",
-      "ndv_ratio_by_type": {
-        "bool": null,
-        "date": null,
-        "numeric": 0.0007991129565584415,
-        "other": null,
-        "text": 0.004357464630852837
-      },
-      "rows": 173622
+      "rows": 74180464
     },
     {
       "column_type_counts": {
@@ -120,7 +54,7 @@
         "text": 18
       },
       "dropped_rows": 0,
-      "input": "clouddb_project/CityMaxCapita_1.csv",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/CityMaxCapita_1.csv",
       "input_rows": 912657,
       "input_size_bytes": 349155009,
       "name": "CityMaxCapita_1",
@@ -142,7 +76,7 @@
         "text": 4
       },
       "dropped_rows": 0,
-      "input": "clouddb_project/Euro2016_1.csv",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Euro2016_1.csv",
       "input_rows": 2052497,
       "input_size_bytes": 409590096,
       "name": "Euro2016_1",
@@ -154,28 +88,6 @@
         "text": 0.24300327844571756
       },
       "rows": 2052497
-    },
-    {
-      "column_type_counts": {
-        "bool": 0,
-        "date": 0,
-        "numeric": 15,
-        "other": 0,
-        "text": 3
-      },
-      "dropped_rows": 0,
-      "input": "clouddb_project/IGlocations1_1.csv",
-      "input_rows": 81611,
-      "input_size_bytes": 6904315,
-      "name": "IGlocations1_1",
-      "ndv_ratio_by_type": {
-        "bool": null,
-        "date": null,
-        "numeric": 0.11468388656757873,
-        "other": null,
-        "text": 0.13020712077211813
-      },
-      "rows": 81611
     },
     {
       "column_type_counts": {
@@ -208,7 +120,7 @@
         "text": 16
       },
       "dropped_rows": 0,
-      "input": "clouddb_project/MedPayment1_1.csv",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/MedPayment1_1.csv",
       "input_rows": 9153273,
       "input_size_bytes": 1832552088,
       "name": "MedPayment1_1",
@@ -230,7 +142,7 @@
         "text": 16
       },
       "dropped_rows": 0,
-      "input": "clouddb_project/MedPayment2_1.csv",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/MedPayment2_1.csv",
       "input_rows": 9153273,
       "input_size_bytes": 1930063282,
       "name": "MedPayment2_1",
@@ -246,24 +158,68 @@
     {
       "column_type_counts": {
         "bool": 0,
-        "date": 4,
-        "numeric": 7,
+        "date": 0,
+        "numeric": 16,
         "other": 0,
-        "text": 43
+        "text": 10
       },
       "dropped_rows": 0,
-      "input": "clouddb_project/NYC_1.csv",
-      "input_rows": 9624351,
-      "input_size_bytes": 6785500797,
-      "name": "NYC_1",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Medicare1_1.csv",
+      "input_rows": 8645072,
+      "input_size_bytes": 1746256970,
+      "name": "Medicare1_1",
       "ndv_ratio_by_type": {
         "bool": null,
-        "date": 0.352089091513807,
-        "numeric": 0.17425936416016888,
+        "date": null,
+        "numeric": 0.15564680953495819,
         "other": null,
-        "text": 0.004995666358347478
+        "text": 0.002740867860903877
       },
-      "rows": 9624351
+      "rows": 8645072
+    },
+    {
+      "column_type_counts": {
+        "bool": 0,
+        "date": 0,
+        "numeric": 13,
+        "other": 0,
+        "text": 15
+      },
+      "dropped_rows": 0,
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Medicare2_1.csv",
+      "input_rows": 9153273,
+      "input_size_bytes": 1831162338,
+      "name": "Medicare2_1",
+      "ndv_ratio_by_type": {
+        "bool": null,
+        "date": null,
+        "numeric": 0.1847777040224594,
+        "other": null,
+        "text": 0.00503424294238793
+      },
+      "rows": 9153273
+    },
+    {
+      "column_type_counts": {
+        "bool": 0,
+        "date": 0,
+        "numeric": 12,
+        "other": 0,
+        "text": 17
+      },
+      "dropped_rows": 0,
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Medicare3_1.csv",
+      "input_rows": 9287877,
+      "input_size_bytes": 2253756104,
+      "name": "Medicare3_1",
+      "ndv_ratio_by_type": {
+        "bool": null,
+        "date": null,
+        "numeric": 0.21788111535068777,
+        "other": null,
+        "text": 0.004537065454500845
+      },
+      "rows": 9287877
     },
     {
       "column_type_counts": {
@@ -274,7 +230,7 @@
         "text": 16
       },
       "dropped_rows": 0,
-      "input": "clouddb_project/Physicians_1.csv",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Physicians_1.csv",
       "input_rows": 9153273,
       "input_size_bytes": 1832552088,
       "name": "Physicians_1",
@@ -289,128 +245,143 @@
     },
     {
       "column_type_counts": {
-        "bool": 2,
-        "date": 8,
-        "numeric": 17,
+        "bool": 1,
+        "date": 0,
+        "numeric": 86,
         "other": 0,
         "text": 54
       },
       "dropped_rows": 0,
-      "input": "clouddb_project/Uberlandia_1.csv",
-      "input_rows": 7559227,
-      "input_size_bytes": 6921667897,
-      "name": "Uberlandia_1",
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Rentabilidad_1.csv",
+      "input_rows": 399545,
+      "input_size_bytes": 396265383,
+      "name": "Rentabilidad_1",
       "ndv_ratio_by_type": {
-        "bool": 2.645773172309814e-07,
-        "date": 0.005420560858934386,
-        "numeric": 0.047196336811874,
+        "bool": 5.005693976898723e-06,
+        "date": null,
+        "numeric": 0.2129340147673794,
         "other": null,
-        "text": 0.05995548859005665
+        "text": 0.05805492636763208
       },
-      "rows": 7559227
+      "rows": 399545
     },
     {
       "column_type_counts": {
-        "bool": 1,
+        "bool": 0,
         "date": 0,
-        "numeric": 2,
+        "numeric": 6,
         "other": 0,
-        "text": 1
+        "text": 6
       },
-      "dropped_rows": 1,
-      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/dummy.csv",
-      "input_rows": 4,
-      "input_size_bytes": 71,
-      "name": "dummy",
+      "dropped_rows": 0,
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Romance_1.csv",
+      "input_rows": 1586588,
+      "input_size_bytes": 558733083,
+      "name": "Romance_1",
       "ndv_ratio_by_type": {
-        "bool": 0.6666666666666666,
+        "bool": null,
         "date": null,
-        "numeric": 1.0,
+        "numeric": 0.245082739396323,
         "other": null,
-        "text": 1.0
+        "text": 0.541099096509827
       },
-      "rows": 3
+      "rows": 1586588
     }
   ],
   "formats": {
     "duckdb_table": {
       "compression_ratio_geomean": 1.0,
+      "compression_speed_mb_s_geomean": null,
       "compression_time_s_geomean": null,
-      "datasets": 7,
+      "datasets": 13,
+      "decompression_speed_mb_s_geomean": null,
+      "decompression_time_s_geomean": null,
       "like_median_ms_geomean": {
-        "contains": 3.5372994286392765,
-        "prefix": 1.4143773573128524,
-        "suffix": 3.513161928562372
+        "contains": 17.445342609057974,
+        "prefix": 5.172682886526955,
+        "suffix": 17.16079425522678
       },
-      "output_size_bytes_geomean": 986727.1965054662,
+      "output_size_bytes_geomean": 876277640.445172,
       "query_median_ms_geomean": {
-        "full_scan_min": 0.24694133612566646,
-        "random_access": 0.7405363820955986,
-        "selective_predicate": 0.5841712494245153
+        "full_scan_min": 1.2311623463310057,
+        "random_access": 6.271194348315015,
+        "selective_predicate": 2.3442629511947004
       }
     },
     "parquet_snappy": {
-      "compression_ratio_geomean": 2.7931814124957732,
-      "compression_time_s_geomean": 0.5772345940246644,
-      "datasets": 15,
+      "compression_ratio_geomean": 3.643920659911041,
+      "compression_speed_mb_s_geomean": 296.04906781509226,
+      "compression_time_s_geomean": 2.822787066688511,
+      "datasets": 13,
+      "decompression_speed_mb_s_geomean": 811.4920520540672,
+      "decompression_time_s_geomean": 0.28261072155043554,
       "like_median_ms_geomean": {
-        "contains": 21.527053423071607,
-        "prefix": 17.941778182021825,
-        "suffix": 20.650437613508096
+        "contains": 26.288417223206615,
+        "prefix": 22.668442581024312,
+        "suffix": 25.769965277421647
       },
-      "output_size_bytes_geomean": 13073459.181392819,
+      "output_size_bytes_geomean": 240476597.11300194,
       "query_median_ms_geomean": {
-        "full_scan_min": 10.19222688273811,
-        "random_access": 16.793116893311847,
-        "selective_predicate": 10.26674147915579
+        "full_scan_min": 22.10232097738101,
+        "random_access": 40.2024961881636,
+        "selective_predicate": 25.896260713824976
       }
     },
     "parquet_uncompressed": {
-      "compression_ratio_geomean": 2.1136245289509574,
-      "compression_time_s_geomean": 0.6755455140501887,
-      "datasets": 15,
+      "compression_ratio_geomean": 2.519767154976852,
+      "compression_speed_mb_s_geomean": 220.10663340315284,
+      "compression_time_s_geomean": 3.796721011142694,
+      "datasets": 13,
+      "decompression_speed_mb_s_geomean": 1256.9991170312837,
+      "decompression_time_s_geomean": 0.26384352076263906,
       "like_median_ms_geomean": {
-        "contains": 21.84189360777313,
-        "prefix": 17.346545880629442,
-        "suffix": 19.96553897721434
+        "contains": 25.60163193939374,
+        "prefix": 21.86264900874934,
+        "suffix": 25.049675838869696
       },
-      "output_size_bytes_geomean": 17276740.822369576,
+      "output_size_bytes_geomean": 347761355.137285,
       "query_median_ms_geomean": {
-        "full_scan_min": 10.053732379806695,
-        "random_access": 12.356624091434877,
-        "selective_predicate": 10.139819951157742
+        "full_scan_min": 22.704885756140833,
+        "random_access": 27.511515885046613,
+        "selective_predicate": 26.133073349375238
       }
     },
     "parquet_zstd": {
-      "compression_ratio_geomean": 3.4531294860288844,
-      "compression_time_s_geomean": 0.5442023859241263,
-      "datasets": 15,
+      "compression_ratio_geomean": 4.870641516681957,
+      "compression_speed_mb_s_geomean": 344.7703464092573,
+      "compression_time_s_geomean": 2.423884444927409,
+      "datasets": 13,
+      "decompression_speed_mb_s_geomean": 598.048467716632,
+      "decompression_time_s_geomean": 0.2868925486090696,
       "like_median_ms_geomean": {
-        "contains": 22.16374251587909,
-        "prefix": 18.386781477226307,
-        "suffix": 20.972646760381974
+        "contains": 26.452926783127236,
+        "prefix": 22.262588560539562,
+        "suffix": 25.554344143361106
       },
-      "output_size_bytes_geomean": 10574912.794388939,
+      "output_size_bytes_geomean": 179910107.8254105,
       "query_median_ms_geomean": {
-        "full_scan_min": 10.446086864764517,
-        "random_access": 20.713257123024334,
-        "selective_predicate": 10.661319462555365
+        "full_scan_min": 22.39527762971296,
+        "random_access": 53.330261678999854,
+        "selective_predicate": 26.77433904417248
       }
     },
     "vortex_default": {
-      "compression_ratio_geomean": 1.9690082756743885,
-      "compression_time_s_geomean": 0.5436753180356397,
-      "datasets": 15,
+      "compression_ratio_geomean": 3.42971414950497,
+      "compression_speed_mb_s_geomean": 322.8789187665486,
+      "compression_time_s_geomean": 2.5882255891034425,
+      "datasets": 13,
+      "decompression_speed_mb_s_geomean": 341.7360725441419,
+      "decompression_time_s_geomean": 0.7130058084108014,
       "like_median_ms_geomean": {
-        "contains": 10.859534815672827,
-        "prefix": 6.382642938063,
-        "suffix": 9.75723786253212
+        "contains": 12.60532067317475,
+        "prefix": 7.4381315166866475,
+        "suffix": 11.512201160613362
       },
-      "output_size_bytes_geomean": 18545652.465570062,
+      "output_size_bytes_geomean": 255495823.33899522,
       "query_median_ms_geomean": {
-        "full_scan_min": 3.840038537263765,
-        "random_access": 8.73565958232964,
-        "selective_predicate": 4.175377646496068
+        "full_scan_min": 6.144501524614001,
+        "random_access": 18.222511973551754,
+        "selective_predicate": 6.3531554140195015
       }
     }
   }

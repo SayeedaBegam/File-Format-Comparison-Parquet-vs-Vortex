@@ -1,0 +1,200 @@
+# Benchmark Report
+
+- Input: `/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Bimbo_1.csv` (csv)
+- Rows: **74,180,464**
+- Input rows: **74,180,464**
+- Dropped rows: **0**
+- Input size: **3037.92 MB**
+- column_type_counts: numeric=12, text=0, date=0, bool=0, other=0
+- min_col: `column00`
+- filter_col: `column05`
+- select_cols: `column00, column01, column02, column03, column04, column05, column07, column08, column09, column10, column11`
+- ndv_ratio_by_type: numeric=0.001
+- ndv_ratio_top_cols:
+  - column02: 0.012
+  - column10: 0.001
+  - column04: 0.000
+  - column08: 0.000
+  - column11: 0.000
+  - column03: 0.000
+  - column07: 0.000
+  - column05: 0.000
+  - column00: 0.000
+  - column01: 0.000
+- recommendations:
+  - storage-first: `parquet_zstd`
+    - reason: highest compression_ratio 8.654
+  - compression-speed-first: `vortex_default`
+    - reason: highest compression_speed_mb_s 631.40
+  - decompression-speed-first: `parquet_uncompressed`
+    - reason: highest decompression_speed_mb_s 865.01
+  - read-latency-first: `parquet_snappy`
+    - reason: lowest random_access median_ms 12.89
+  - scan-first: `vortex_default`
+    - reason: lowest full_scan_min median_ms 35.80
+
+## duckdb_table
+- size_mb: **3037.92**
+- compression_time_s: **0.000**
+- compression_ratio: **1.000**
+- full_scan_min median_ms: **11.74** (p95 **17.81**, cold **11.40**)
+- selective_predicate median_ms: **13.66** (p95 **13.87**, cold **14.14**)
+- random_access median_ms: **0.29** (p95 **0.34**, cold **0.66**)
+- best_select_col: `column10` (avg median_ms **32.08**)
+- selectivity:
+  - column00: 1%: 107.80ms, 10%: 107.91ms, 25%: 112.50ms, 50%: 109.81ms, 90%: 110.59ms
+  - column01: 1%: 113.55ms, 10%: 115.32ms, 25%: 116.71ms, 50%: 112.31ms, 90%: 112.17ms
+  - column02: 1%: 107.94ms, 10%: 113.93ms, 25%: 112.52ms, 50%: 112.27ms, 90%: 120.17ms
+  - column03: 1%: 114.80ms, 10%: 113.52ms, 25%: 112.13ms, 50%: 117.12ms, 90%: 113.73ms
+  - column04: 1%: 31.62ms, 10%: 32.66ms, 25%: 34.02ms, 50%: 33.03ms, 90%: 33.53ms
+  - column05: 1%: 123.72ms, 10%: 115.89ms, 25%: 113.42ms, 50%: 116.12ms, 90%: 115.23ms
+  - column07: 1%: 114.32ms, 10%: 110.86ms, 25%: 111.98ms, 50%: 119.91ms, 90%: 112.73ms
+  - column08: 1%: 110.91ms, 10%: 113.66ms, 25%: 111.35ms, 50%: 115.02ms, 90%: 116.38ms
+  - column09: 1%: 113.24ms, 10%: 110.13ms, 25%: 110.15ms, 50%: 114.78ms, 90%: 13.73ms
+  - column10: 1%: 29.52ms, 10%: 32.08ms, 25%: 32.89ms, 50%: 33.01ms, 90%: 32.90ms
+  - column11: 1%: 116.93ms, 10%: 112.27ms, 25%: 116.59ms, 50%: 114.64ms, 90%: 112.94ms
+
+## parquet_zstd
+- size_mb: **351.05**
+- compression_time_s: **7.243**
+- compression_speed_mb_s: **419.399**
+- decompression_time_s: **0.790**
+- decompression_speed_mb_s: **444.404**
+- compression_ratio: **8.654**
+- encodings:
+  - column00: PLAIN_DICTIONARY
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN_DICTIONARY
+  - column03: PLAIN_DICTIONARY
+  - column04: PLAIN_DICTIONARY
+  - column05: PLAIN_DICTIONARY
+  - column06: PLAIN_DICTIONARY
+  - column07: PLAIN_DICTIONARY
+  - column08: PLAIN_DICTIONARY
+  - column09: PLAIN_DICTIONARY
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN_DICTIONARY
+- full_scan_min median_ms: **47.20** (p95 **47.43**, cold **162.77**)
+- selective_predicate median_ms: **63.15** (p95 **75.55**, cold **239.82**)
+- random_access median_ms: **16.87** (p95 **21.32**, cold **26.60**)
+- best_select_col: `column00` (avg median_ms **44.47**)
+- validation_pass: **True**
+- selectivity:
+  - column00: 1%: 41.35ms, 10%: 43.84ms, 25%: 44.97ms, 50%: 45.76ms, 90%: 46.46ms
+  - column01: 1%: 46.99ms, 10%: 48.10ms, 25%: 47.91ms, 50%: 49.56ms, 90%: 48.11ms
+  - column02: 1%: 68.16ms, 10%: 72.41ms, 25%: 74.08ms, 50%: 77.08ms, 90%: 79.33ms
+  - column03: 1%: 56.32ms, 10%: 59.55ms, 25%: 63.74ms, 50%: 66.09ms, 90%: 60.07ms
+  - column04: 1%: 56.03ms, 10%: 56.37ms, 25%: 57.01ms, 50%: 58.67ms, 90%: 56.58ms
+  - column05: 1%: 57.86ms, 10%: 55.51ms, 25%: 56.03ms, 50%: 54.88ms, 90%: 57.19ms
+  - column07: 1%: 52.50ms, 10%: 56.44ms, 25%: 58.58ms, 50%: 60.23ms, 90%: 71.44ms
+  - column08: 1%: 43.72ms, 10%: 43.74ms, 25%: 49.81ms, 50%: 47.43ms, 90%: 50.92ms
+  - column09: 1%: 44.33ms, 10%: 45.50ms, 25%: 44.60ms, 50%: 49.38ms, 90%: 56.83ms
+  - column10: 1%: 56.64ms, 10%: 57.99ms, 25%: 77.29ms, 50%: 69.88ms, 90%: 67.64ms
+  - column11: 1%: 57.07ms, 10%: 57.99ms, 25%: 62.38ms, 50%: 65.99ms, 90%: 61.15ms
+
+## parquet_snappy
+- size_mb: **475.83**
+- compression_time_s: **6.998**
+- compression_speed_mb_s: **434.116**
+- decompression_time_s: **0.814**
+- decompression_speed_mb_s: **584.904**
+- compression_ratio: **6.384**
+- encodings:
+  - column00: PLAIN_DICTIONARY
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN_DICTIONARY
+  - column03: PLAIN_DICTIONARY
+  - column04: PLAIN_DICTIONARY
+  - column05: PLAIN_DICTIONARY
+  - column06: PLAIN_DICTIONARY
+  - column07: PLAIN_DICTIONARY
+  - column08: PLAIN_DICTIONARY
+  - column09: PLAIN_DICTIONARY
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN_DICTIONARY
+- full_scan_min median_ms: **43.41** (p95 **47.16**, cold **153.74**)
+- selective_predicate median_ms: **51.66** (p95 **53.01**, cold **266.07**)
+- random_access median_ms: **12.89** (p95 **13.00**, cold **23.35**)
+- best_select_col: `column00` (avg median_ms **43.93**)
+- validation_pass: **True**
+- selectivity:
+  - column00: 1%: 43.18ms, 10%: 44.53ms, 25%: 43.48ms, 50%: 43.42ms, 90%: 45.03ms
+  - column01: 1%: 46.25ms, 10%: 48.86ms, 25%: 48.77ms, 50%: 48.67ms, 90%: 49.27ms
+  - column02: 1%: 66.28ms, 10%: 74.39ms, 25%: 69.50ms, 50%: 70.68ms, 90%: 74.07ms
+  - column03: 1%: 52.25ms, 10%: 56.07ms, 25%: 63.34ms, 50%: 63.57ms, 90%: 61.12ms
+  - column04: 1%: 59.21ms, 10%: 54.89ms, 25%: 54.37ms, 50%: 56.56ms, 90%: 55.84ms
+  - column05: 1%: 52.13ms, 10%: 56.46ms, 25%: 55.50ms, 50%: 53.93ms, 90%: 54.66ms
+  - column07: 1%: 53.32ms, 10%: 53.77ms, 25%: 54.94ms, 50%: 56.23ms, 90%: 57.64ms
+  - column08: 1%: 45.82ms, 10%: 45.47ms, 25%: 45.74ms, 50%: 47.42ms, 90%: 48.04ms
+  - column09: 1%: 44.35ms, 10%: 51.29ms, 25%: 46.02ms, 50%: 47.10ms, 90%: 42.08ms
+  - column10: 1%: 48.89ms, 10%: 50.80ms, 25%: 54.84ms, 50%: 58.55ms, 90%: 56.57ms
+  - column11: 1%: 59.43ms, 10%: 59.23ms, 25%: 64.80ms, 50%: 76.27ms, 90%: 61.76ms
+
+## parquet_uncompressed
+- size_mb: **673.64**
+- compression_time_s: **9.079**
+- compression_speed_mb_s: **334.624**
+- decompression_time_s: **0.779**
+- decompression_speed_mb_s: **865.008**
+- compression_ratio: **4.510**
+- encodings:
+  - column00: PLAIN_DICTIONARY
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN_DICTIONARY
+  - column03: PLAIN_DICTIONARY
+  - column04: PLAIN_DICTIONARY
+  - column05: PLAIN_DICTIONARY
+  - column06: PLAIN_DICTIONARY
+  - column07: PLAIN_DICTIONARY
+  - column08: PLAIN_DICTIONARY
+  - column09: PLAIN_DICTIONARY
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN_DICTIONARY
+- full_scan_min median_ms: **45.92** (p95 **46.82**, cold **185.83**)
+- selective_predicate median_ms: **67.58** (p95 **85.24**, cold **789.12**)
+- random_access median_ms: **15.07** (p95 **16.14**, cold **31.81**)
+- best_select_col: `column00` (avg median_ms **43.63**)
+- validation_pass: **True**
+- selectivity:
+  - column00: 1%: 41.04ms, 10%: 42.77ms, 25%: 43.01ms, 50%: 45.52ms, 90%: 45.82ms
+  - column01: 1%: 47.05ms, 10%: 47.99ms, 25%: 46.87ms, 50%: 45.73ms, 90%: 48.46ms
+  - column02: 1%: 60.94ms, 10%: 65.11ms, 25%: 65.63ms, 50%: 68.28ms, 90%: 68.57ms
+  - column03: 1%: 50.66ms, 10%: 54.75ms, 25%: 58.27ms, 50%: 61.40ms, 90%: 57.71ms
+  - column04: 1%: 54.76ms, 10%: 55.69ms, 25%: 55.53ms, 50%: 54.61ms, 90%: 56.07ms
+  - column05: 1%: 57.43ms, 10%: 54.00ms, 25%: 54.36ms, 50%: 55.08ms, 90%: 55.17ms
+  - column07: 1%: 45.62ms, 10%: 50.11ms, 25%: 52.74ms, 50%: 53.33ms, 90%: 58.95ms
+  - column08: 1%: 45.14ms, 10%: 45.21ms, 25%: 56.38ms, 50%: 54.94ms, 90%: 53.51ms
+  - column09: 1%: 52.30ms, 10%: 48.11ms, 25%: 49.19ms, 50%: 51.93ms, 90%: 46.33ms
+  - column10: 1%: 48.12ms, 10%: 53.23ms, 25%: 55.62ms, 50%: 58.42ms, 90%: 56.17ms
+  - column11: 1%: 52.56ms, 10%: 49.90ms, 25%: 56.69ms, 50%: 57.38ms, 90%: 58.44ms
+
+## vortex_default
+- size_mb: **517.13**
+- compression_time_s: **4.811**
+- compression_speed_mb_s: **631.397**
+- decompression_time_s: **0.874**
+- decompression_speed_mb_s: **591.703**
+- compression_ratio: **5.875**
+- encodings: unable to read vortex encodings: Type `u32` at position 858 is unaligned.
+	while verifying table field `max` at position 858
+	while verifying vector element 0 at position 28
+	while verifying table field `field_stats` at position 20
+
+
+- full_scan_min median_ms: **35.80** (p95 **36.41**, cold **49.37**)
+- selective_predicate median_ms: **19.15** (p95 **20.09**, cold **214.87**)
+- random_access median_ms: **61.51** (p95 **85.03**, cold **79.88**)
+- best_select_col: `column04` (avg median_ms **34.80**)
+- validation_pass: **True**
+- selectivity:
+  - column00: 1%: 117.29ms, 10%: 123.22ms, 25%: 121.64ms, 50%: 117.73ms, 90%: 122.88ms
+  - column01: 1%: 136.72ms, 10%: 123.86ms, 25%: 121.18ms, 50%: 128.16ms, 90%: 122.61ms
+  - column02: 1%: 125.40ms, 10%: 126.79ms, 25%: 126.12ms, 50%: 125.92ms, 90%: 133.56ms
+  - column03: 1%: 112.15ms, 10%: 112.39ms, 25%: 116.90ms, 50%: 113.79ms, 90%: 115.63ms
+  - column04: 1%: 35.90ms, 10%: 35.22ms, 25%: 34.89ms, 50%: 34.41ms, 90%: 33.60ms
+  - column05: 1%: 115.91ms, 10%: 115.36ms, 25%: 119.39ms, 50%: 118.22ms, 90%: 121.74ms
+  - column07: 1%: 114.73ms, 10%: 114.15ms, 25%: 119.37ms, 50%: 118.35ms, 90%: 122.95ms
+  - column08: 1%: 118.87ms, 10%: 123.55ms, 25%: 122.86ms, 50%: 120.68ms, 90%: 129.24ms
+  - column09: 1%: 125.43ms, 10%: 120.70ms, 25%: 120.10ms, 50%: 129.37ms, 90%: 118.66ms
+  - column10: 1%: 32.77ms, 10%: 37.69ms, 25%: 40.52ms, 50%: 40.00ms, 90%: 45.81ms
+  - column11: 1%: 120.38ms, 10%: 118.00ms, 25%: 113.08ms, 50%: 122.63ms, 90%: 119.96ms

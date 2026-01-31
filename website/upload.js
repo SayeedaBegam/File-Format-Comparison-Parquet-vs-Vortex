@@ -34,6 +34,7 @@ const getFormatColor = (label) => formatColors[label] || "#6b6358";
 
 let currentReport = null;
 let lastUploadInfo = null;
+let lastReportPath = null;
 
 const _shortLineLabel = (label) => {
   const text = String(label).replace("parquet_", "pq_");
@@ -49,6 +50,207 @@ const _splitLabel = (label) => {
     return [parts[0], parts.slice(1).join("_")];
   }
   return [text.slice(0, 8), text.slice(8)];
+};
+
+const formatCellValue = (value) => {
+  if (value === null || value === undefined) return "--";
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return formatNumber(value, 4);
+  }
+  return String(value);
+};
+
+const renderCustomQueryResults = (output, data) => {
+  output.innerHTML = "";
+  const results = data?.results || {};
+  const entries = Object.entries(results);
+  if (!entries.length) {
+    output.textContent = "No results returned.";
+    return;
+  }
+
+  const best = data.best_format;
+  const bestLine = document.createElement("div");
+  bestLine.textContent = best ? `Best format: ${best}` : "Best format: n/a";
+  bestLine.className = best ? "query-best" : "";
+  output.appendChild(bestLine);
+
+  const resultPanel = document.createElement("div");
+  resultPanel.className = "query-result-panel";
+  const resultTitle = document.createElement("div");
+  resultTitle.className = "query-result-title";
+  resultTitle.textContent = "Result detail";
+  const resultBody = document.createElement("div");
+  resultBody.className = "query-result-body";
+  resultBody.textContent = "Click View to see a result.";
+  resultPanel.appendChild(resultTitle);
+  resultPanel.appendChild(resultBody);
+
+  let activeName = null;
+  let activeResult = null;
+  let activePage = 0;
+  const pageSize = 10;
+
+  const renderActiveResult = () => {
+    resultBody.innerHTML = "";
+    if (!activeResult) {
+      resultBody.textContent = "Click View to see a result.";
+      return;
+    }
+    if (activeResult.error) {
+      const err = document.createElement("div");
+      err.className = "query-result-box";
+      err.textContent = String(activeResult.error);
+      resultBody.appendChild(err);
+      return;
+    }
+
+    const rows = Array.isArray(activeResult.rows) ? activeResult.rows : [];
+    const cols = Array.isArray(activeResult.columns) ? activeResult.columns : [];
+    if (!rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "query-result-box";
+      empty.textContent = "No rows returned.";
+      resultBody.appendChild(empty);
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+    activePage = Math.min(Math.max(activePage, 0), totalPages - 1);
+    const start = activePage * pageSize;
+    const end = start + pageSize;
+    const slice = rows.slice(start, end);
+
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "table-wrap";
+    const table = document.createElement("table");
+    table.className = "preview-table";
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    const headerCells = cols.length ? cols : slice[0].map((_, idx) => `col_${idx + 1}`);
+    headerCells.forEach((label) => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    slice.forEach((row) => {
+      const tr = document.createElement("tr");
+      row.forEach((cell) => {
+        const td = document.createElement("td");
+        td.textContent = formatCellValue(cell);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    resultBody.appendChild(tableWrap);
+
+    if (rows.length > pageSize) {
+      const pager = document.createElement("div");
+      pager.className = "query-pagination";
+      const prev = document.createElement("button");
+      prev.type = "button";
+      prev.className = "button is-muted";
+      prev.textContent = "Prev";
+      prev.disabled = activePage === 0;
+      prev.addEventListener("click", () => {
+        activePage = Math.max(0, activePage - 1);
+        renderActiveResult();
+      });
+      const next = document.createElement("button");
+      next.type = "button";
+      next.className = "button is-muted";
+      next.textContent = "Next";
+      next.disabled = activePage >= totalPages - 1;
+      next.addEventListener("click", () => {
+        activePage = Math.min(totalPages - 1, activePage + 1);
+        renderActiveResult();
+      });
+      const info = document.createElement("div");
+      info.className = "query-page-info";
+      info.textContent = `Page ${activePage + 1} of ${totalPages} · ${rows.length} rows`;
+      pager.appendChild(prev);
+      pager.appendChild(info);
+      pager.appendChild(next);
+      resultBody.appendChild(pager);
+    }
+  };
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "table-wrap";
+  const table = document.createElement("table");
+  table.className = "preview-table";
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  ["Format", "Median", "P95", "Result", "Runs", "Status"].forEach((label) => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  entries
+    .slice()
+    .sort((a, b) => {
+      const aMed = typeof a[1]?.median_ms === "number" ? a[1].median_ms : Number.POSITIVE_INFINITY;
+      const bMed = typeof b[1]?.median_ms === "number" ? b[1].median_ms : Number.POSITIVE_INFINITY;
+      if (aMed === bMed) return a[0].localeCompare(b[0]);
+      return aMed - bMed;
+    })
+    .forEach(([name, result]) => {
+      const row = document.createElement("tr");
+      const isBest = best && name === best;
+      const error = result?.error;
+      const hasError = Boolean(error);
+
+      const cells = [
+        name,
+        hasError ? "--" : formatMs(result?.median_ms),
+        hasError ? "--" : formatMs(result?.p95_ms),
+      ];
+      cells.forEach((text) => {
+        const td = document.createElement("td");
+        td.textContent = text;
+        row.appendChild(td);
+      });
+
+      const resultCell = document.createElement("td");
+      const viewButton = document.createElement("button");
+      viewButton.type = "button";
+      viewButton.className = "button is-muted";
+      viewButton.textContent = "View";
+      viewButton.addEventListener("click", () => {
+        activeName = name;
+        activeResult = result;
+        activePage = 0;
+        resultTitle.textContent = `Result detail (${activeName})`;
+        renderActiveResult();
+      });
+      resultCell.appendChild(viewButton);
+      row.appendChild(resultCell);
+
+      const runsCell = document.createElement("td");
+      runsCell.textContent = hasError ? "--" : String(result?.runs ?? "--");
+      row.appendChild(runsCell);
+
+      const statusCell = document.createElement("td");
+      statusCell.textContent = hasError ? "error" : isBest ? "best" : "ok";
+      row.appendChild(statusCell);
+
+      tbody.appendChild(row);
+    });
+
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  output.appendChild(tableWrap);
+  output.appendChild(resultPanel);
 };
 
 const createLineChart = (container, data, valueFormatter) => {
@@ -530,6 +732,10 @@ const buildFormatCard = (name, data, isOverall, best) => {
         data.compression_time_s_geomean,
         2
       )} s</strong></div>
+      <div class="kv"><span>Compression speed</span><strong>${formatNumber(
+        data.compression_speed_mb_s_geomean,
+        2
+      )} MB/s</strong></div>
       <div class="kv"><span>Full scan median</span><strong>${formatMs(
         data.query_median_ms_geomean?.full_scan_min
       )}</strong></div>
@@ -548,6 +754,9 @@ const buildFormatCard = (name, data, isOverall, best) => {
       </div>
       <div class="kv ${isBestMin(data.write?.compression_time_s, best.write_time) ? "is-best" : ""}">
         <span>Compression time</span><strong>${formatNumber(data.write?.compression_time_s, 2)} s</strong>
+      </div>
+      <div class="kv ${isBestMax(data.write?.compression_speed_mb_s, best.comp_speed) ? "is-best" : ""}">
+        <span>Compression speed</span><strong>${formatNumber(data.write?.compression_speed_mb_s, 2)} MB/s</strong>
       </div>
       <div class="kv ${isBestMin(data.queries?.full_scan_min?.median_ms, best.full_scan) ? "is-best" : ""}">
         <span>Full scan median</span><strong>${formatMs(data.queries?.full_scan_min?.median_ms)}</strong>
@@ -572,6 +781,7 @@ const computeBestMetrics = (formats) => {
     compression_ratio: max(getNums((item) => item.compression_ratio)),
     output_size_bytes: min(getNums((item) => item.write?.output_size_bytes)),
     write_time: min(getNums((item) => item.write?.compression_time_s)),
+    comp_speed: max(getNums((item) => item.write?.compression_speed_mb_s)),
     full_scan: min(getNums((item) => item.queries?.full_scan_min?.median_ms)),
     random_access: min(getNums((item) => item.queries?.random_access?.median_ms)),
   };
@@ -694,6 +904,9 @@ async function runBenchmark(file) {
     if (data.upload) {
       lastUploadInfo = data.upload;
     }
+    if (data.report_path) {
+      lastReportPath = data.report_path;
+    }
     if (data.manifest) {
       localStorage.setItem("latestManifest", JSON.stringify(data.manifest));
     }
@@ -741,7 +954,7 @@ const initCustomQuery = () => {
   if (!button || !sqlBox || !output) return;
 
   button.addEventListener("click", async () => {
-    if (!lastUploadInfo) {
+    if (!lastReportPath) {
       output.textContent = "Upload a dataset first.";
       return;
     }
@@ -754,12 +967,11 @@ const initCustomQuery = () => {
     const warmup = Number(warmupInput?.value || 1);
     output.textContent = "Running...";
     try {
-      const response = await fetch("/api/query", {
+      const response = await fetch("/api/query-formats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          filename: lastUploadInfo.filename,
-          input_type: lastUploadInfo.input_type,
+          report_path: lastReportPath,
           sql,
           repeats,
           warmup,
@@ -770,9 +982,7 @@ const initCustomQuery = () => {
         throw new Error(err.error || "Query failed");
       }
       const data = await response.json();
-      output.textContent = `Median: ${formatMs(data.median_ms)} · P95: ${formatMs(
-        data.p95_ms
-      )} · Result: ${data.result_value ?? "--"}`;
+      renderCustomQueryResults(output, data);
     } catch (err) {
       output.textContent = err.message || "Query failed";
     }

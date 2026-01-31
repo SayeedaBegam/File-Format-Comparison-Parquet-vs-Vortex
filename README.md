@@ -25,6 +25,9 @@ This README documents:
 - **output_size_bytes**: size of the generated file(s) for each format
 - **compression_ratio**: input_size_bytes / output_size_bytes (higher is better)
 - **compression_time_s**: time to write each format
+- **compression_speed_mb_s**: input_size_mb / compression_time_s (higher is better)
+- **decompression_time_s**: time to materialize a full scan into an in-memory table
+- **decompression_speed_mb_s**: output_size_mb / decompression_time_s (higher is better)
 
 ### Query latency metrics (per format)
 All query latencies include:

@@ -975,6 +975,52 @@ code {
   color: #2f4a36;
 }
 
+.query-best {
+  color: #2f4a36;
+  font-weight: 600;
+}
+
+.query-result-panel {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(232, 244, 232, 0.65);
+}
+
+.query-result-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2f4a36;
+}
+
+.query-result-body {
+  margin-top: 8px;
+  display: grid;
+  gap: 10px;
+}
+
+.query-result-box {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #2c2c2c;
+}
+
+.query-pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  font-size: 0.85rem;
+  color: #4f574f;
+}
+
+.query-page-info {
+  margin-right: auto;
+}
+
 #diagnostics-panel .chart {
   min-height: 440px;
 }

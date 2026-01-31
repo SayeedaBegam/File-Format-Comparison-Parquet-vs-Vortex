@@ -227,6 +227,10 @@ const renderFormatCards = (formats) => {
         data.compression_time_s_geomean,
         2
       )} s</strong></div>
+      <div class="kv"><span>Compression speed</span><strong>${formatNumber(
+        data.compression_speed_mb_s_geomean,
+        2
+      )} MB/s</strong></div>
       <div class="kv"><span>Full scan median</span><strong>${formatMs(
         data.query_median_ms_geomean?.full_scan_min
       )}</strong></div>

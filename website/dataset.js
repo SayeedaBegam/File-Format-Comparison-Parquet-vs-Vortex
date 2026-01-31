@@ -424,6 +424,9 @@ const buildFormatCard = (name, data, best) => {
     <div class="kv ${isBestMin(write.compression_time_s, best.write_time) ? "is-best" : ""}">
       <span>Compression time</span><strong>${formatNumber(write.compression_time_s, 2)} s</strong>
     </div>
+    <div class="kv ${isBestMax(write.compression_speed_mb_s, best.comp_speed) ? "is-best" : ""}">
+      <span>Compression speed</span><strong>${formatNumber(write.compression_speed_mb_s, 2)} MB/s</strong>
+    </div>
     <div class="kv ${isBestMin(queries.full_scan_min?.median_ms, best.full_scan) ? "is-best" : ""}">
       <span>Full scan median</span><strong>${formatMs(queries.full_scan_min?.median_ms)}</strong>
     </div>
@@ -455,6 +458,7 @@ const computeBestMetrics = (formats) => {
     compression_ratio: max(getNums((item) => item.compression_ratio)),
     output_size_bytes: min(getNums((item) => item.write?.output_size_bytes)),
     write_time: min(getNums((item) => item.write?.compression_time_s)),
+    comp_speed: max(getNums((item) => item.write?.compression_speed_mb_s)),
     full_scan: min(getNums((item) => item.queries?.full_scan_min?.median_ms)),
     selective: min(getNums((item) => item.queries?.selective_predicate?.median_ms)),
     random_access: min(getNums((item) => item.queries?.random_access?.median_ms)),
@@ -1025,6 +1029,10 @@ const renderOverallUpload = (summary) => {
         data.compression_time_s_geomean,
         2
       )} s</strong></div>
+      <div class="kv"><span>Compression speed</span><strong>${formatNumber(
+        data.compression_speed_mb_s_geomean,
+        2
+      )} MB/s</strong></div>
       <div class="kv"><span>Full scan median</span><strong>${formatMs(
         data.query_median_ms_geomean?.full_scan_min
       )}</strong></div>

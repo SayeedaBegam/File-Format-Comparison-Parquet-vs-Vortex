@@ -1,0 +1,400 @@
+# Benchmark Report
+
+- Input: `/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/Romance_1.csv` (csv)
+- Rows: **1,586,588**
+- Input rows: **1,586,588**
+- Dropped rows: **0**
+- Input size: **532.85 MB**
+- column_type_counts: numeric=6, text=6, date=0, bool=0, other=0
+- min_col: `column00`
+- filter_col: `column02`
+- select_cols: `column00, column03, column05, column07, column11`
+- ndv_ratio_by_type: numeric=0.245, text=0.541
+- ndv_ratio_top_cols:
+  - column04: 0.970
+  - column06: 0.970
+  - column00: 0.697
+  - column09: 0.678
+  - column02: 0.532
+  - column11: 0.391
+  - column03: 0.194
+  - column08: 0.095
+  - column07: 0.094
+  - column05: 0.093
+- recommendations:
+  - storage-first: `parquet_zstd`
+    - reason: highest compression_ratio 3.778
+  - compression-speed-first: `parquet_zstd`
+    - reason: highest compression_speed_mb_s 307.16
+  - decompression-speed-first: `parquet_uncompressed`
+    - reason: highest decompression_speed_mb_s 4447.00
+  - read-latency-first: `vortex_default`
+    - reason: lowest random_access median_ms 18.00
+  - scan-first: `vortex_default`
+    - reason: lowest full_scan_min median_ms 2.91
+
+## duckdb_table
+- size_mb: **532.85**
+- compression_time_s: **0.000**
+- compression_ratio: **1.000**
+- full_scan_min median_ms: **0.45** (p95 **0.48**, cold **0.64**)
+- selective_predicate median_ms: **1.65** (p95 **1.85**, cold **2.28**)
+- random_access median_ms: **3.75** (p95 **3.92**, cold **4.04**)
+- best_select_col: `column05` (avg median_ms **0.79**)
+- selectivity:
+  - column00: 1%: 6.28ms, 10%: 5.93ms, 25%: 6.10ms, 50%: 4.04ms, 90%: 3.90ms
+  - column03: 1%: 2.87ms, 10%: 2.79ms, 25%: 2.53ms, 50%: 3.74ms, 90%: 3.04ms
+  - column05: 1%: 0.68ms, 10%: 0.59ms, 25%: 0.80ms, 50%: 1.02ms, 90%: 0.84ms
+  - column07: 1%: 1.36ms, 10%: 1.21ms, 25%: 1.11ms, 50%: 1.12ms, 90%: 0.97ms
+  - column11: 1%: 5.87ms, 10%: 5.46ms, 25%: 6.44ms, 50%: 6.33ms, 90%: 5.97ms
+- like_predicates:
+  - column02 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `<3 %`: 4.01ms
+  - column02 suffix target 1% (actual 0.25%) `%:) `: 83.24ms
+  - column02 suffix target 10%,25%,50%,90% (actual 1.88%) `%❤️ `: 68.82ms
+  - column02 contains target 1% (actual 1.02%) `%a a%`: 70.19ms
+  - column02 contains target 10% (actual 8.12%) `%in %`: 59.69ms
+  - column02 contains target 25%,50%,90% (actual 13.12%) `%rom%`: 58.58ms
+  - column04 prefix target 1% (actual 3.50%) `112%`: 3.72ms
+  - column04 prefix target 10%,25%,50%,90% (actual 11.33%) `118%`: 3.66ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.13%) `%142`: 20.27ms
+  - column04 contains target 1% (actual 1.95%) `%999%`: 18.72ms
+  - column04 contains target 10% (actual 9.75%) `%123%`: 18.67ms
+  - column04 contains target 25%,50%,90% (actual 13.69%) `%118%`: 18.05ms
+  - column06 prefix target 1%,10%,25%,50%,90% (actual 100.00%) `htt%`: 3.22ms
+  - column06 suffix target 1%,10%,25%,50%,90% (actual 1.56%) `%!_/`: 27.00ms
+  - column06 contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ram%`: 11.75ms
+  - column08 prefix target 1%,10%,25%,50%,90% (actual 0.84%) `The%`: 2.16ms
+  - column08 suffix target 1%,10%,25%,50%,90% (actual 0.43%) `%and`: 14.32ms
+  - column08 contains target 1% (actual 0.81%) `%ing%`: 13.23ms
+  - column08 contains target 10%,25%,50%,90% (actual 1.20%) `% Re%`: 14.67ms
+  - column09 prefix target 1% (actual 0.95%) `wed%`: 4.77ms
+  - column09 prefix target 10% (actual 5.18%) `lov%`: 4.59ms
+  - column09 prefix target 25%,50%,90% (actual 22.02%) `bea%`: 4.77ms
+  - column09 suffix target 1% (actual 0.93%) `%l4l`: 90.48ms
+  - column09 suffix target 10% (actual 8.11%) `%day`: 82.27ms
+  - column09 suffix target 25%,50%,90% (actual 18.63%) `%ppy`: 85.46ms
+  - column09 contains target 1% (actual 0.99%) `%ya,%`: 79.23ms
+  - column09 contains target 10% (actual 9.14%) `%e,g%`: 81.97ms
+  - column09 contains target 25% (actual 23.70%) `%goo%`: 74.35ms
+  - column09 contains target 50% (actual 50.55%) `%nce%`: 71.05ms
+  - column09 contains target 90% (actual 87.15%) `%,ro%`: 60.14ms
+  - column10 prefix target 1% (actual 0.07%) `fir%`: 2.42ms
+  - column10 prefix target 10%,25% (actual 3.30%) `dat%`: 2.46ms
+  - column10 prefix target 50%,90% (actual 96.63%) `rom%`: 2.80ms
+  - column10 suffix target 1% (actual 0.07%) `%ate`: 9.77ms
+  - column10 suffix target 10% (actual 3.26%) `%ght`: 10.09ms
+  - column10 suffix target 25% (actual 45.46%) `%nce`: 10.05ms
+  - column10 suffix target 50%,90% (actual 51.16%) `%tic`: 5.96ms
+  - column10 contains target 1% (actual 0.07%) `%std%`: 6.27ms
+  - column10 contains target 10%,25% (actual 3.30%) `%eni%`: 9.50ms
+  - column10 contains target 50% (actual 51.17%) `%nti%`: 6.97ms
+  - column10 contains target 90% (actual 96.63%) `%man%`: 4.37ms
+- like_summary:
+  - contains: avg median_ms **37.63** (n=18)
+  - prefix: avg median_ms **3.51** (n=11)
+  - suffix: avg median_ms **42.31** (n=12)
+
+## parquet_zstd
+- size_mb: **141.06**
+- compression_time_s: **1.735**
+- compression_speed_mb_s: **307.161**
+- decompression_time_s: **0.141**
+- decompression_speed_mb_s: **997.424**
+- compression_ratio: **3.778**
+- encodings:
+  - column00: PLAIN
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN, PLAIN_DICTIONARY
+  - column03: PLAIN, PLAIN_DICTIONARY
+  - column04: PLAIN
+  - column05: PLAIN, PLAIN_DICTIONARY
+  - column06: PLAIN
+  - column07: PLAIN, PLAIN_DICTIONARY
+  - column08: PLAIN, PLAIN_DICTIONARY
+  - column09: PLAIN
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN
+- full_scan_min median_ms: **15.58** (p95 **16.75**, cold **87.81**)
+- selective_predicate median_ms: **63.54** (p95 **66.66**, cold **553.35**)
+- random_access median_ms: **74.76** (p95 **92.81**, cold **337.44**)
+- best_select_col: `column05` (avg median_ms **13.83**)
+- validation_pass: **True**
+- selectivity:
+  - column00: 1%: 19.89ms, 10%: 17.87ms, 25%: 18.03ms, 50%: 18.98ms, 90%: 21.00ms
+  - column03: 1%: 18.75ms, 10%: 19.70ms, 25%: 20.38ms, 50%: 20.02ms, 90%: 19.65ms
+  - column05: 1%: 11.11ms, 10%: 14.84ms, 25%: 14.11ms, 50%: 13.09ms, 90%: 16.01ms
+  - column07: 1%: 16.29ms, 10%: 15.39ms, 25%: 13.05ms, 50%: 14.17ms, 90%: 12.28ms
+  - column11: 1%: 23.31ms, 10%: 22.43ms, 25%: 23.91ms, 50%: 23.51ms, 90%: 25.99ms
+- like_predicates:
+  - column02 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `<3 %`: 69.51ms
+  - column02 suffix target 1% (actual 0.25%) `%:) `: 105.46ms
+  - column02 suffix target 10%,25%,50%,90% (actual 1.88%) `%❤️ `: 111.30ms
+  - column02 contains target 1% (actual 1.02%) `%a a%`: 113.45ms
+  - column02 contains target 10% (actual 8.12%) `%in %`: 102.51ms
+  - column02 contains target 25%,50%,90% (actual 13.12%) `%rom%`: 89.93ms
+  - column04 prefix target 1% (actual 3.50%) `112%`: 25.29ms
+  - column04 prefix target 10%,25%,50%,90% (actual 11.33%) `118%`: 23.68ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.13%) `%142`: 52.78ms
+  - column04 contains target 1% (actual 1.95%) `%999%`: 54.30ms
+  - column04 contains target 10% (actual 9.75%) `%123%`: 44.35ms
+  - column04 contains target 25%,50%,90% (actual 13.69%) `%118%`: 41.58ms
+  - column06 prefix target 1%,10%,25%,50%,90% (actual 100.00%) `htt%`: 22.48ms
+  - column06 suffix target 1%,10%,25%,50%,90% (actual 1.56%) `%!_/`: 40.34ms
+  - column06 contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ram%`: 30.64ms
+  - column08 prefix target 1%,10%,25%,50%,90% (actual 0.84%) `The%`: 20.36ms
+  - column08 suffix target 1%,10%,25%,50%,90% (actual 0.43%) `%and`: 31.86ms
+  - column08 contains target 1% (actual 0.81%) `%ing%`: 36.19ms
+  - column08 contains target 10%,25%,50%,90% (actual 1.20%) `% Re%`: 34.60ms
+  - column09 prefix target 1% (actual 0.95%) `wed%`: 43.92ms
+  - column09 prefix target 10% (actual 5.18%) `lov%`: 48.60ms
+  - column09 prefix target 25%,50%,90% (actual 22.02%) `bea%`: 43.10ms
+  - column09 suffix target 1% (actual 0.93%) `%l4l`: 117.03ms
+  - column09 suffix target 10% (actual 8.11%) `%day`: 123.76ms
+  - column09 suffix target 25%,50%,90% (actual 18.63%) `%ppy`: 121.19ms
+  - column09 contains target 1% (actual 0.99%) `%ya,%`: 117.93ms
+  - column09 contains target 10% (actual 9.14%) `%e,g%`: 122.36ms
+  - column09 contains target 25% (actual 23.70%) `%goo%`: 108.15ms
+  - column09 contains target 50% (actual 50.55%) `%nce%`: 109.46ms
+  - column09 contains target 90% (actual 87.15%) `%,ro%`: 94.01ms
+  - column10 prefix target 1% (actual 0.07%) `fir%`: 22.52ms
+  - column10 prefix target 10%,25% (actual 3.30%) `dat%`: 17.14ms
+  - column10 prefix target 50%,90% (actual 96.63%) `rom%`: 20.29ms
+  - column10 suffix target 1% (actual 0.07%) `%ate`: 15.24ms
+  - column10 suffix target 10% (actual 3.26%) `%ght`: 19.24ms
+  - column10 suffix target 25% (actual 45.46%) `%nce`: 18.17ms
+  - column10 suffix target 50%,90% (actual 51.16%) `%tic`: 19.05ms
+  - column10 contains target 1% (actual 0.07%) `%std%`: 17.47ms
+  - column10 contains target 10%,25% (actual 3.30%) `%eni%`: 17.91ms
+  - column10 contains target 50% (actual 51.17%) `%nti%`: 18.63ms
+  - column10 contains target 90% (actual 96.63%) `%man%`: 17.93ms
+- like_summary:
+  - contains: avg median_ms **65.08** (n=18)
+  - prefix: avg median_ms **32.44** (n=11)
+  - suffix: avg median_ms **64.62** (n=12)
+
+## parquet_snappy
+- size_mb: **233.00**
+- compression_time_s: **2.502**
+- compression_speed_mb_s: **212.988**
+- decompression_time_s: **0.143**
+- decompression_speed_mb_s: **1632.383**
+- compression_ratio: **2.287**
+- encodings:
+  - column00: PLAIN
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN, PLAIN_DICTIONARY
+  - column03: PLAIN, PLAIN_DICTIONARY
+  - column04: PLAIN
+  - column05: PLAIN, PLAIN_DICTIONARY
+  - column06: PLAIN
+  - column07: PLAIN, PLAIN_DICTIONARY
+  - column08: PLAIN, PLAIN_DICTIONARY
+  - column09: PLAIN
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN
+- full_scan_min median_ms: **15.95** (p95 **16.32**, cold **112.54**)
+- selective_predicate median_ms: **54.81** (p95 **70.21**, cold **543.32**)
+- random_access median_ms: **80.85** (p95 **106.90**, cold **494.57**)
+- best_select_col: `column07` (avg median_ms **13.17**)
+- validation_pass: **True**
+- selectivity:
+  - column00: 1%: 19.22ms, 10%: 19.07ms, 25%: 19.66ms, 50%: 19.39ms, 90%: 21.40ms
+  - column03: 1%: 20.90ms, 10%: 20.25ms, 25%: 20.28ms, 50%: 18.12ms, 90%: 17.07ms
+  - column05: 1%: 15.31ms, 10%: 13.39ms, 25%: 11.75ms, 50%: 12.47ms, 90%: 15.09ms
+  - column07: 1%: 15.10ms, 10%: 13.77ms, 25%: 10.64ms, 50%: 12.60ms, 90%: 13.74ms
+  - column11: 1%: 22.35ms, 10%: 22.17ms, 25%: 23.84ms, 50%: 22.68ms, 90%: 21.82ms
+- like_predicates:
+  - column02 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `<3 %`: 56.24ms
+  - column02 suffix target 1% (actual 0.25%) `%:) `: 113.18ms
+  - column02 suffix target 10%,25%,50%,90% (actual 1.88%) `%❤️ `: 114.15ms
+  - column02 contains target 1% (actual 1.02%) `%a a%`: 113.93ms
+  - column02 contains target 10% (actual 8.12%) `%in %`: 116.25ms
+  - column02 contains target 25%,50%,90% (actual 13.12%) `%rom%`: 98.69ms
+  - column04 prefix target 1% (actual 3.50%) `112%`: 27.46ms
+  - column04 prefix target 10%,25%,50%,90% (actual 11.33%) `118%`: 28.25ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.13%) `%142`: 41.69ms
+  - column04 contains target 1% (actual 1.95%) `%999%`: 40.64ms
+  - column04 contains target 10% (actual 9.75%) `%123%`: 40.30ms
+  - column04 contains target 25%,50%,90% (actual 13.69%) `%118%`: 38.80ms
+  - column06 prefix target 1%,10%,25%,50%,90% (actual 100.00%) `htt%`: 20.13ms
+  - column06 suffix target 1%,10%,25%,50%,90% (actual 1.56%) `%!_/`: 42.54ms
+  - column06 contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ram%`: 29.19ms
+  - column08 prefix target 1%,10%,25%,50%,90% (actual 0.84%) `The%`: 21.09ms
+  - column08 suffix target 1%,10%,25%,50%,90% (actual 0.43%) `%and`: 33.83ms
+  - column08 contains target 1% (actual 0.81%) `%ing%`: 30.65ms
+  - column08 contains target 10%,25%,50%,90% (actual 1.20%) `% Re%`: 33.54ms
+  - column09 prefix target 1% (actual 0.95%) `wed%`: 43.65ms
+  - column09 prefix target 10% (actual 5.18%) `lov%`: 45.51ms
+  - column09 prefix target 25%,50%,90% (actual 22.02%) `bea%`: 38.42ms
+  - column09 suffix target 1% (actual 0.93%) `%l4l`: 112.04ms
+  - column09 suffix target 10% (actual 8.11%) `%day`: 116.14ms
+  - column09 suffix target 25%,50%,90% (actual 18.63%) `%ppy`: 119.61ms
+  - column09 contains target 1% (actual 0.99%) `%ya,%`: 113.37ms
+  - column09 contains target 10% (actual 9.14%) `%e,g%`: 120.98ms
+  - column09 contains target 25% (actual 23.70%) `%goo%`: 113.26ms
+  - column09 contains target 50% (actual 50.55%) `%nce%`: 107.47ms
+  - column09 contains target 90% (actual 87.15%) `%,ro%`: 87.65ms
+  - column10 prefix target 1% (actual 0.07%) `fir%`: 16.44ms
+  - column10 prefix target 10%,25% (actual 3.30%) `dat%`: 16.46ms
+  - column10 prefix target 50%,90% (actual 96.63%) `rom%`: 15.54ms
+  - column10 suffix target 1% (actual 0.07%) `%ate`: 13.00ms
+  - column10 suffix target 10% (actual 3.26%) `%ght`: 14.47ms
+  - column10 suffix target 25% (actual 45.46%) `%nce`: 16.40ms
+  - column10 suffix target 50%,90% (actual 51.16%) `%tic`: 16.17ms
+  - column10 contains target 1% (actual 0.07%) `%std%`: 11.08ms
+  - column10 contains target 10%,25% (actual 3.30%) `%eni%`: 11.19ms
+  - column10 contains target 50% (actual 51.17%) `%nti%`: 16.83ms
+  - column10 contains target 90% (actual 96.63%) `%man%`: 16.99ms
+- like_summary:
+  - contains: avg median_ms **63.38** (n=18)
+  - prefix: avg median_ms **29.93** (n=11)
+  - suffix: avg median_ms **62.77** (n=12)
+
+## parquet_uncompressed
+- size_mb: **500.32**
+- compression_time_s: **4.835**
+- compression_speed_mb_s: **110.217**
+- decompression_time_s: **0.113**
+- decompression_speed_mb_s: **4447.004**
+- compression_ratio: **1.065**
+- encodings:
+  - column00: PLAIN
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN, PLAIN_DICTIONARY
+  - column03: PLAIN, PLAIN_DICTIONARY
+  - column04: PLAIN
+  - column05: PLAIN, PLAIN_DICTIONARY
+  - column06: PLAIN
+  - column07: PLAIN, PLAIN_DICTIONARY
+  - column08: PLAIN, PLAIN_DICTIONARY
+  - column09: PLAIN
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN
+- full_scan_min median_ms: **16.80** (p95 **17.10**, cold **176.23**)
+- selective_predicate median_ms: **32.89** (p95 **34.76**, cold **814.35**)
+- random_access median_ms: **27.38** (p95 **29.06**, cold **753.32**)
+- best_select_col: `column07` (avg median_ms **14.11**)
+- validation_pass: **True**
+- selectivity:
+  - column00: 1%: 20.75ms, 10%: 21.06ms, 25%: 19.93ms, 50%: 19.87ms, 90%: 20.28ms
+  - column03: 1%: 17.53ms, 10%: 17.66ms, 25%: 17.65ms, 50%: 17.77ms, 90%: 36.95ms
+  - column05: 1%: 15.62ms, 10%: 21.36ms, 25%: 11.61ms, 50%: 11.10ms, 90%: 12.13ms
+  - column07: 1%: 14.58ms, 10%: 13.59ms, 25%: 12.73ms, 50%: 15.32ms, 90%: 14.34ms
+  - column11: 1%: 21.20ms, 10%: 19.27ms, 25%: 17.58ms, 50%: 20.51ms, 90%: 22.21ms
+- like_predicates:
+  - column02 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `<3 %`: 45.98ms
+  - column02 suffix target 1% (actual 0.25%) `%:) `: 101.46ms
+  - column02 suffix target 10%,25%,50%,90% (actual 1.88%) `%❤️ `: 86.45ms
+  - column02 contains target 1% (actual 1.02%) `%a a%`: 102.66ms
+  - column02 contains target 10% (actual 8.12%) `%in %`: 93.20ms
+  - column02 contains target 25%,50%,90% (actual 13.12%) `%rom%`: 75.54ms
+  - column04 prefix target 1% (actual 3.50%) `112%`: 17.94ms
+  - column04 prefix target 10%,25%,50%,90% (actual 11.33%) `118%`: 18.12ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.13%) `%142`: 44.09ms
+  - column04 contains target 1% (actual 1.95%) `%999%`: 46.02ms
+  - column04 contains target 10% (actual 9.75%) `%123%`: 43.80ms
+  - column04 contains target 25%,50%,90% (actual 13.69%) `%118%`: 34.01ms
+  - column06 prefix target 1%,10%,25%,50%,90% (actual 100.00%) `htt%`: 18.63ms
+  - column06 suffix target 1%,10%,25%,50%,90% (actual 1.56%) `%!_/`: 38.51ms
+  - column06 contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ram%`: 30.88ms
+  - column08 prefix target 1%,10%,25%,50%,90% (actual 0.84%) `The%`: 20.59ms
+  - column08 suffix target 1%,10%,25%,50%,90% (actual 0.43%) `%and`: 33.60ms
+  - column08 contains target 1% (actual 0.81%) `%ing%`: 33.49ms
+  - column08 contains target 10%,25%,50%,90% (actual 1.20%) `% Re%`: 30.42ms
+  - column09 prefix target 1% (actual 0.95%) `wed%`: 32.46ms
+  - column09 prefix target 10% (actual 5.18%) `lov%`: 33.24ms
+  - column09 prefix target 25%,50%,90% (actual 22.02%) `bea%`: 30.89ms
+  - column09 suffix target 1% (actual 0.93%) `%l4l`: 111.06ms
+  - column09 suffix target 10% (actual 8.11%) `%day`: 109.99ms
+  - column09 suffix target 25%,50%,90% (actual 18.63%) `%ppy`: 106.24ms
+  - column09 contains target 1% (actual 0.99%) `%ya,%`: 106.74ms
+  - column09 contains target 10% (actual 9.14%) `%e,g%`: 111.09ms
+  - column09 contains target 25% (actual 23.70%) `%goo%`: 99.70ms
+  - column09 contains target 50% (actual 50.55%) `%nce%`: 98.65ms
+  - column09 contains target 90% (actual 87.15%) `%,ro%`: 81.52ms
+  - column10 prefix target 1% (actual 0.07%) `fir%`: 15.63ms
+  - column10 prefix target 10%,25% (actual 3.30%) `dat%`: 8.59ms
+  - column10 prefix target 50%,90% (actual 96.63%) `rom%`: 15.37ms
+  - column10 suffix target 1% (actual 0.07%) `%ate`: 14.74ms
+  - column10 suffix target 10% (actual 3.26%) `%ght`: 12.68ms
+  - column10 suffix target 25% (actual 45.46%) `%nce`: 15.40ms
+  - column10 suffix target 50%,90% (actual 51.16%) `%tic`: 15.61ms
+  - column10 contains target 1% (actual 0.07%) `%std%`: 8.56ms
+  - column10 contains target 10%,25% (actual 3.30%) `%eni%`: 15.30ms
+  - column10 contains target 50% (actual 51.17%) `%nti%`: 14.00ms
+  - column10 contains target 90% (actual 96.63%) `%man%`: 15.83ms
+- like_summary:
+  - contains: avg median_ms **57.86** (n=18)
+  - prefix: avg median_ms **23.41** (n=11)
+  - suffix: avg median_ms **57.49** (n=12)
+
+## vortex_default
+- size_mb: **246.13**
+- compression_time_s: **2.269**
+- compression_speed_mb_s: **234.888**
+- decompression_time_s: **0.389**
+- decompression_speed_mb_s: **633.329**
+- compression_ratio: **2.165**
+- encodings: unable to read vortex encodings: Type `u32` at position 1042 is unaligned.
+	while verifying table field `max` at position 1042
+	while verifying vector element 0 at position 28
+	while verifying table field `field_stats` at position 20
+
+
+- full_scan_min median_ms: **2.91** (p95 **4.26**, cold **42.64**)
+- selective_predicate median_ms: **9.73** (p95 **11.06**, cold **531.90**)
+- random_access median_ms: **18.00** (p95 **20.86**, cold **280.42**)
+- best_select_col: `column05` (avg median_ms **4.41**)
+- validation_pass: **True**
+- selectivity:
+  - column00: 1%: 9.17ms, 10%: 8.01ms, 25%: 8.27ms, 50%: 9.32ms, 90%: 8.96ms
+  - column03: 1%: 5.90ms, 10%: 5.53ms, 25%: 5.02ms, 50%: 5.62ms, 90%: 4.97ms
+  - column05: 1%: 4.51ms, 10%: 4.32ms, 25%: 4.24ms, 50%: 4.44ms, 90%: 4.57ms
+  - column07: 1%: 4.80ms, 10%: 4.78ms, 25%: 5.21ms, 50%: 5.19ms, 90%: 4.43ms
+  - column11: 1%: 9.35ms, 10%: 6.90ms, 25%: 6.69ms, 50%: 6.49ms, 90%: 6.79ms
+- like_predicates:
+  - column02 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `<3 %`: 14.14ms
+  - column02 suffix target 1% (actual 0.25%) `%:) `: 31.81ms
+  - column02 suffix target 10%,25%,50%,90% (actual 1.88%) `%❤️ `: 33.13ms
+  - column02 contains target 1% (actual 1.02%) `%a a%`: 33.21ms
+  - column02 contains target 10% (actual 8.12%) `%in %`: 30.52ms
+  - column02 contains target 25%,50%,90% (actual 13.12%) `%rom%`: 30.59ms
+  - column04 prefix target 1% (actual 3.50%) `112%`: 6.38ms
+  - column04 prefix target 10%,25%,50%,90% (actual 11.33%) `118%`: 6.65ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.13%) `%142`: 18.14ms
+  - column04 contains target 1% (actual 1.95%) `%999%`: 17.12ms
+  - column04 contains target 10% (actual 9.75%) `%123%`: 17.03ms
+  - column04 contains target 25%,50%,90% (actual 13.69%) `%118%`: 16.44ms
+  - column06 prefix target 1%,10%,25%,50%,90% (actual 100.00%) `htt%`: 6.73ms
+  - column06 suffix target 1%,10%,25%,50%,90% (actual 1.56%) `%!_/`: 17.40ms
+  - column06 contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ram%`: 11.98ms
+  - column08 prefix target 1%,10%,25%,50%,90% (actual 0.84%) `The%`: 6.00ms
+  - column08 suffix target 1%,10%,25%,50%,90% (actual 0.43%) `%and`: 11.36ms
+  - column08 contains target 1% (actual 0.81%) `%ing%`: 11.21ms
+  - column08 contains target 10%,25%,50%,90% (actual 1.20%) `% Re%`: 12.65ms
+  - column09 prefix target 1% (actual 0.95%) `wed%`: 20.04ms
+  - column09 prefix target 10% (actual 5.18%) `lov%`: 20.08ms
+  - column09 prefix target 25%,50%,90% (actual 22.02%) `bea%`: 19.90ms
+  - column09 suffix target 1% (actual 0.93%) `%l4l`: 52.16ms
+  - column09 suffix target 10% (actual 8.11%) `%day`: 50.38ms
+  - column09 suffix target 25%,50%,90% (actual 18.63%) `%ppy`: 49.35ms
+  - column09 contains target 1% (actual 0.99%) `%ya,%`: 48.79ms
+  - column09 contains target 10% (actual 9.14%) `%e,g%`: 50.91ms
+  - column09 contains target 25% (actual 23.70%) `%goo%`: 46.89ms
+  - column09 contains target 50% (actual 50.55%) `%nce%`: 46.55ms
+  - column09 contains target 90% (actual 87.15%) `%,ro%`: 35.70ms
+  - column10 prefix target 1% (actual 0.07%) `fir%`: 2.96ms
+  - column10 prefix target 10%,25% (actual 3.30%) `dat%`: 2.94ms
+  - column10 prefix target 50%,90% (actual 96.63%) `rom%`: 3.03ms
+  - column10 suffix target 1% (actual 0.07%) `%ate`: 2.92ms
+  - column10 suffix target 10% (actual 3.26%) `%ght`: 2.87ms
+  - column10 suffix target 25% (actual 45.46%) `%nce`: 2.66ms
+  - column10 suffix target 50%,90% (actual 51.16%) `%tic`: 2.70ms
+  - column10 contains target 1% (actual 0.07%) `%std%`: 2.68ms
+  - column10 contains target 10%,25% (actual 3.30%) `%eni%`: 2.74ms
+  - column10 contains target 50% (actual 51.17%) `%nti%`: 2.79ms
+  - column10 contains target 90% (actual 96.63%) `%man%`: 2.79ms
+- like_summary:
+  - contains: avg median_ms **23.37** (n=18)
+  - prefix: avg median_ms **9.90** (n=11)
+  - suffix: avg median_ms **22.91** (n=12)

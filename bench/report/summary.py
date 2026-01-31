@@ -90,6 +90,9 @@ def _build_summary(reports: List[Dict[str, Any]]) -> Dict[str, Any]:
     for name in formats:
         ratio_vals = []
         comp_vals = []
+        comp_speed_vals = []
+        decomp_vals = []
+        decomp_speed_vals = []
         size_vals = []
         q_full_vals = []
         q_sel_vals = []
@@ -107,6 +110,15 @@ def _build_summary(reports: List[Dict[str, Any]]) -> Dict[str, Any]:
             comp = body.get("write", {}).get("compression_time_s")
             if comp is not None:
                 comp_vals.append(comp)
+            comp_speed = body.get("write", {}).get("compression_speed_mb_s")
+            if comp_speed is not None:
+                comp_speed_vals.append(comp_speed)
+            decomp = body.get("write", {}).get("decompression_time_s")
+            if decomp is not None:
+                decomp_vals.append(decomp)
+            decomp_speed = body.get("write", {}).get("decompression_speed_mb_s")
+            if decomp_speed is not None:
+                decomp_speed_vals.append(decomp_speed)
             size = body.get("write", {}).get("output_size_bytes")
             if size is not None:
                 size_vals.append(size)
@@ -134,6 +146,9 @@ def _build_summary(reports: List[Dict[str, Any]]) -> Dict[str, Any]:
             "datasets": len(ratio_vals) or len(comp_vals) or len(size_vals),
             "compression_ratio_geomean": _geomean(ratio_vals),
             "compression_time_s_geomean": _geomean(comp_vals),
+            "compression_speed_mb_s_geomean": _geomean(comp_speed_vals),
+            "decompression_time_s_geomean": _geomean(decomp_vals),
+            "decompression_speed_mb_s_geomean": _geomean(decomp_speed_vals),
             "output_size_bytes_geomean": _geomean(size_vals),
             "query_median_ms_geomean": {
                 "full_scan_min": _geomean(q_full_vals),
@@ -183,8 +198,8 @@ def generate_overall_summary(reports_dir: Path, out_dir: Path) -> None:
         )
     lines.append("")
     lines.append("## Formats (Geomean)")
-    lines.append("format | comp_ratio | comp_time_s | size_mb | full_scan_ms | selective_pred_ms | random_access_ms")
-    lines.append("--- | --- | --- | --- | --- | --- | ---")
+    lines.append("format | comp_ratio | comp_time_s | comp_speed_mb_s | decomp_time_s | decomp_speed_mb_s | size_mb | full_scan_ms | selective_pred_ms | random_access_ms")
+    lines.append("--- | --- | --- | --- | --- | --- | --- | --- | --- | ---")
     for name, body in summary["formats"].items():
         q = body.get("query_median_ms_geomean", {})
         size_mb = None
@@ -194,6 +209,9 @@ def generate_overall_summary(reports_dir: Path, out_dir: Path) -> None:
             f"{name} | "
             f"{_format_float(body.get('compression_ratio_geomean'))} | "
             f"{_format_float(body.get('compression_time_s_geomean'))} | "
+            f"{_format_float(body.get('compression_speed_mb_s_geomean'))} | "
+            f"{_format_float(body.get('decompression_time_s_geomean'))} | "
+            f"{_format_float(body.get('decompression_speed_mb_s_geomean'))} | "
             f"{_format_float(size_mb)} | "
             f"{_format_float(q.get('full_scan_min'))} | "
             f"{_format_float(q.get('selective_predicate'))} | "

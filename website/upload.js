@@ -334,7 +334,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
     let lx = padding.left + index * groupWidth + groupWidth * 0.5;
     const ly = height - 40;
     const minX = padding.left + 6;
-    const maxX = width - padding.right - 6;
+    const maxX = plotWidth - padding.right - 6;
     lx = Math.min(Math.max(lx, minX), maxX);
     label.setAttribute("x", lx);
     label.setAttribute("y", ly);
@@ -704,6 +704,12 @@ async function runBenchmark(file) {
     setError("");
   } catch (error) {
     console.error("Benchmark run failed", error);
+    const message = String(error?.message || "");
+    if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+      setStatus("Benchmark failed. Is the server running on port 5000?", "is-error");
+      setError("Could not reach /api/run. Start the server and retry.");
+      return;
+    }
     setStatus("Benchmark failed. Check server logs.", "is-error");
     setError(error.message);
   }

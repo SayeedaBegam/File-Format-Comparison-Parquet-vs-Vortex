@@ -41,6 +41,14 @@
             Optional sort column (e.g., a filter/select column)
           </label>
           <input id="sort-col" type="text" placeholder="column_name" />
+          <label class="upload-label" for="csv-delimiter">
+            CSV delimiter (default |)
+          </label>
+          <input id="csv-delimiter" type="text" value="|" maxlength="2" />
+          <label class="upload-label" for="csv-header">
+            CSV has header row
+          </label>
+          <input id="csv-header" type="checkbox" />
           <div class="upload-hint">
             Select files (optional schema and sort column), then run the benchmark.
           </div>
@@ -177,7 +185,7 @@
         <div class="selector-row">
           <select id="upload-metric" class="select">
             <option value="compression_ratio">Compression ratio</option>
-            <option value="output_size">Output size</option>
+            <option value="output_size">Compressed size</option>
             <option value="write_time">Compression time</option>
             <option value="full_scan">Full scan median</option>
             <option value="selective">Selective predicate median</option>

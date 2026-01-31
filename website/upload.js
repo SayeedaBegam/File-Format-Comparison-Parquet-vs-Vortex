@@ -618,6 +618,12 @@ const buildFormatCard = (name, data, isOverall, best) => {
   const isBestMin = (value, target) =>
     Number.isFinite(value) && Number.isFinite(target) && value <= target + epsilon;
   const errorNote = data.note ? `<div class="kv"><span>Note</span><strong>${data.note}</strong></div>` : "";
+  const validationText =
+    data.validation?.count_match === false ||
+    data.validation?.min_match === false ||
+    data.validation?.filtered_count_match === false
+      ? `<span class="status-bad">Mismatch</span>`
+      : `<span class="status-ok">OK</span>`;
 
   if (isOverall) {
     card.innerHTML = `
@@ -626,7 +632,7 @@ const buildFormatCard = (name, data, isOverall, best) => {
         data.compression_ratio_geomean,
         2
       )}</strong></div>
-      <div class="kv"><span>Output size</span><strong>${formatBytes(
+      <div class="kv"><span>Compressed size</span><strong>${formatBytes(
         data.output_size_bytes_geomean
       )}</strong></div>
       <div class="kv"><span>Compression time</span><strong>${formatNumber(
@@ -650,7 +656,7 @@ const buildFormatCard = (name, data, isOverall, best) => {
         <span>Compression ratio</span><strong>${formatNumber(data.compression_ratio, 2)}</strong>
       </div>
       <div class="kv ${allowBest && isBestMin(data.write?.output_size_bytes, best.output_size_bytes) ? "is-best" : ""}">
-        <span>Output size</span><strong>${formatBytes(data.write?.output_size_bytes)}</strong>
+        <span>Compressed size</span><strong>${formatBytes(data.write?.output_size_bytes)}</strong>
       </div>
       <div class="kv ${allowBest && isBestMin(data.write?.compression_time_s, best.write_time) ? "is-best" : ""}">
         <span>Compression time</span><strong>${formatNumber(data.write?.compression_time_s, 2)} s</strong>
@@ -667,6 +673,7 @@ const buildFormatCard = (name, data, isOverall, best) => {
           data.queries?.random_access?.p95_ms
         )}</strong>
       </div>
+      <div class="kv"><span>Compression validation</span><strong>${validationText}</strong></div>
       ${errorNote}
     `;
   }
@@ -772,6 +779,10 @@ async function runBenchmark(file) {
   if (sortCol) {
     formData.append("sort_col", sortCol);
   }
+  const delimiter = document.getElementById("csv-delimiter")?.value?.trim() || "|";
+  formData.append("csv_delimiter", delimiter);
+  const headerChecked = document.getElementById("csv-header")?.checked ? "true" : "false";
+  formData.append("csv_header", headerChecked);
   setStatus("Processing benchmark...", "is-running");
   setError("");
 
@@ -922,7 +933,7 @@ const renderUploadChart = (report, metric) => {
       format: (value) => formatNumber(value, 2),
     },
     output_size: {
-      label: "Output size",
+      label: "Compressed size",
       getValue: (data) => data.write?.output_size_bytes,
       format: (value) => formatBytes(value),
     },

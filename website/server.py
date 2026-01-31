@@ -166,6 +166,8 @@ def run_benchmark():
   upload = request.files.get("dataset")
   schema_upload = request.files.get("schema")
   sort_col = request.form.get("sort_col", "").strip()
+  csv_delimiter = request.form.get("csv_delimiter", "|").strip() or "|"
+  csv_header = request.form.get("csv_header", "false").strip().lower()
   if not upload:
     return jsonify({"error": "Missing dataset file"}), 400
 
@@ -198,6 +200,9 @@ def run_benchmark():
     "--include-cold",
     "--baseline-duckdb",
   ]
+  if input_type == "csv":
+    cmd.extend(["--csv-delimiter", csv_delimiter])
+    cmd.extend(["--csv-header", "true" if csv_header == "true" else "false"])
   if sort_col:
     cmd.extend(["--sorted-by", sort_col])
   if schema_path is not None:

@@ -269,7 +269,7 @@ const renderFormatCards = (formats) => {
         allowBest && isBestMin(data.output_size_bytes_geomean, best.output_size_bytes)
           ? "is-best"
           : ""
-      }"><span>Output size</span><strong>${formatBytes(
+      }"><span>Compressed size</span><strong>${formatBytes(
         data.output_size_bytes_geomean
       )}</strong></div>
       <div class="kv ${
@@ -321,12 +321,14 @@ const renderDatasetGrid = (datasets, manifest) => {
     card.className = "dataset-card";
     card.innerHTML = `
       <div class="dataset-title">${dataset.name}</div>
-      <div class="dataset-meta">${formatNumber(dataset.rows)} rows</div>
-      <div class="dataset-meta">${formatBytes(dataset.input_size_bytes)} input</div>
-      <div class="dataset-meta">Columns: ${Object.values(dataset.column_type_counts || {}).reduce(
-        (sum, val) => sum + (val || 0),
-        0
-      )}</div>
+      <div class="dataset-meta-block">
+        <div class="dataset-meta">${formatNumber(dataset.rows)} rows</div>
+        <div class="dataset-meta">${formatBytes(dataset.input_size_bytes)} input</div>
+        <div class="dataset-meta">Columns: ${Object.values(dataset.column_type_counts || {}).reduce(
+          (sum, val) => sum + (val || 0),
+          0
+        )}</div>
+      </div>
     `;
     grid.appendChild(card);
   });
@@ -390,7 +392,7 @@ const renderOverallChart = (summary, reports, formatKey, metric) => {
       format: (value) => formatNumber(value, 2),
     },
     output_size: {
-      label: "Output size by dataset",
+      label: "Compressed size by dataset",
       format: (value) => formatBytes(value),
     },
     write_time: {

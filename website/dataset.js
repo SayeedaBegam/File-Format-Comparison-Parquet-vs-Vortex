@@ -42,6 +42,7 @@ const formatMsWithP95 = (medianMs, p95Ms) => {
 };
 
 let currentReport = null;
+let currentManifest = null;
 
 const _shortLineLabel = (label) => {
   const text = String(label).replace("parquet_", "pq_");
@@ -435,7 +436,7 @@ const buildFormatCard = (name, data, best) => {
       <span>Compression ratio</span><strong>${formatNumber(data.compression_ratio, 2)}</strong>
     </div>
     <div class="kv ${isBestMin(write.output_size_bytes, best.output_size_bytes) ? "is-best" : ""}">
-      <span>Output size</span><strong>${formatBytes(write.output_size_bytes)}</strong>
+      <span>Compressed size</span><strong>${formatBytes(write.output_size_bytes)}</strong>
     </div>
     <div class="kv ${isBestMin(write.compression_time_s, best.write_time) ? "is-best" : ""}">
       <span>Compression time</span><strong>${formatNumber(write.compression_time_s, 2)} s</strong>
@@ -458,12 +459,12 @@ const buildFormatCard = (name, data, best) => {
         queries.random_access?.p95_ms
       )}</strong>
     </div>
-    <div class="kv"><span>Validation</span><strong>${
+    <div class="kv"><span>Compression validation</span><strong>${
       validation.count_match === false ||
       validation.min_match === false ||
       validation.filtered_count_match === false
-        ? "Mismatch"
-        : "OK"
+        ? "<span class=\"status-bad\">Mismatch</span>"
+        : "<span class=\"status-ok\">OK</span>"
     }</strong></div>
     ${errorNote}
   `;
@@ -732,6 +733,10 @@ const renderEncodings = (formats) => {
         more > 0
           ? `<button class="encoding-more" type="button">+${more} more columns</button>`
           : ""
+      }${
+        showAll && columns.length > 8
+          ? `<button class="encoding-less" type="button">Show fewer</button>`
+          : ""
       }</div>
     `;
     container.innerHTML = "";
@@ -741,6 +746,13 @@ const renderEncodings = (formats) => {
     if (moreButton) {
       moreButton.addEventListener("click", () => {
         expanded.add(name);
+        renderFormat(name, data);
+      });
+    }
+    const lessButton = group.querySelector(".encoding-less");
+    if (lessButton) {
+      lessButton.addEventListener("click", () => {
+        expanded.delete(name);
         renderFormat(name, data);
       });
     }
@@ -1056,7 +1068,7 @@ const renderDatasetChart = (report, metric) => {
       format: (value) => formatNumber(value, 2),
     },
     output_size: {
-      label: "Output size",
+      label: "Compressed size",
       getValue: (data) => data.write?.output_size_bytes,
       format: (value) => formatBytes(value),
     },
@@ -1173,6 +1185,9 @@ const loadDataset = async (datasetName, manifest) => {
   try {
     const response = await fetch(`${reportUrl}${cacheBust}`);
     if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Missing report file");
+      }
       throw new Error(`Failed to load report (${response.status})`);
     }
     const report = await response.json();
@@ -1181,13 +1196,11 @@ const loadDataset = async (datasetName, manifest) => {
     params.set("name", datasetName);
     history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
   } catch (err) {
-    if (caption) {
-      caption.textContent = `Failed to load ${datasetName}. Check console for details.`;
-    }
     if (chart3d) {
       chart3d.textContent = "3D chart unavailable for this dataset.";
     }
     console.error("Failed to load dataset report", reportUrl, err);
+    // Keep the list unchanged; just log the error.
   }
 };
 
@@ -1224,6 +1237,7 @@ const init = async () => {
   if (!manifest) {
     throw new Error("Manifest not available.");
   }
+  currentManifest = manifest;
   const select = document.getElementById("dataset-select");
   const loadButton = document.getElementById("load-dataset");
   const search = document.getElementById("dataset-search");

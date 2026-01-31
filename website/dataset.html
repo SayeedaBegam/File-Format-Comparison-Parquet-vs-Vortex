@@ -23,19 +23,6 @@
     </header>
 
     <main class="page dataset-layout">
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <div class="sidebar-title">Datasets</div>
-          <input
-            id="dataset-search"
-            class="search"
-            type="search"
-            placeholder="Search datasets"
-          />
-        </div>
-        <div id="dataset-list" class="sidebar-list"></div>
-      </aside>
-
       <div class="dataset-main">
         <section class="panel">
           <div class="panel-header">
@@ -113,6 +100,7 @@
           <div class="chart-card" id="metric-chart-block">
             <div class="chart-title" id="dataset-chart-title">Compression ratio</div>
             <div id="dataset-chart" class="chart"></div>
+            <div class="chart-note">Dot size encodes output size. Time values are shown in ms or s.</div>
           </div>
           <div class="detail-row" id="selectivity-block">
             <div class="detail-card">
@@ -141,6 +129,33 @@
               <div id="like-summary" class="like-summary"></div>
               <div id="like-table" class="like-table"></div>
             </div>
+          </div>
+        </section>
+
+        <section class="panel" id="diagnostics-panel">
+          <div class="panel-header">
+            <h2>Diagnostics</h2>
+            <p>Cold vs warm timings, baseline comparison, and parquet row-group count.</p>
+          </div>
+          <div class="detail-row">
+            <div class="detail-card">
+              <h3>Cold vs warm (full scan)</h3>
+              <div class="chart-card">
+                <div id="diagnostics-cold-chart" class="chart"></div>
+              </div>
+            </div>
+            <div class="detail-card">
+              <h3>Median (full scan) by format</h3>
+              <div class="chart-card">
+                <div id="diagnostics-baseline-chart" class="chart"></div>
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="preview-table">
+              <thead id="diagnostics-head"></thead>
+              <tbody id="diagnostics-body"></tbody>
+            </table>
           </div>
         </section>
 

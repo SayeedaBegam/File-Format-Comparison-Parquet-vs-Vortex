@@ -1,6 +1,15 @@
 const DATASETS_URL = "./data/datasets.json";
 const SUMMARY_URL = "../out/overall_summary.json";
 
+const loadCached = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    return null;
+  }
+};
+
 const formatNumber = (value, digits = 0) => {
   if (value === null || value === undefined) return "--";
   return value.toLocaleString(undefined, {
@@ -26,25 +35,48 @@ const formatMs = (ms) => {
   return `${ms.toFixed(2)} ms`;
 };
 
+const _shortLineLabel = (label) => {
+  const text = String(label).replace("parquet_", "pq_");
+  if (text.length <= 12) return text;
+  return `${text.slice(0, 10)}…`;
+};
+
+const _splitLabel = (label) => {
+  const text = _shortLineLabel(label);
+  if (text.length <= 10) return [text];
+  const parts = text.split("_");
+  if (parts.length >= 2) {
+    return [parts[0], parts.slice(1).join("_")];
+  }
+  return [text.slice(0, 8), text.slice(8)];
+};
+
 const createLineChart = (container, data, valueFormatter) => {
   container.innerHTML = "";
-  const width = container.clientWidth || 640;
-  const height = 280;
-  const padding = { top: 18, right: 16, bottom: 48, left: 56 };
+  const baseWidth = container.clientWidth || 640;
+  const plotWidth = Math.max(baseWidth, data.length * 140);
+  const height = 420;
+  const padding = { top: 18, right: 16, bottom: 160, left: 56 };
   const maxValue = Math.max(...data.map((item) => item.value || 0), 1);
+  const sizeValues = data.map((item) => item.size).filter(Number.isFinite);
+  const minSize = sizeValues.length ? Math.min(...sizeValues) : null;
+  const maxSize = sizeValues.length ? Math.max(...sizeValues) : null;
   const ticks = 4;
   const step = maxValue / ticks;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("width", "100%");
+  svg.setAttribute("viewBox", `0 0 ${plotWidth} ${height}`);
+  svg.setAttribute("width", plotWidth);
   svg.setAttribute("height", "100%");
+  container.style.overflowX = "auto";
+  container.style.overflowY = "hidden";
+  container.style.scrollbarGutter = "stable both-edges";
 
   const tooltip = document.createElement("div");
   tooltip.className = "chart-tooltip";
   container.appendChild(tooltip);
 
-  const chartWidth = width - padding.left - padding.right;
+  const chartWidth = plotWidth - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const pointGap = data.length > 1 ? chartWidth / (data.length - 1) : 0;
 
@@ -53,7 +85,7 @@ const createLineChart = (container, data, valueFormatter) => {
     const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
     const grid = document.createElementNS("http://www.w3.org/2000/svg", "line");
     grid.setAttribute("x1", padding.left);
-    grid.setAttribute("x2", width - padding.right);
+    grid.setAttribute("x2", plotWidth - padding.right);
     grid.setAttribute("y1", y);
     grid.setAttribute("y2", y);
     grid.setAttribute("stroke", "rgba(79,87,79,0.2)");
@@ -86,17 +118,28 @@ const createLineChart = (container, data, valueFormatter) => {
   path.setAttribute("stroke-width", "3");
   svg.appendChild(path);
 
+  const shouldRotate = false;
   points.forEach((point, index) => {
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", point.x);
     circle.setAttribute("cy", point.y);
-    circle.setAttribute("r", "5");
+    let radius = 5;
+    if (Number.isFinite(point.item.size) && minSize !== null && maxSize !== null) {
+      if (minSize === maxSize) {
+        radius = 7;
+      } else {
+        const t = (point.item.size - minSize) / (maxSize - minSize);
+        radius = 4 + t * 6;
+      }
+    }
+    circle.setAttribute("r", radius.toFixed(2));
     circle.setAttribute("fill", "#e38b2c");
     circle.style.cursor = "pointer";
 
     circle.addEventListener("mousemove", (event) => {
       const containerRect = container.getBoundingClientRect();
-      tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}`;
+      const sizeHint = point.item.sizeLabel ? ` · ${point.item.sizeLabel}` : "";
+      tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}${sizeHint}`;
       tooltip.style.left = `${event.clientX - containerRect.left}px`;
       tooltip.style.top = `${event.clientY - containerRect.top - 12}px`;
       tooltip.style.opacity = "1";
@@ -106,17 +149,25 @@ const createLineChart = (container, data, valueFormatter) => {
     });
 
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", point.x);
-    label.setAttribute("y", height - 18);
+    const lx = point.x;
+    const ly = height - padding.bottom + 28;
+    label.setAttribute("x", lx);
+    label.setAttribute("y", ly);
     label.setAttribute("text-anchor", "middle");
-    label.setAttribute("font-size", "12");
+    label.setAttribute("font-size", "11");
     label.setAttribute("fill", "#4f574f");
-    label.textContent = point.item.label.replace("parquet_", "pq_");
+    const lines = _splitLabel(point.item.label);
+    label.textContent = "";
+    lines.forEach((line, idx) => {
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan.setAttribute("x", lx);
+      tspan.setAttribute("dy", idx === 0 ? "0" : "12");
+      tspan.textContent = line;
+      label.appendChild(tspan);
+    });
 
     svg.appendChild(circle);
-    if (index === points.length - 1 || index === 0 || index % 1 === 0) {
-      svg.appendChild(label);
-    }
+    svg.appendChild(label);
   });
 
   container.appendChild(svg);
@@ -290,6 +341,8 @@ const renderOverallChart = (summary, reports, formatKey, metric) => {
   const data = summary.datasets.map((dataset) => ({
     label: dataset.name,
     value: getMetricValue(reports[dataset.name], formatKey, metric),
+    size: dataset.rows,
+    sizeLabel: `${formatNumber(dataset.rows)} rows`,
   }));
 
   title.textContent = chosen.label;
@@ -297,12 +350,23 @@ const renderOverallChart = (summary, reports, formatKey, metric) => {
 };
 
 const loadData = async () => {
-  const [summaryResp, manifestResp] = await Promise.all([
-    fetch(SUMMARY_URL),
-    fetch(DATASETS_URL),
-  ]);
-  const summary = await summaryResp.json();
-  const manifest = await manifestResp.json();
+  const cacheBust = `?t=${Date.now()}`;
+  let summary = null;
+  let manifest = null;
+  try {
+    const [summaryResp, manifestResp] = await Promise.all([
+      fetch(`${SUMMARY_URL}${cacheBust}`),
+      fetch(`${DATASETS_URL}${cacheBust}`),
+    ]);
+    summary = await summaryResp.json();
+    manifest = await manifestResp.json();
+  } catch (err) {
+    summary = loadCached("latestSummary");
+    manifest = loadCached("latestManifest");
+  }
+  if (!summary || !manifest) {
+    throw new Error("Summary or manifest not available.");
+  }
   const manifestMap = Object.fromEntries(
     manifest.datasets.map((entry) => [entry.name, entry.report])
   );
@@ -374,3 +438,11 @@ loadData().catch((error) => {
 });
 
 initReveal();
+
+window.addEventListener("storage", (event) => {
+  if (event.key === "latestSummary" || event.key === "latestManifest") {
+    loadData().catch((error) => {
+      console.error("Failed to reload summary data", error);
+    });
+  }
+});

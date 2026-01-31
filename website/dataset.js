@@ -1,5 +1,14 @@
 const DATASETS_URL = "./data/datasets.json";
 
+const loadCached = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    return null;
+  }
+};
+
 const formatNumber = (value, digits = 0) => {
   if (value === null || value === undefined || !Number.isFinite(value)) return "--";
   return value.toLocaleString(undefined, {
@@ -27,25 +36,47 @@ const formatMs = (ms) => {
 
 let currentReport = null;
 
+const _shortLineLabel = (label) => {
+  const text = String(label).replace("parquet_", "pq_");
+  if (text.length <= 12) return text;
+  return `${text.slice(0, 10)}…`;
+};
+
+const _splitLabel = (label) => {
+  const text = _shortLineLabel(label);
+  if (text.length <= 10) return [text];
+  const parts = text.split("_");
+  if (parts.length >= 2) {
+    return [parts[0], parts.slice(1).join("_")];
+  }
+  return [text.slice(0, 8), text.slice(8)];
+};
+
 const createLineChart = (container, data, valueFormatter) => {
   container.innerHTML = "";
-  const width = container.clientWidth || 640;
-  const height = 280;
-  const padding = { top: 18, right: 16, bottom: 48, left: 56 };
+  const baseWidth = container.clientWidth || 640;
+  const plotWidth = Math.max(baseWidth, data.length * 90);
+  const height = 420;
+  const padding = { top: 18, right: 16, bottom: 160, left: 56 };
   const maxValue = Math.max(...data.map((item) => item.value || 0), 1);
+  const sizeValues = data.map((item) => item.size).filter(Number.isFinite);
+  const minSize = sizeValues.length ? Math.min(...sizeValues) : null;
+  const maxSize = sizeValues.length ? Math.max(...sizeValues) : null;
   const ticks = 4;
   const step = maxValue / ticks;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("width", "100%");
+  svg.setAttribute("viewBox", `0 0 ${plotWidth} ${height}`);
+  svg.setAttribute("width", plotWidth);
   svg.setAttribute("height", "100%");
+  container.style.overflowX = "auto";
+  container.style.overflowY = "hidden";
 
   const tooltip = document.createElement("div");
   tooltip.className = "chart-tooltip";
   container.appendChild(tooltip);
 
-  const chartWidth = width - padding.left - padding.right;
+  const chartWidth = plotWidth - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const pointGap = data.length > 1 ? chartWidth / (data.length - 1) : 0;
 
@@ -54,7 +85,7 @@ const createLineChart = (container, data, valueFormatter) => {
     const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
     const grid = document.createElementNS("http://www.w3.org/2000/svg", "line");
     grid.setAttribute("x1", padding.left);
-    grid.setAttribute("x2", width - padding.right);
+    grid.setAttribute("x2", plotWidth - padding.right);
     grid.setAttribute("y1", y);
     grid.setAttribute("y2", y);
     grid.setAttribute("stroke", "rgba(79,87,79,0.2)");
@@ -87,17 +118,28 @@ const createLineChart = (container, data, valueFormatter) => {
   path.setAttribute("stroke-width", "3");
   svg.appendChild(path);
 
+  const shouldRotate = false;
   points.forEach((point) => {
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", point.x);
     circle.setAttribute("cy", point.y);
-    circle.setAttribute("r", "5");
+    let radius = 5;
+    if (Number.isFinite(point.item.size) && minSize !== null && maxSize !== null) {
+      if (minSize === maxSize) {
+        radius = 7;
+      } else {
+        const t = (point.item.size - minSize) / (maxSize - minSize);
+        radius = 4 + t * 6;
+      }
+    }
+    circle.setAttribute("r", radius.toFixed(2));
     circle.setAttribute("fill", "#e38b2c");
     circle.style.cursor = "pointer";
 
     circle.addEventListener("mousemove", (event) => {
       const containerRect = container.getBoundingClientRect();
-      tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}`;
+      const sizeHint = point.item.sizeLabel ? ` · ${point.item.sizeLabel}` : "";
+      tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}${sizeHint}`;
       tooltip.style.left = `${event.clientX - containerRect.left}px`;
       tooltip.style.top = `${event.clientY - containerRect.top - 12}px`;
       tooltip.style.opacity = "1";
@@ -107,12 +149,22 @@ const createLineChart = (container, data, valueFormatter) => {
     });
 
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", point.x);
-    label.setAttribute("y", height - 18);
+    const lx = point.x;
+    const ly = height - padding.bottom + 28;
+    label.setAttribute("x", lx);
+    label.setAttribute("y", ly);
     label.setAttribute("text-anchor", "middle");
-    label.setAttribute("font-size", "12");
+    label.setAttribute("font-size", "11");
     label.setAttribute("fill", "#4f574f");
-    label.textContent = point.item.label.replace("parquet_", "pq_");
+    const lines = _splitLabel(point.item.label);
+    label.textContent = "";
+    lines.forEach((line, idx) => {
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan.setAttribute("x", lx);
+      tspan.setAttribute("dy", idx === 0 ? "0" : "12");
+      tspan.textContent = line;
+      label.appendChild(tspan);
+    });
 
     svg.appendChild(circle);
     svg.appendChild(label);
@@ -132,7 +184,8 @@ const getFormatColor = (label) => formatColors[label] || "#6b6358";
 
 const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
   container.innerHTML = "";
-  const width = container.clientWidth || 640;
+  const baseWidth = container.clientWidth || 640;
+  const plotWidth = Math.max(baseWidth, xLabels.length * 80);
   const height = 280;
   const padding = { top: 18, right: 24, bottom: 48, left: 56 };
   const allValues = series.flatMap((item) => item.values);
@@ -141,15 +194,17 @@ const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
   const step = maxValue / ticks;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("width", "100%");
+  svg.setAttribute("viewBox", `0 0 ${plotWidth} ${height}`);
+  svg.setAttribute("width", plotWidth);
   svg.setAttribute("height", "100%");
+  container.style.overflowX = "auto";
+  container.style.overflowY = "hidden";
 
   const tooltip = document.createElement("div");
   tooltip.className = "chart-tooltip";
   container.appendChild(tooltip);
 
-  const chartWidth = width - padding.left - padding.right;
+  const chartWidth = plotWidth - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const pointGap = xLabels.length > 1 ? chartWidth / (xLabels.length - 1) : 0;
 
@@ -158,7 +213,7 @@ const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
     const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
     const grid = document.createElementNS("http://www.w3.org/2000/svg", "line");
     grid.setAttribute("x1", padding.left);
-    grid.setAttribute("x2", width - padding.right);
+    grid.setAttribute("x2", plotWidth - padding.right);
     grid.setAttribute("y1", y);
     grid.setAttribute("y2", y);
     grid.setAttribute("stroke", "rgba(79,87,79,0.2)");
@@ -225,26 +280,38 @@ const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
   container.appendChild(svg);
 };
 
+const _shortLabel = (label) => {
+  return String(label)
+    .replace("parquet_", "pq_")
+    .replace("duckdb_table", "duckdb")
+    .replace("vortex_default", "vortex")
+    .replace("vortex_error", "vortex_err");
+};
+
 const createGroupedBarChart = (container, categories, series, valueFormatter) => {
   container.innerHTML = "";
-  const width = container.clientWidth || 640;
-  const height = 280;
-  const padding = { top: 18, right: 24, bottom: 56, left: 56 };
+  const baseWidth = container.clientWidth || 640;
+  const plotWidth = Math.max(baseWidth, categories.length * 90);
+  const height = 420;
+  const padding = { top: 18, right: 40, bottom: 140, left: 64 };
   const allValues = series.flatMap((item) => item.values);
   const maxValue = Math.max(...allValues.filter(Number.isFinite), 1);
   const ticks = 4;
   const step = maxValue / ticks;
+  const shouldRotate = false;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("width", "100%");
+  svg.setAttribute("viewBox", `0 0 ${plotWidth} ${height}`);
+  svg.setAttribute("width", plotWidth);
   svg.setAttribute("height", "100%");
+  container.style.overflowX = "auto";
+  container.style.overflowY = "hidden";
 
   const tooltip = document.createElement("div");
   tooltip.className = "chart-tooltip";
   container.appendChild(tooltip);
 
-  const chartWidth = width - padding.left - padding.right;
+  const chartWidth = plotWidth - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const groupWidth = categories.length ? chartWidth / categories.length : 0;
   const barWidth = series.length ? (groupWidth * 0.7) / series.length : 0;
@@ -254,7 +321,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
     const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
     const grid = document.createElementNS("http://www.w3.org/2000/svg", "line");
     grid.setAttribute("x1", padding.left);
-    grid.setAttribute("x2", width - padding.right);
+    grid.setAttribute("x2", plotWidth - padding.right);
     grid.setAttribute("y1", y);
     grid.setAttribute("y2", y);
     grid.setAttribute("stroke", "rgba(79,87,79,0.2)");
@@ -274,12 +341,25 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
   categories.forEach((category, index) => {
     const xStart = padding.left + index * groupWidth + groupWidth * 0.15;
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", padding.left + index * groupWidth + groupWidth * 0.5);
-    label.setAttribute("y", height - 22);
+    let lx = padding.left + index * groupWidth + groupWidth * 0.5;
+    const ly = height - 40;
+    const minX = padding.left + 6;
+    const maxX = width - padding.right - 6;
+    lx = Math.min(Math.max(lx, minX), maxX);
+    label.setAttribute("x", lx);
+    label.setAttribute("y", ly);
     label.setAttribute("text-anchor", "middle");
-    label.setAttribute("font-size", "12");
+    label.setAttribute("font-size", "11");
     label.setAttribute("fill", "#4f574f");
-    label.textContent = category;
+    const lines = _splitLabel(category);
+    label.textContent = "";
+    lines.forEach((line, idx) => {
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan.setAttribute("x", lx);
+      tspan.setAttribute("dy", idx === 0 ? "0" : "12");
+      tspan.textContent = line;
+      label.appendChild(tspan);
+    });
     svg.appendChild(label);
 
     series.forEach((item, seriesIndex) => {
@@ -400,6 +480,7 @@ const renderDatasetReport = (report) => {
 
   renderDatasetChart(report, document.getElementById("dataset-metric")?.value);
   renderDetails(report);
+  renderDiagnostics(report);
 };
 
 const renderColumnTypes = (dataset) => {
@@ -791,6 +872,66 @@ const renderDetails = (report) => {
   initLikeSelect(report.formats || {});
 };
 
+const renderDiagnostics = (report) => {
+  const head = document.getElementById("diagnostics-head");
+  const body = document.getElementById("diagnostics-body");
+  const coldChart = document.getElementById("diagnostics-cold-chart");
+  const baseChart = document.getElementById("diagnostics-baseline-chart");
+  if (!head || !body) return;
+  const formats = Object.entries(report.formats || {});
+  if (!formats.length) return;
+
+  head.innerHTML = "";
+  body.innerHTML = "";
+  const headerRow = document.createElement("tr");
+  ["Format", "Full scan (ms)", "Cold (ms)", "Row groups", "Note"].forEach((label) => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    headerRow.appendChild(th);
+  });
+  head.appendChild(headerRow);
+
+  formats.forEach(([name, data]) => {
+    const tr = document.createElement("tr");
+    const full = data.queries?.full_scan_min?.median_ms;
+    const cold = data.queries?.full_scan_min?.cold_ms;
+    const rowGroups = data.write?.row_group_count;
+    const note = data.note || "";
+    [name, formatMs(full), formatMs(cold), rowGroups ?? "--", note].forEach((val) => {
+      const td = document.createElement("td");
+      td.textContent = String(val ?? "--");
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+
+  if (coldChart) {
+    const categories = formats.map(([name]) => name);
+    const warm = formats.map(([, data]) => data.queries?.full_scan_min?.median_ms || 0);
+    const cold = formats.map(([, data]) => data.queries?.full_scan_min?.cold_ms || 0);
+    createGroupedBarChart(
+      coldChart,
+      categories,
+      [
+        { label: "Warm", color: "#2f4a36", values: warm },
+        { label: "Cold", color: "#e38b2c", values: cold },
+      ],
+      (value) => formatMs(value)
+    );
+  }
+
+  if (baseChart) {
+    const categories = formats.map(([name]) => name);
+    const values = formats.map(([, data]) => data.queries?.full_scan_min?.median_ms || 0);
+    createGroupedBarChart(
+      baseChart,
+      categories,
+      [{ label: "Median", color: "#4c6fa8", values }],
+      (value) => formatMs(value)
+    );
+  }
+};
+
 const renderDatasetChart = (report, metric) => {
   const container = document.getElementById("dataset-chart");
   const title = document.getElementById("dataset-chart-title");
@@ -833,6 +974,10 @@ const renderDatasetChart = (report, metric) => {
   const data = Object.entries(report.formats || {}).map(([name, values]) => ({
     label: name,
     value: chosen.getValue(values) || 0,
+    size: values.write?.output_size_bytes,
+    sizeLabel: values.write?.output_size_bytes
+      ? `Output ${formatBytes(values.write.output_size_bytes)}`
+      : "",
   }));
 
   title.textContent = chosen.label;
@@ -921,8 +1066,17 @@ const initUpload = () => {
 };
 
 const init = async () => {
-  const response = await fetch(DATASETS_URL);
-  const manifest = await response.json();
+  const cacheBust = `?t=${Date.now()}`;
+  let manifest = null;
+  try {
+    const response = await fetch(`${DATASETS_URL}${cacheBust}`);
+    manifest = await response.json();
+  } catch (err) {
+    manifest = loadCached("latestManifest");
+  }
+  if (!manifest) {
+    throw new Error("Manifest not available.");
+  }
   const select = document.getElementById("dataset-select");
   const loadButton = document.getElementById("load-dataset");
   const search = document.getElementById("dataset-search");

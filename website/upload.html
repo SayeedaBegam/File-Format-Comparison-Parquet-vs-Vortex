@@ -33,6 +33,14 @@
             Dataset file
           </label>
           <input id="dataset-file" type="file" accept=".csv" />
+          <label class="upload-label" for="schema-file">
+            Optional schema (SQL)
+          </label>
+          <input id="schema-file" type="file" accept=".sql" />
+          <label class="upload-label" for="sort-col">
+            Optional sort column (e.g., a filter/select column)
+          </label>
+          <input id="sort-col" type="text" placeholder="column_name" />
           <div class="upload-hint">
             Upload a CSV and we'll run the benchmark automatically.
           </div>
@@ -89,6 +97,67 @@
         <div id="report-output" class="format-grid"></div>
       </section>
 
+      <section class="panel" id="diagnostics-panel">
+        <div class="panel-header">
+          <h2>Diagnostics</h2>
+          <p>Cold vs warm timings, baseline comparison, and parquet row-group count.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Cold vs warm (full scan)</h3>
+            <div class="chart-card">
+              <div id="diagnostics-cold-chart" class="chart"></div>
+            </div>
+          </div>
+          <div class="detail-card">
+            <h3>Median (full scan) by format</h3>
+            <div class="chart-card">
+              <div id="diagnostics-baseline-chart" class="chart"></div>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="preview-table">
+            <thead id="diagnostics-head"></thead>
+            <tbody id="diagnostics-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Data preview</h2>
+          <p>First 10 rows from the uploaded file.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="preview-table">
+            <thead id="preview-head"></thead>
+            <tbody id="preview-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Custom query timing</h2>
+          <p>Run a SQL query against the uploaded dataset and see the timing.</p>
+        </div>
+        <div class="query-card">
+          <label class="upload-label" for="custom-sql">SQL (table is <code>data</code>)</label>
+          <textarea id="custom-sql" class="query-input" rows="5">SELECT COUNT(*) FROM data;</textarea>
+          <div class="selector-row">
+            <label class="inline-label">Runs
+              <input id="custom-repeats" type="number" min="1" max="25" value="5" />
+            </label>
+            <label class="inline-label">Warmup
+              <input id="custom-warmup" type="number" min="0" max="5" value="1" />
+            </label>
+            <button id="custom-run" class="button">Run query</button>
+          </div>
+          <div id="custom-result" class="query-result">No query run yet.</div>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="panel-header">
           <h2>Interactive chart</h2>
@@ -107,6 +176,7 @@
         <div class="chart-card">
           <div class="chart-title" id="upload-chart-title">Compression ratio</div>
           <div id="upload-chart" class="chart"></div>
+          <div class="chart-note">Dot size encodes output size. Time values are shown in ms or s.</div>
         </div>
       </section>
 

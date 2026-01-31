@@ -33,26 +33,49 @@ const formatColors = {
 const getFormatColor = (label) => formatColors[label] || "#6b6358";
 
 let currentReport = null;
+let lastUploadInfo = null;
+
+const _shortLineLabel = (label) => {
+  const text = String(label).replace("parquet_", "pq_");
+  if (text.length <= 12) return text;
+  return `${text.slice(0, 10)}…`;
+};
+
+const _splitLabel = (label) => {
+  const text = _shortLineLabel(label);
+  if (text.length <= 10) return [text];
+  const parts = text.split("_");
+  if (parts.length >= 2) {
+    return [parts[0], parts.slice(1).join("_")];
+  }
+  return [text.slice(0, 8), text.slice(8)];
+};
 
 const createLineChart = (container, data, valueFormatter) => {
   container.innerHTML = "";
-  const width = container.clientWidth || 640;
-  const height = 280;
-  const padding = { top: 18, right: 16, bottom: 48, left: 56 };
+  const baseWidth = container.clientWidth || 640;
+  const plotWidth = Math.max(baseWidth, data.length * 90);
+  const height = 420;
+  const padding = { top: 18, right: 16, bottom: 160, left: 56 };
   const maxValue = Math.max(...data.map((item) => item.value || 0), 1);
+  const sizeValues = data.map((item) => item.size).filter(Number.isFinite);
+  const minSize = sizeValues.length ? Math.min(...sizeValues) : null;
+  const maxSize = sizeValues.length ? Math.max(...sizeValues) : null;
   const ticks = 4;
   const step = maxValue / ticks;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("width", "100%");
+  svg.setAttribute("viewBox", `0 0 ${plotWidth} ${height}`);
+  svg.setAttribute("width", plotWidth);
   svg.setAttribute("height", "100%");
+  container.style.overflowX = "auto";
+  container.style.overflowY = "hidden";
 
   const tooltip = document.createElement("div");
   tooltip.className = "chart-tooltip";
   container.appendChild(tooltip);
 
-  const chartWidth = width - padding.left - padding.right;
+  const chartWidth = plotWidth - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const pointGap = data.length > 1 ? chartWidth / (data.length - 1) : 0;
 
@@ -61,7 +84,7 @@ const createLineChart = (container, data, valueFormatter) => {
     const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
     const grid = document.createElementNS("http://www.w3.org/2000/svg", "line");
     grid.setAttribute("x1", padding.left);
-    grid.setAttribute("x2", width - padding.right);
+    grid.setAttribute("x2", plotWidth - padding.right);
     grid.setAttribute("y1", y);
     grid.setAttribute("y2", y);
     grid.setAttribute("stroke", "rgba(79,87,79,0.2)");
@@ -94,17 +117,28 @@ const createLineChart = (container, data, valueFormatter) => {
   path.setAttribute("stroke-width", "3");
   svg.appendChild(path);
 
+  const shouldRotate = false;
   points.forEach((point) => {
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle.setAttribute("cx", point.x);
     circle.setAttribute("cy", point.y);
-    circle.setAttribute("r", "5");
+    let radius = 5;
+    if (Number.isFinite(point.item.size) && minSize !== null && maxSize !== null) {
+      if (minSize === maxSize) {
+        radius = 7;
+      } else {
+        const t = (point.item.size - minSize) / (maxSize - minSize);
+        radius = 4 + t * 6;
+      }
+    }
+    circle.setAttribute("r", radius.toFixed(2));
     circle.setAttribute("fill", "#e38b2c");
     circle.style.cursor = "pointer";
 
     circle.addEventListener("mousemove", (event) => {
       const containerRect = container.getBoundingClientRect();
-      tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}`;
+      const sizeHint = point.item.sizeLabel ? ` · ${point.item.sizeLabel}` : "";
+      tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}${sizeHint}`;
       tooltip.style.left = `${event.clientX - containerRect.left}px`;
       tooltip.style.top = `${event.clientY - containerRect.top - 12}px`;
       tooltip.style.opacity = "1";
@@ -114,12 +148,22 @@ const createLineChart = (container, data, valueFormatter) => {
     });
 
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", point.x);
-    label.setAttribute("y", height - 18);
+    const lx = point.x;
+    const ly = height - padding.bottom + 28;
+    label.setAttribute("x", lx);
+    label.setAttribute("y", ly);
     label.setAttribute("text-anchor", "middle");
-    label.setAttribute("font-size", "12");
+    label.setAttribute("font-size", "11");
     label.setAttribute("fill", "#4f574f");
-    label.textContent = point.item.label.replace("parquet_", "pq_");
+    const lines = _splitLabel(point.item.label);
+    label.textContent = "";
+    lines.forEach((line, idx) => {
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan.setAttribute("x", lx);
+      tspan.setAttribute("dy", idx === 0 ? "0" : "12");
+      tspan.textContent = line;
+      label.appendChild(tspan);
+    });
 
     svg.appendChild(circle);
     svg.appendChild(label);
@@ -130,7 +174,8 @@ const createLineChart = (container, data, valueFormatter) => {
 
 const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
   container.innerHTML = "";
-  const width = container.clientWidth || 640;
+  const baseWidth = container.clientWidth || 640;
+  const plotWidth = Math.max(baseWidth, xLabels.length * 80);
   const height = 280;
   const padding = { top: 18, right: 24, bottom: 48, left: 56 };
   const allValues = series.flatMap((item) => item.values);
@@ -139,15 +184,17 @@ const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
   const step = maxValue / ticks;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("width", "100%");
+  svg.setAttribute("viewBox", `0 0 ${plotWidth} ${height}`);
+  svg.setAttribute("width", plotWidth);
   svg.setAttribute("height", "100%");
+  container.style.overflowX = "auto";
+  container.style.overflowY = "hidden";
 
   const tooltip = document.createElement("div");
   tooltip.className = "chart-tooltip";
   container.appendChild(tooltip);
 
-  const chartWidth = width - padding.left - padding.right;
+  const chartWidth = plotWidth - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const pointGap = xLabels.length > 1 ? chartWidth / (xLabels.length - 1) : 0;
 
@@ -156,7 +203,7 @@ const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
     const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
     const grid = document.createElementNS("http://www.w3.org/2000/svg", "line");
     grid.setAttribute("x1", padding.left);
-    grid.setAttribute("x2", width - padding.right);
+    grid.setAttribute("x2", plotWidth - padding.right);
     grid.setAttribute("y1", y);
     grid.setAttribute("y2", y);
     grid.setAttribute("stroke", "rgba(79,87,79,0.2)");
@@ -223,26 +270,38 @@ const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
   container.appendChild(svg);
 };
 
+const _shortLabel = (label) => {
+  return String(label)
+    .replace("parquet_", "pq_")
+    .replace("duckdb_table", "duckdb")
+    .replace("vortex_default", "vortex")
+    .replace("vortex_error", "vortex_err");
+};
+
 const createGroupedBarChart = (container, categories, series, valueFormatter) => {
   container.innerHTML = "";
-  const width = container.clientWidth || 640;
-  const height = 280;
-  const padding = { top: 18, right: 24, bottom: 56, left: 56 };
+  const baseWidth = container.clientWidth || 640;
+  const plotWidth = Math.max(baseWidth, categories.length * 90);
+  const height = 420;
+  const padding = { top: 18, right: 40, bottom: 140, left: 64 };
   const allValues = series.flatMap((item) => item.values);
   const maxValue = Math.max(...allValues.filter(Number.isFinite), 1);
   const ticks = 4;
   const step = maxValue / ticks;
+  const shouldRotate = false;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("width", "100%");
+  svg.setAttribute("viewBox", `0 0 ${plotWidth} ${height}`);
+  svg.setAttribute("width", plotWidth);
   svg.setAttribute("height", "100%");
+  container.style.overflowX = "auto";
+  container.style.overflowY = "hidden";
 
   const tooltip = document.createElement("div");
   tooltip.className = "chart-tooltip";
   container.appendChild(tooltip);
 
-  const chartWidth = width - padding.left - padding.right;
+  const chartWidth = plotWidth - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const groupWidth = categories.length ? chartWidth / categories.length : 0;
   const barWidth = series.length ? (groupWidth * 0.7) / series.length : 0;
@@ -252,7 +311,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
     const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
     const grid = document.createElementNS("http://www.w3.org/2000/svg", "line");
     grid.setAttribute("x1", padding.left);
-    grid.setAttribute("x2", width - padding.right);
+    grid.setAttribute("x2", plotWidth - padding.right);
     grid.setAttribute("y1", y);
     grid.setAttribute("y2", y);
     grid.setAttribute("stroke", "rgba(79,87,79,0.2)");
@@ -272,12 +331,25 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
   categories.forEach((category, index) => {
     const xStart = padding.left + index * groupWidth + groupWidth * 0.15;
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", padding.left + index * groupWidth + groupWidth * 0.5);
-    label.setAttribute("y", height - 22);
+    let lx = padding.left + index * groupWidth + groupWidth * 0.5;
+    const ly = height - 40;
+    const minX = padding.left + 6;
+    const maxX = width - padding.right - 6;
+    lx = Math.min(Math.max(lx, minX), maxX);
+    label.setAttribute("x", lx);
+    label.setAttribute("y", ly);
     label.setAttribute("text-anchor", "middle");
-    label.setAttribute("font-size", "12");
+    label.setAttribute("font-size", "11");
     label.setAttribute("fill", "#4f574f");
-    label.textContent = category;
+    const lines = _splitLabel(category);
+    label.textContent = "";
+    lines.forEach((line, idx) => {
+      const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      tspan.setAttribute("x", lx);
+      tspan.setAttribute("dy", idx === 0 ? "0" : "12");
+      tspan.textContent = line;
+      label.appendChild(tspan);
+    });
     svg.appendChild(label);
 
     series.forEach((item, seriesIndex) => {
@@ -342,6 +414,96 @@ const fillRunSummary = (dataset) => {
   if (caption) {
     const label = dataset.name || "Uploaded dataset";
     caption.textContent = `${label} | ${formatNumber(dataset.rows || 0)} rows`;
+  }
+};
+
+const renderPreview = (preview) => {
+  const head = document.getElementById("preview-head");
+  const body = document.getElementById("preview-body");
+  if (!head || !body) return;
+  head.innerHTML = "";
+  body.innerHTML = "";
+  if (!preview || !preview.columns || !preview.rows) {
+    body.innerHTML = "<tr><td>No preview available.</td></tr>";
+    return;
+  }
+
+  const headerRow = document.createElement("tr");
+  preview.columns.forEach((col) => {
+    const th = document.createElement("th");
+    th.textContent = col;
+    headerRow.appendChild(th);
+  });
+  head.appendChild(headerRow);
+
+  preview.rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    row.forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell === null || cell === undefined ? "" : String(cell);
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+};
+
+const renderDiagnostics = (report) => {
+  const head = document.getElementById("diagnostics-head");
+  const body = document.getElementById("diagnostics-body");
+  const coldChart = document.getElementById("diagnostics-cold-chart");
+  const baseChart = document.getElementById("diagnostics-baseline-chart");
+  if (!head || !body) return;
+  const formats = Object.entries(report.formats || {});
+  if (!formats.length) return;
+
+  head.innerHTML = "";
+  body.innerHTML = "";
+  const headerRow = document.createElement("tr");
+  ["Format", "Full scan (ms)", "Cold (ms)", "Row groups", "Note"].forEach((label) => {
+    const th = document.createElement("th");
+    th.textContent = label;
+    headerRow.appendChild(th);
+  });
+  head.appendChild(headerRow);
+
+  formats.forEach(([name, data]) => {
+    const tr = document.createElement("tr");
+    const full = data.queries?.full_scan_min?.median_ms;
+    const cold = data.queries?.full_scan_min?.cold_ms;
+    const rowGroups = data.write?.row_group_count;
+    const note = data.note || "";
+    [name, formatMs(full), formatMs(cold), rowGroups ?? "--", note].forEach((val) => {
+      const td = document.createElement("td");
+      td.textContent = String(val ?? "--");
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+
+  if (coldChart) {
+    const categories = formats.map(([name]) => name);
+    const warm = formats.map(([, data]) => data.queries?.full_scan_min?.median_ms || 0);
+    const cold = formats.map(([, data]) => data.queries?.full_scan_min?.cold_ms || 0);
+    createGroupedBarChart(
+      coldChart,
+      categories,
+      [
+        { label: "Warm", color: "#2f4a36", values: warm },
+        { label: "Cold", color: "#e38b2c", values: cold },
+      ],
+      (value) => formatMs(value)
+    );
+  }
+
+  if (baseChart) {
+    const categories = formats.map(([name]) => name);
+    const values = formats.map(([, data]) => data.queries?.full_scan_min?.median_ms || 0);
+    createGroupedBarChart(
+      baseChart,
+      categories,
+      [{ label: "Median", color: "#4c6fa8", values }],
+      (value) => formatMs(value)
+    );
   }
 };
 
@@ -475,6 +637,8 @@ const renderPlots = (plots) => {
 };
 
 async function runBenchmark(file) {
+  const schemaInput = document.getElementById("schema-file");
+  const schemaFile = schemaInput?.files?.[0] || null;
   if (!file) {
     setStatus("Select a dataset file first.", "is-error");
     setError("");
@@ -483,6 +647,13 @@ async function runBenchmark(file) {
 
   const formData = new FormData();
   formData.append("dataset", file);
+  if (schemaFile) {
+    formData.append("schema", schemaFile);
+  }
+  const sortCol = document.getElementById("sort-col")?.value?.trim();
+  if (sortCol) {
+    formData.append("sort_col", sortCol);
+  }
   setStatus("Processing benchmark...", "is-running");
   setError("");
 
@@ -494,11 +665,11 @@ async function runBenchmark(file) {
 
     if (!response.ok) {
       let message = "Benchmark failed";
+      const errorText = await response.text();
       try {
-        const data = await response.json();
+        const data = JSON.parse(errorText);
         message = data.stderr || data.error || message;
       } catch (parseError) {
-        const errorText = await response.text();
         message = errorText || message;
       }
       throw new Error(message);
@@ -512,9 +683,22 @@ async function runBenchmark(file) {
       renderUploadSelectivity(data.report.formats || {});
       renderUploadEncodings(data.report.formats || {});
       initUploadLikeSelect(data.report.formats || {});
+      renderDiagnostics(data.report);
     }
     if (data.plots) {
       renderPlots(data.plots);
+    }
+    if (data.preview) {
+      renderPreview(data.preview);
+    }
+    if (data.upload) {
+      lastUploadInfo = data.upload;
+    }
+    if (data.manifest) {
+      localStorage.setItem("latestManifest", JSON.stringify(data.manifest));
+    }
+    if (data.summary) {
+      localStorage.setItem("latestSummary", JSON.stringify(data.summary));
     }
     setStatus("Benchmark complete. Results loaded.", "");
     setError("");
@@ -539,6 +723,53 @@ const initDatasetUpload = () => {
 
     setStatus("Ready to run.", "");
     runBenchmark(file);
+  });
+};
+
+const initCustomQuery = () => {
+  const button = document.getElementById("custom-run");
+  const sqlBox = document.getElementById("custom-sql");
+  const repeatsInput = document.getElementById("custom-repeats");
+  const warmupInput = document.getElementById("custom-warmup");
+  const output = document.getElementById("custom-result");
+  if (!button || !sqlBox || !output) return;
+
+  button.addEventListener("click", async () => {
+    if (!lastUploadInfo) {
+      output.textContent = "Upload a dataset first.";
+      return;
+    }
+    const sql = sqlBox.value.trim();
+    if (!sql) {
+      output.textContent = "Enter a SQL query.";
+      return;
+    }
+    const repeats = Number(repeatsInput?.value || 5);
+    const warmup = Number(warmupInput?.value || 1);
+    output.textContent = "Running...";
+    try {
+      const response = await fetch("/api/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: lastUploadInfo.filename,
+          input_type: lastUploadInfo.input_type,
+          sql,
+          repeats,
+          warmup,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Query failed");
+      }
+      const data = await response.json();
+      output.textContent = `Median: ${formatMs(data.median_ms)} · P95: ${formatMs(
+        data.p95_ms
+      )} · Result: ${data.result_value ?? "--"}`;
+    } catch (err) {
+      output.textContent = err.message || "Query failed";
+    }
   });
 };
 
@@ -584,6 +815,10 @@ const renderUploadChart = (report, metric) => {
   const data = Object.entries(report.formats || {}).map(([name, values]) => ({
     label: name,
     value: chosen.getValue(values) || 0,
+    size: values.write?.output_size_bytes,
+    sizeLabel: values.write?.output_size_bytes
+      ? `Output ${formatBytes(values.write.output_size_bytes)}`
+      : "",
   }));
 
   title.textContent = chosen.label;
@@ -819,6 +1054,7 @@ const initPlotModal = () => {
 
 initDatasetUpload();
 initPlotModal();
+initCustomQuery();
 
 const metricSelect = document.getElementById("upload-metric");
 if (metricSelect) {

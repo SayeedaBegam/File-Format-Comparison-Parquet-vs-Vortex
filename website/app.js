@@ -35,6 +35,13 @@ const formatMs = (ms) => {
   return `${ms.toFixed(2)} ms`;
 };
 
+const formatMsWithP95 = (medianMs, p95Ms) => {
+  const median = formatMs(medianMs);
+  if (!Number.isFinite(p95Ms)) return median;
+  const p95 = formatMs(p95Ms);
+  return `${median}<span class="kv-sub">p95 ${p95}</span>`;
+};
+
 const _shortLineLabel = (label) => {
   const text = String(label).replace("parquet_", "pq_");
   if (text.length <= 12) return text;
@@ -139,7 +146,8 @@ const createLineChart = (container, data, valueFormatter) => {
     circle.addEventListener("mousemove", (event) => {
       const containerRect = container.getBoundingClientRect();
       const sizeHint = point.item.sizeLabel ? ` · ${point.item.sizeLabel}` : "";
-      tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}${sizeHint}`;
+      const metaHint = point.item.metaLabel ? ` · ${point.item.metaLabel}` : "";
+      tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}${sizeHint}${metaHint}`;
       tooltip.style.left = `${event.clientX - containerRect.left}px`;
       tooltip.style.top = `${event.clientY - containerRect.top - 12}px`;
       tooltip.style.opacity = "1";
@@ -173,32 +181,41 @@ const createLineChart = (container, data, valueFormatter) => {
   container.appendChild(svg);
 };
 
+const formatDisplayName = (name) => {
+  if (name === "duckdb_table") return "duckdb_table (baseline)";
+  if (name === "vortex_default") return "vortex default";
+  return name;
+};
+
 const renderLeaderboard = (formats) => {
   const container = document.getElementById("format-leaderboard");
   if (!container) return;
   container.innerHTML = "";
 
-  const entries = Object.entries(formats).map(([name, data]) => ({
-    name,
-    score: data.query_median_ms_geomean?.random_access ?? null,
-  }));
+  const entries = Object.entries(formats)
+    .filter(([name]) => name !== "duckdb_table")
+    .map(([name, data]) => ({
+      name,
+      score: data.query_median_ms_geomean?.random_access ?? null,
+    }));
 
   const valid = entries.filter((entry) => Number.isFinite(entry.score));
   if (!valid.length) return;
-  const max = Math.max(...valid.map((entry) => entry.score));
+  const scores = valid.map((entry) => entry.score);
+  const max = Math.max(...scores);
+  const min = Math.min(...scores);
 
   valid
     .sort((a, b) => a.score - b.score)
     .forEach((entry) => {
       const row = document.createElement("div");
       row.className = "leader-item";
+      const widthPct =
+        max === min ? 60 : 20 + ((max - entry.score) / (max - min)) * 80;
       row.innerHTML = `
-        <div><strong>${entry.name}</strong></div>
+        <div><strong>${formatDisplayName(entry.name)}</strong></div>
         <div class="leader-bar">
-          <div class="leader-fill" style="width:${Math.max(
-            12,
-            100 - (entry.score / max) * 100
-          )}%"></div>
+          <div class="leader-fill" style="width:${widthPct.toFixed(1)}%"></div>
         </div>
         <div>${formatMs(entry.score)}</div>
       `;
@@ -206,24 +223,58 @@ const renderLeaderboard = (formats) => {
     });
 };
 
+const computeBestOverall = (formats) => {
+  const values = Object.entries(formats || {}).filter(([name]) => name !== "duckdb_table");
+  const getNums = (fn) =>
+    values.map(([, body]) => fn(body)).filter((value) => Number.isFinite(value));
+  const min = (list) => (list.length ? Math.min(...list) : null);
+  const max = (list) => (list.length ? Math.max(...list) : null);
+
+  return {
+    compression_ratio: max(getNums((item) => item.compression_ratio_geomean)),
+    output_size_bytes: min(getNums((item) => item.output_size_bytes_geomean)),
+    write_time: min(getNums((item) => item.compression_time_s_geomean)),
+    full_scan: min(getNums((item) => item.query_median_ms_geomean?.full_scan_min)),
+    selective: min(getNums((item) => item.query_median_ms_geomean?.selective_predicate)),
+    random_access: min(getNums((item) => item.query_median_ms_geomean?.random_access)),
+  };
+};
+
 const renderFormatCards = (formats) => {
   const grid = document.getElementById("format-grid");
   if (!grid) return;
   grid.innerHTML = "";
+  const best = computeBestOverall(formats);
+  const epsilon = 1e-9;
+  const isBestMax = (value, target) =>
+    Number.isFinite(value) && Number.isFinite(target) && value >= target - epsilon;
+  const isBestMin = (value, target) =>
+    Number.isFinite(value) && Number.isFinite(target) && value <= target + epsilon;
 
   Object.entries(formats).forEach(([name, data]) => {
     const card = document.createElement("div");
     card.className = "format-card";
+    const allowBest = name !== "duckdb_table";
     card.innerHTML = `
-      <h3>${name}</h3>
-      <div class="kv"><span>Compression ratio</span><strong>${formatNumber(
+      <h3>${formatDisplayName(name)}</h3>
+      <div class="kv ${
+        allowBest && isBestMax(data.compression_ratio_geomean, best.compression_ratio)
+          ? "is-best"
+          : ""
+      }"><span>Compression ratio</span><strong>${formatNumber(
         data.compression_ratio_geomean,
         2
       )}</strong></div>
-      <div class="kv"><span>Output size</span><strong>${formatBytes(
+      <div class="kv ${
+        allowBest && isBestMin(data.output_size_bytes_geomean, best.output_size_bytes)
+          ? "is-best"
+          : ""
+      }"><span>Compressed size</span><strong>${formatBytes(
         data.output_size_bytes_geomean
       )}</strong></div>
-      <div class="kv"><span>Compression time</span><strong>${formatNumber(
+      <div class="kv ${
+        allowBest && isBestMin(data.compression_time_s_geomean, best.write_time) ? "is-best" : ""
+      }"><span>Compression time</span><strong>${formatNumber(
         data.compression_time_s_geomean,
         2
       )} s</strong></div>
@@ -231,14 +282,30 @@ const renderFormatCards = (formats) => {
         data.compression_speed_mb_s_geomean,
         2
       )} MB/s</strong></div>
-      <div class="kv"><span>Full scan median</span><strong>${formatMs(
-        data.query_median_ms_geomean?.full_scan_min
+      <div class="kv ${
+        allowBest && isBestMin(data.query_median_ms_geomean?.full_scan_min, best.full_scan)
+          ? "is-best"
+          : ""
+      }"><span>Full scan*</span><strong>${formatMsWithP95(
+        data.query_median_ms_geomean?.full_scan_min,
+        undefined
       )}</strong></div>
-      <div class="kv"><span>Selective median</span><strong>${formatMs(
-        data.query_median_ms_geomean?.selective_predicate
+      <div class="kv ${
+        allowBest &&
+        isBestMin(data.query_median_ms_geomean?.selective_predicate, best.selective)
+          ? "is-best"
+          : ""
+      }"><span>Selective predicate*</span><strong>${formatMsWithP95(
+        data.query_median_ms_geomean?.selective_predicate,
+        undefined
       )}</strong></div>
-      <div class="kv"><span>Random access median</span><strong>${formatMs(
-        data.query_median_ms_geomean?.random_access
+      <div class="kv ${
+        allowBest && isBestMin(data.query_median_ms_geomean?.random_access, best.random_access)
+          ? "is-best"
+          : ""
+      }"><span>Random access*</span><strong>${formatMsWithP95(
+        data.query_median_ms_geomean?.random_access,
+        undefined
       )}</strong></div>
     `;
     grid.appendChild(card);
@@ -258,12 +325,14 @@ const renderDatasetGrid = (datasets, manifest) => {
     card.className = "dataset-card";
     card.innerHTML = `
       <div class="dataset-title">${dataset.name}</div>
-      <div class="dataset-meta">${formatNumber(dataset.rows)} rows</div>
-      <div class="dataset-meta">${formatBytes(dataset.input_size_bytes)} input</div>
-      <div class="dataset-meta">Columns: ${Object.values(dataset.column_type_counts || {}).reduce(
-        (sum, val) => sum + (val || 0),
-        0
-      )}</div>
+      <div class="dataset-meta-block">
+        <div class="dataset-meta">${formatNumber(dataset.rows)} rows</div>
+        <div class="dataset-meta">${formatBytes(dataset.input_size_bytes)} input</div>
+        <div class="dataset-meta">Columns: ${Object.values(dataset.column_type_counts || {}).reduce(
+          (sum, val) => sum + (val || 0),
+          0
+        )}</div>
+      </div>
     `;
     grid.appendChild(card);
   });
@@ -309,6 +378,13 @@ const getMetricValue = (report, formatKey, metric) => {
   }
 };
 
+const getDatasetColumns = (dataset) => {
+  return Object.values(dataset.column_type_counts || {}).reduce(
+    (sum, val) => sum + (val || 0),
+    0
+  );
+};
+
 const renderOverallChart = (summary, reports, formatKey, metric) => {
   const container = document.getElementById("overall-chart");
   const title = document.getElementById("overall-chart-title");
@@ -320,7 +396,7 @@ const renderOverallChart = (summary, reports, formatKey, metric) => {
       format: (value) => formatNumber(value, 2),
     },
     output_size: {
-      label: "Output size by dataset",
+      label: "Compressed size by dataset",
       format: (value) => formatBytes(value),
     },
     write_time: {
@@ -342,15 +418,84 @@ const renderOverallChart = (summary, reports, formatKey, metric) => {
   };
 
   const chosen = metricMap[metric] || metricMap.compression_ratio;
-  const data = summary.datasets.map((dataset) => ({
-    label: dataset.name,
-    value: getMetricValue(reports[dataset.name], formatKey, metric),
-    size: dataset.rows,
-    sizeLabel: `${formatNumber(dataset.rows)} rows`,
-  }));
+  const data = summary.datasets.map((dataset) => {
+    const columns = getDatasetColumns(dataset);
+    return {
+      label: dataset.name,
+      value: getMetricValue(reports[dataset.name], formatKey, metric),
+      size: dataset.rows,
+      sizeLabel: `${formatNumber(dataset.rows)} rows`,
+      metaLabel: columns ? `Columns: ${formatNumber(columns)}` : "",
+    };
+  });
 
   title.textContent = chosen.label;
   createLineChart(container, data, chosen.format);
+};
+
+const renderOverall3D = (summary, reports, formatKey, metric) => {
+  const container = document.getElementById("overall-3d-chart");
+  if (!container) return;
+  if (!window.Plotly) {
+    container.textContent = "3D chart unavailable (Plotly not loaded).";
+    return;
+  }
+
+  const yMode = "rows";
+  const x = [];
+  const y = [];
+  const z = [];
+  const text = [];
+  const sizes = [];
+
+  summary.datasets.forEach((dataset, index) => {
+    const metricValue = getMetricValue(reports[dataset.name], formatKey, metric);
+    const columns = getDatasetColumns(dataset);
+    const yValue = yMode === "columns" ? columns : dataset.rows || 0;
+    if (!Number.isFinite(metricValue)) return;
+    x.push(index + 1);
+    y.push(yValue || 0);
+    z.push(metricValue);
+    sizes.push(Math.max(6, Math.min(18, Math.log10((dataset.input_size_bytes || 1) + 1) * 4)));
+    text.push(
+      `${dataset.name}<br>Rows: ${formatNumber(dataset.rows)}<br>Columns: ${formatNumber(
+        columns
+      )}<br>Metric: ${metricValue}`
+    );
+  });
+
+  const trace = {
+    type: "scatter3d",
+    mode: "lines+markers",
+    x,
+    y,
+    z,
+    text,
+    hoverinfo: "text",
+    marker: {
+      size: sizes,
+      color: z,
+      colorscale: "Viridis",
+      opacity: 0.85,
+    },
+    line: {
+      color: "#2f4a36",
+      width: 3,
+    },
+  };
+
+  const layout = {
+    margin: { l: 0, r: 0, b: 0, t: 10 },
+    scene: {
+      xaxis: { title: "Dataset (index)" },
+      yaxis: { title: yMode === "columns" ? "Columns" : "Rows" },
+      zaxis: { title: metric },
+    },
+    paper_bgcolor: "transparent",
+    plot_bgcolor: "transparent",
+  };
+
+  Plotly.newPlot(container, [trace], layout, { displayModeBar: false, responsive: true });
 };
 
 const loadData = async () => {
@@ -405,6 +550,7 @@ const loadData = async () => {
     const renderChart = () => {
       if (!formatSelect.value) return;
       renderOverallChart(summary, reports, formatSelect.value, metricSelect.value);
+      renderOverall3D(summary, reports, formatSelect.value, metricSelect.value);
     };
     renderChart();
     metricSelect.addEventListener("change", renderChart);

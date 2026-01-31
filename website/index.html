@@ -28,9 +28,8 @@
           <p class="eyebrow">DuckDB format showdown</p>
           <h1>Compression, latency, and scan behavior across datasets.</h1>
           <p class="lede">
-            Two columnar formats walk into a benchmark: Parquet and Vortex.
-            Identical input data and identical DuckDB queries keep it fair.
-            The charts below show who’s smaller, who’s faster, and where the trade‑offs live.
+            Compare Parquet and Vortex across compression, size, and query latency.
+            Every dataset runs through the same DuckDB queries, so the trade-offs are apples-to-apples.
           </p>
           <div class="hero-actions">
             <a class="button primary" href="./dataset.html">Explore datasets</a>
@@ -58,7 +57,7 @@
           <div class="stat-value" id="stat-size">--</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Avg. NDV ratio (numeric)</div>
+          <div class="stat-label">Avg. NDV ratio (col type: numeric)</div>
           <div class="stat-value" id="stat-ndv">--</div>
         </div>
       </section>
@@ -67,6 +66,7 @@
         <div class="panel-header">
           <h2>Geomean format metrics</h2>
           <p>Compression ratio, output size, compression time, and query medians.</p>
+          <div class="panel-note">* indicates median. P95 shown when available.</div>
         </div>
         <div id="format-grid" class="format-grid"></div>
       </section>
@@ -80,7 +80,7 @@
           <select id="overall-format" class="select"></select>
           <select id="overall-metric" class="select">
             <option value="compression_ratio">Compression ratio</option>
-            <option value="output_size">Output size</option>
+            <option value="output_size">Compressed size</option>
             <option value="write_time">Compression time</option>
             <option value="full_scan">Full scan median</option>
             <option value="selective">Selective predicate median</option>
@@ -91,6 +91,13 @@
           <div class="chart-title" id="overall-chart-title">Compression ratio (geomean)</div>
           <div id="overall-chart" class="chart"></div>
           <div class="chart-note">Dot size encodes dataset rows. Time values are shown in ms or s.</div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">3D view (metric × dataset × rows/columns)</div>
+          <div id="overall-3d-chart" class="chart"></div>
+          <div class="chart-note">
+            X = dataset, Y = rows/columns, Z = selected metric. Rotate to inspect clusters.
+          </div>
         </div>
       </section>
 
@@ -113,5 +120,6 @@
     </footer>
 
     <script src="./app.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
   </body>
 </html>

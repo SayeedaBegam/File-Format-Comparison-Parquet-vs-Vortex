@@ -1,14 +1,6 @@
 {
   "datasets": [
     {
-      "name": "CityMaxCapita_1",
-      "report": "../out/report_CityMaxCapita_1.json"
-    },
-    {
-      "name": "Euro2016_1",
-      "report": "../out/report_Euro2016_1.json"
-    },
-    {
       "name": "IGlocations1_1",
       "report": "../out/report_IGlocations1_1.json"
     },
@@ -33,60 +25,8 @@
       "report": "../out/report_Uberlandia_1.json"
     },
     {
-      "name": "1769863055_Hatred_1",
-      "report": "./out/report_1769863055_Hatred_1.json"
-    },
-    {
-      "name": "1769877242_MLB_18",
-      "report": "./out/report_1769877242_MLB_18.json"
-    },
-    {
-      "name": "1769877427_dummy",
-      "report": "./out/report_1769877427_dummy.json"
-    },
-    {
-      "name": "1769881248_MLB_18",
-      "report": "./out/report_1769881248_MLB_18.json"
-    },
-    {
-      "name": "1769886163_dummy",
-      "report": "./out/report_1769886163_dummy.json"
-    },
-    {
-      "name": "1769889145_dummy",
-      "report": "./out/report_1769889145_dummy.json"
-    },
-    {
-      "name": "1769889411_dummy",
-      "report": "./out/report_1769889411_dummy.json"
-    },
-    {
-      "name": "1769889593_MLB_18",
-      "report": "./out/report_1769889593_MLB_18.json"
-    },
-    {
-      "name": "1769889791_MLB_18",
-      "report": "./out/report_1769889791_MLB_18.json"
-    },
-    {
-      "name": "1769890136_dummy",
-      "report": "./out/report_1769890136_dummy.json"
-    },
-    {
-      "name": "1769890290_dummy",
-      "report": "./out/report_1769890290_dummy.json"
-    },
-    {
-      "name": "1769890326_dummy",
-      "report": "../out/report_1769890326_dummy.json"
-    },
-    {
-      "name": "1769891506_dummy",
-      "report": "../out/report_1769891506_dummy.json"
-    },
-    {
-      "name": "1769893365_dummy",
-      "report": "../out/report_1769893365_dummy.json"
+      "name": "Hatred_1",
+      "report": "./out/report_Hatred_1.json"
     }
   ]
 }

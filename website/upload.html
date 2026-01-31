@@ -41,14 +41,32 @@
             Optional sort column (e.g., a filter/select column)
           </label>
           <input id="sort-col" type="text" placeholder="column_name" />
+          <label class="upload-label" for="csv-delimiter">
+            CSV delimiter (default |)
+          </label>
+          <input id="csv-delimiter" type="text" value="|" maxlength="2" />
+          <label class="upload-label" for="csv-header">
+            CSV has header row
+          </label>
+          <input id="csv-header" type="checkbox" />
           <div class="upload-hint">
-            Upload a CSV and we'll run the benchmark automatically.
+            Select files (optional schema and sort column), then run the benchmark.
+          </div>
+          <div class="selector-row">
+            <button id="run-benchmark" class="button primary" type="button">Run benchmark</button>
           </div>
         </div>
         <div class="selector-row">
           <div id="run-status" class="status-pill">Waiting for a file.</div>
         </div>
         <pre id="run-error" class="error-box" hidden></pre>
+        <div class="selector-row">
+          <select id="delete-dataset" class="select"></select>
+          <button id="delete-button" class="button ghost" type="button">Delete selected upload</button>
+        </div>
+        <div class="upload-hint">
+          Removes the selected upload from the dashboard and deletes its output files.
+        </div>
 
         <div class="stats-grid">
           <div class="stat-card">
@@ -75,6 +93,7 @@
         <div class="panel-header">
           <h2>Run summary</h2>
           <p id="run-caption">Upload a dataset to generate a report.</p>
+          <div class="panel-note">* indicates median. P95 shown when available.</div>
         </div>
         <div class="stats-grid">
           <div class="stat-card">
@@ -166,7 +185,7 @@
         <div class="selector-row">
           <select id="upload-metric" class="select">
             <option value="compression_ratio">Compression ratio</option>
-            <option value="output_size">Output size</option>
+            <option value="output_size">Compressed size</option>
             <option value="write_time">Compression time</option>
             <option value="full_scan">Full scan median</option>
             <option value="selective">Selective predicate median</option>
@@ -201,6 +220,10 @@
             <div class="selector-row">
               <select id="upload-like-select" class="select"></select>
               <select id="upload-like-column-select" class="select"></select>
+              <select id="upload-like-scale" class="select">
+                <option value="capped">Capped scale</option>
+                <option value="log">Log scale</option>
+              </select>
             </div>
             <div class="chart-card">
               <div class="chart-title">Pattern type latency</div>

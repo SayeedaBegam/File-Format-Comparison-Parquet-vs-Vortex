@@ -234,6 +234,9 @@ const computeBestOverall = (formats) => {
     compression_ratio: max(getNums((item) => item.compression_ratio_geomean)),
     output_size_bytes: min(getNums((item) => item.output_size_bytes_geomean)),
     write_time: min(getNums((item) => item.compression_time_s_geomean)),
+    decomp_time: min(getNums((item) => item.decompression_time_s_geomean)),
+    comp_speed: max(getNums((item) => item.compression_speed_mb_s_geomean)),
+    decomp_speed: max(getNums((item) => item.decompression_speed_mb_s_geomean)),
     full_scan: min(getNums((item) => item.query_median_ms_geomean?.full_scan_min)),
     selective: min(getNums((item) => item.query_median_ms_geomean?.selective_predicate)),
     random_access: min(getNums((item) => item.query_median_ms_geomean?.random_access)),
@@ -278,10 +281,28 @@ const renderFormatCards = (formats) => {
         data.compression_time_s_geomean,
         2
       )} s</strong></div>
-      <div class="kv"><span>Compression speed</span><strong>${formatNumber(
+      <div class="kv ${
+        allowBest && isBestMax(data.compression_speed_mb_s_geomean, best.comp_speed) ? "is-best" : ""
+      }"><span>Compression speed</span><strong>${formatNumber(
         data.compression_speed_mb_s_geomean,
         2
       )} MB/s</strong></div>
+      <div class="kv ${
+        allowBest && isBestMax(data.decompression_speed_mb_s_geomean, best.decomp_speed)
+          ? "is-best"
+          : ""
+      }"><span>Decompression speed</span><strong>${formatNumber(
+        data.decompression_speed_mb_s_geomean,
+        2
+      )} MB/s</strong></div>
+      <div class="kv ${
+        allowBest && isBestMin(data.decompression_time_s_geomean, best.decomp_time)
+          ? "is-best"
+          : ""
+      }"><span>Decompression time</span><strong>${formatNumber(
+        data.decompression_time_s_geomean,
+        2
+      )} s</strong></div>
       <div class="kv ${
         allowBest && isBestMin(data.query_median_ms_geomean?.full_scan_min, best.full_scan)
           ? "is-best"
@@ -367,6 +388,12 @@ const getMetricValue = (report, formatKey, metric) => {
       return format.write?.output_size_bytes || 0;
     case "write_time":
       return format.write?.compression_time_s || 0;
+    case "compression_speed":
+      return format.write?.compression_speed_mb_s || 0;
+    case "decompression_time":
+      return format.write?.decompression_time_s || 0;
+    case "decompression_speed":
+      return format.write?.decompression_speed_mb_s || 0;
     case "full_scan":
       return format.queries?.full_scan_min?.median_ms || 0;
     case "selective":
@@ -402,6 +429,18 @@ const renderOverallChart = (summary, reports, formatKey, metric) => {
     write_time: {
       label: "Compression time by dataset",
       format: (value) => `${formatNumber(value, 2)} s`,
+    },
+    compression_speed: {
+      label: "Compression speed by dataset",
+      format: (value) => `${formatNumber(value, 2)} MB/s`,
+    },
+    decompression_time: {
+      label: "Decompression time by dataset",
+      format: (value) => `${formatNumber(value, 2)} s`,
+    },
+    decompression_speed: {
+      label: "Decompression speed by dataset",
+      format: (value) => `${formatNumber(value, 2)} MB/s`,
     },
     full_scan: {
       label: "Full scan median by dataset",

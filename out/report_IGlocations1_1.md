@@ -1,306 +1,380 @@
 # Benchmark Report
 
-- Input: `clouddb_project/IGlocations1_1.csv` (csv)
-- Rows: **81,611**
+- Input: `/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/IGlocations1_1.csv` (csv)
+- Rows: **81,427**
 - Input rows: **81,611**
-- Dropped rows: **0**
+- Dropped rows: **184**
+- Drop note: rows dropped because --csv-ignore-errors skips malformed rows
+- Drop note: common causes: bad quotes, type conversion failures, inconsistent delimiters
 - Input size: **6.58 MB**
 - column_type_counts: numeric=15, text=3, date=0, bool=0, other=0
-- min_col: `column01`
-- filter_col: `column04`
-- select_cols: `column01, column00, column02, column04, column05, column08, column09, column10, column11, column12, column13, column14, column15, column16`
+- min_col: `CENSUS2010POP`
+- filter_col: `County Code`
+- select_cols: `CENSUS2010POP, CONCIT, COUSUB, County Code, ESTIMATESBASE2010, PLACE, POPESTIMATE2010, POPESTIMATE2011, POPESTIMATE2012, POPESTIMATE2013, POPESTIMATE2014, PRIMGEO_FLAG, SUMLEV, State code`
 - ndv_ratio_by_type: numeric=0.115, text=0.130
 - ndv_ratio_top_cols:
-  - column03: 0.390
-  - column13: 0.194
-  - column09: 0.194
-  - column12: 0.194
-  - column11: 0.194
-  - column05: 0.193
-  - column00: 0.193
-  - column10: 0.193
-  - column02: 0.187
-  - column08: 0.174
+  - City: 0.390
+  - POPESTIMATE2014: 0.194
+  - POPESTIMATE2010: 0.194
+  - POPESTIMATE2013: 0.194
+  - POPESTIMATE2012: 0.194
+  - ESTIMATESBASE2010: 0.194
+  - CENSUS2010POP: 0.193
+  - POPESTIMATE2011: 0.193
+  - COUSUB: 0.187
+  - PLACE: 0.175
 - recommendations:
   - storage-first: `parquet_zstd`
-  - read-latency-first: `vortex_default`
-  - scan-first: `vortex_default`
+    - reason: highest compression_ratio 3.051
+  - compression-speed-first: `vortex_default`
+    - reason: highest compression_speed_mb_s 136.38
+  - decompression-speed-first: `vortex_default`
+    - reason: highest decompression_speed_mb_s 116.83
+  - read-latency-first: `parquet_uncompressed`
+    - reason: lowest random_access median_ms 0.87
+  - scan-first: `parquet_uncompressed`
+    - reason: lowest full_scan_min median_ms 0.42
+
+## duckdb_table
+- size_mb: **6.58**
+- compression_time_s: **0.000**
+- compression_ratio: **1.000**
+- full_scan_min median_ms: **0.23** (p95 **0.28**, cold **0.27**)
+- selective_predicate median_ms: **0.27** (p95 **0.28**, cold **0.35**)
+- random_access median_ms: **0.36** (p95 **0.53**, cold **0.43**)
+- best_select_col: `PRIMGEO_FLAG` (avg median_ms **0.45**)
+- selectivity:
+  - CENSUS2010POP: 1%: 0.47ms, 10%: 0.45ms, 25%: 0.49ms, 50%: 0.48ms, 90%: 0.50ms
+  - CONCIT: 1%: 0.74ms, 10%: 0.51ms, 25%: 0.52ms, 50%: 0.52ms, 90%: 0.73ms
+  - COUSUB: 1%: 0.50ms, 10%: 0.71ms, 25%: 0.51ms, 50%: 0.69ms, 90%: 1.46ms
+  - County Code: 1%: 0.69ms, 10%: 0.68ms, 25%: 0.49ms, 50%: 0.71ms, 90%: 0.72ms
+  - ESTIMATESBASE2010: 1%: 0.50ms, 10%: 0.69ms, 25%: 0.48ms, 50%: 0.49ms, 90%: 0.71ms
+  - PLACE: 1%: 0.50ms, 10%: 0.49ms, 25%: 0.50ms, 50%: 0.50ms, 90%: 0.73ms
+  - POPESTIMATE2010: 1%: 0.48ms, 10%: 0.47ms, 25%: 0.49ms, 50%: 0.48ms, 90%: 1.45ms
+  - POPESTIMATE2011: 1%: 0.48ms, 10%: 0.48ms, 25%: 0.49ms, 50%: 0.48ms, 90%: 1.48ms
+  - POPESTIMATE2012: 1%: 0.49ms, 10%: 0.48ms, 25%: 0.69ms, 50%: 0.50ms, 90%: 1.46ms
+  - POPESTIMATE2013: 1%: 0.49ms, 10%: 0.48ms, 25%: 0.48ms, 50%: 0.49ms, 90%: 1.46ms
+  - POPESTIMATE2014: 1%: 0.66ms, 10%: 0.49ms, 25%: 0.49ms, 50%: 0.48ms, 90%: 0.51ms
+  - PRIMGEO_FLAG: 1%: 0.50ms, 10%: 0.51ms, 25%: 0.50ms, 50%: 0.50ms, 90%: 0.27ms
+  - SUMLEV: 1%: 0.48ms, 10%: 0.48ms, 25%: 0.49ms, 50%: 0.50ms, 90%: 0.51ms
+  - State code: 1%: 0.47ms, 10%: 0.47ms, 25%: 0.48ms, 50%: 0.49ms, 90%: 0.72ms
+- like_predicates:
+  - City prefix target 1%,10%,25%,50%,90% (actual 0.80%) `Gra%`: 0.96ms
+  - City suffix target 1% (actual 6.28%) `%t.)`: 4.23ms
+  - City suffix target 10% (actual 7.27%) `%nty`: 4.35ms
+  - City suffix target 25%,50%,90% (actual 30.94%) `%ity`: 4.36ms
+  - City contains target 1% (actual 1.00%) `%ek %`: 4.26ms
+  - City contains target 10% (actual 12.40%) `%on %`: 4.16ms
+  - City contains target 25% (actual 21.02%) `%ill%`: 4.13ms
+  - City contains target 50%,90% (actual 37.83%) `%tow%`: 4.02ms
+  - FUNCSTAT prefix target 1% (actual 0.44%) `S%`: 1.03ms
+  - FUNCSTAT prefix target 10%,25% (actual 13.76%) `F%`: 1.05ms
+  - FUNCSTAT prefix target 50%,90% (actual 85.48%) `A%`: 1.05ms
+  - FUNCSTAT suffix target 1% (actual 0.44%) `%S`: 1.22ms
+  - FUNCSTAT suffix target 10%,25% (actual 13.76%) `%F`: 1.23ms
+  - FUNCSTAT suffix target 50%,90% (actual 85.48%) `%A`: 1.57ms
+  - FUNCSTAT contains target 1% (actual 0.44%) `%S%`: 1.22ms
+  - FUNCSTAT contains target 10%,25% (actual 13.76%) `%F%`: 1.21ms
+  - FUNCSTAT contains target 50%,90% (actual 85.48%) `%A%`: 1.26ms
+  - State prefix target 1% (actual 0.91%) `Lou%`: 0.99ms
+  - State prefix target 10%,25%,50%,90% (actual 9.02%) `Ill%`: 0.98ms
+  - State suffix target 1% (actual 0.96%) `%ppi`: 2.29ms
+  - State suffix target 10% (actual 9.96%) `%nia`: 2.30ms
+  - State suffix target 25%,50%,90% (actual 13.08%) `%ota`: 2.28ms
+  - State contains target 1% (actual 0.91%) `%isi%`: 2.33ms
+  - State contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 2.23ms
+- like_summary:
+  - contains: avg median_ms **2.76** (n=9)
+  - prefix: avg median_ms **1.01** (n=6)
+  - suffix: avg median_ms **2.65** (n=9)
 
 ## parquet_zstd
-- size_mb: **2.18**
-- compression_time_s: **0.064**
-- compression_ratio: **3.026**
+- size_mb: **2.16**
+- compression_time_s: **0.060**
+- compression_speed_mb_s: **110.457**
+- decompression_time_s: **0.037**
+- decompression_speed_mb_s: **58.427**
+- compression_ratio: **3.051**
 - encodings:
-  - column00: PLAIN_DICTIONARY
-  - column01: PLAIN_DICTIONARY
-  - column02: PLAIN_DICTIONARY
-  - column03: PLAIN
-  - column04: PLAIN_DICTIONARY
-  - column05: PLAIN_DICTIONARY
-  - column06: PLAIN_DICTIONARY
-  - column07: PLAIN_DICTIONARY
-  - column08: PLAIN_DICTIONARY
-  - column09: PLAIN_DICTIONARY
-  - column10: PLAIN_DICTIONARY
-  - column11: PLAIN_DICTIONARY
-  - column12: PLAIN_DICTIONARY
-  - column13: PLAIN_DICTIONARY
-  - column14: PLAIN_DICTIONARY
-  - column15: PLAIN_DICTIONARY
-  - column16: PLAIN_DICTIONARY
-  - column17: PLAIN_DICTIONARY
-- full_scan_min median_ms: **3.37**
-- selective_predicate median_ms: **3.32**
-- random_access median_ms: **5.83**
-- best_select_col: `column16` (avg median_ms **3.25**)
+  - CENSUS2010POP: PLAIN_DICTIONARY
+  - CONCIT: PLAIN_DICTIONARY
+  - COUSUB: PLAIN_DICTIONARY
+  - City: PLAIN
+  - County Code: PLAIN_DICTIONARY
+  - ESTIMATESBASE2010: PLAIN_DICTIONARY
+  - FUNCSTAT: PLAIN_DICTIONARY
+  - Number of Records: PLAIN_DICTIONARY
+  - PLACE: PLAIN_DICTIONARY
+  - POPESTIMATE2010: PLAIN_DICTIONARY
+  - POPESTIMATE2011: PLAIN_DICTIONARY
+  - POPESTIMATE2012: PLAIN_DICTIONARY
+  - POPESTIMATE2013: PLAIN_DICTIONARY
+  - POPESTIMATE2014: PLAIN_DICTIONARY
+  - PRIMGEO_FLAG: PLAIN_DICTIONARY
+  - SUMLEV: PLAIN_DICTIONARY
+  - State code: PLAIN_DICTIONARY
+  - State: PLAIN_DICTIONARY
+- full_scan_min median_ms: **0.46** (p95 **0.48**, cold **0.72**)
+- selective_predicate median_ms: **0.60** (p95 **0.62**, cold **0.81**)
+- random_access median_ms: **2.24** (p95 **2.32**, cold **2.51**)
+- best_select_col: `State code` (avg median_ms **0.56**)
 - validation_pass: **True**
 - selectivity:
-  - column01: 1%: 3.55ms, 10%: 3.36ms, 25%: 3.29ms, 50%: 3.33ms, 90%: 3.27ms
-  - column00: 1%: 3.75ms, 10%: 3.78ms, 25%: 3.82ms, 50%: 3.90ms, 90%: 3.98ms
-  - column02: 1%: 3.83ms, 10%: 3.80ms, 25%: 3.90ms, 50%: 3.74ms, 90%: 3.72ms
-  - column04: 1%: 3.32ms, 10%: 3.40ms, 25%: 3.40ms, 50%: 3.37ms, 90%: 3.52ms
-  - column05: 1%: 4.36ms, 10%: 4.27ms, 25%: 4.45ms, 50%: 4.68ms, 90%: 4.56ms
-  - column08: 1%: 4.53ms, 10%: 4.45ms, 25%: 4.47ms, 50%: 4.57ms, 90%: 4.48ms
-  - column09: 1%: 4.37ms, 10%: 3.71ms, 25%: 3.77ms, 50%: 3.82ms, 90%: 3.96ms
-  - column10: 1%: 3.73ms, 10%: 3.71ms, 25%: 3.78ms, 50%: 3.85ms, 90%: 3.74ms
-  - column11: 1%: 4.24ms, 10%: 4.40ms, 25%: 4.55ms, 50%: 4.55ms, 90%: 4.46ms
-  - column12: 1%: 4.28ms, 10%: 4.34ms, 25%: 4.51ms, 50%: 4.17ms, 90%: 4.03ms
-  - column13: 1%: 3.67ms, 10%: 3.70ms, 25%: 3.74ms, 50%: 4.11ms, 90%: 3.91ms
-  - column14: 1%: 3.44ms, 10%: 3.40ms, 25%: 3.39ms, 50%: 3.42ms, 90%: 3.26ms
-  - column15: 1%: 3.39ms, 10%: 3.44ms, 25%: 3.45ms, 50%: 3.42ms, 90%: 3.31ms
-  - column16: 1%: 3.15ms, 10%: 3.24ms, 25%: 3.23ms, 50%: 3.31ms, 90%: 3.32ms
+  - CENSUS2010POP: 1%: 0.56ms, 10%: 0.59ms, 25%: 0.70ms, 50%: 0.80ms, 90%: 0.67ms
+  - CONCIT: 1%: 0.75ms, 10%: 0.70ms, 25%: 0.67ms, 50%: 0.77ms, 90%: 0.61ms
+  - COUSUB: 1%: 1.04ms, 10%: 1.12ms, 25%: 0.99ms, 50%: 1.19ms, 90%: 1.10ms
+  - County Code: 1%: 0.87ms, 10%: 0.69ms, 25%: 0.71ms, 50%: 0.74ms, 90%: 0.77ms
+  - ESTIMATESBASE2010: 1%: 0.68ms, 10%: 0.98ms, 25%: 1.01ms, 50%: 0.96ms, 90%: 0.78ms
+  - PLACE: 1%: 1.07ms, 10%: 1.03ms, 25%: 0.87ms, 50%: 0.97ms, 90%: 0.98ms
+  - POPESTIMATE2010: 1%: 0.79ms, 10%: 0.75ms, 25%: 0.79ms, 50%: 0.97ms, 90%: 1.12ms
+  - POPESTIMATE2011: 1%: 0.77ms, 10%: 0.73ms, 25%: 0.81ms, 50%: 0.93ms, 90%: 1.11ms
+  - POPESTIMATE2012: 1%: 0.78ms, 10%: 0.75ms, 25%: 0.85ms, 50%: 0.95ms, 90%: 1.14ms
+  - POPESTIMATE2013: 1%: 0.75ms, 10%: 0.99ms, 25%: 0.88ms, 50%: 1.03ms, 90%: 0.99ms
+  - POPESTIMATE2014: 1%: 0.75ms, 10%: 0.79ms, 25%: 0.80ms, 50%: 1.01ms, 90%: 0.85ms
+  - PRIMGEO_FLAG: 1%: 0.82ms, 10%: 0.91ms, 25%: 0.72ms, 50%: 0.74ms, 90%: 0.57ms
+  - SUMLEV: 1%: 0.64ms, 10%: 0.71ms, 25%: 0.72ms, 50%: 0.71ms, 90%: 0.71ms
+  - State code: 1%: 0.53ms, 10%: 0.54ms, 25%: 0.55ms, 50%: 0.56ms, 90%: 0.60ms
 - like_predicates:
-  - column03 prefix target 1%,10%,25%,50%,90% (actual 1.11%) `Wes%`: 6.36ms
-  - column03 suffix target 1% (actual 0.00%) `%ona`: 9.22ms
-  - column03 suffix target 10% (actual 7.26%) `%nty`: 9.19ms
-  - column03 suffix target 25%,50%,90% (actual 30.93%) `%ity`: 9.17ms
-  - column03 contains target 1% (actual 1.01%) `% Gr%`: 9.21ms
-  - column03 contains target 10% (actual 8.04%) `%n t%`: 9.26ms
-  - column03 contains target 25% (actual 21.02%) `%ill%`: 8.88ms
-  - column03 contains target 50%,90% (actual 38.14%) `%own%`: 9.05ms
-  - column06 prefix target 1% (actual 0.45%) `S%`: 3.33ms
-  - column06 prefix target 10%,25% (actual 13.77%) `F%`: 3.27ms
-  - column06 prefix target 50%,90% (actual 85.46%) `A%`: 3.25ms
-  - column06 suffix target 1% (actual 0.45%) `%S`: 3.34ms
-  - column06 suffix target 10%,25% (actual 13.77%) `%F`: 3.38ms
-  - column06 suffix target 50%,90% (actual 85.46%) `%A`: 3.31ms
-  - column06 contains target 1% (actual 0.45%) `%S%`: 3.45ms
-  - column06 contains target 10%,25% (actual 13.77%) `%F%`: 3.33ms
-  - column06 contains target 50%,90% (actual 85.46%) `%A%`: 3.20ms
-  - column17 prefix target 1% (actual 0.91%) `Lou%`: 3.35ms
-  - column17 prefix target 10%,25%,50%,90% (actual 9.01%) `Ill%`: 3.33ms
-  - column17 suffix target 1% (actual 0.96%) `%ppi`: 3.44ms
-  - column17 suffix target 10% (actual 9.94%) `%nia`: 3.67ms
-  - column17 suffix target 25%,50%,90% (actual 13.07%) `%ota`: 3.31ms
-  - column17 contains target 1% (actual 0.91%) `%isi%`: 3.48ms
-  - column17 contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 3.40ms
+  - City prefix target 1%,10%,25%,50%,90% (actual 0.80%) `Gra%`: 3.36ms
+  - City suffix target 1% (actual 6.28%) `%t.)`: 6.18ms
+  - City suffix target 10% (actual 7.27%) `%nty`: 6.00ms
+  - City suffix target 25%,50%,90% (actual 30.94%) `%ity`: 5.95ms
+  - City contains target 1% (actual 1.00%) `%ek %`: 5.98ms
+  - City contains target 10% (actual 12.40%) `%on %`: 5.88ms
+  - City contains target 25% (actual 21.02%) `%ill%`: 5.75ms
+  - City contains target 50%,90% (actual 37.83%) `%tow%`: 5.75ms
+  - FUNCSTAT prefix target 1% (actual 0.44%) `S%`: 0.41ms
+  - FUNCSTAT prefix target 10%,25% (actual 13.76%) `F%`: 0.41ms
+  - FUNCSTAT prefix target 50%,90% (actual 85.48%) `A%`: 0.41ms
+  - FUNCSTAT suffix target 1% (actual 0.44%) `%S`: 0.41ms
+  - FUNCSTAT suffix target 10%,25% (actual 13.76%) `%F`: 0.42ms
+  - FUNCSTAT suffix target 50%,90% (actual 85.48%) `%A`: 0.40ms
+  - FUNCSTAT contains target 1% (actual 0.44%) `%S%`: 0.40ms
+  - FUNCSTAT contains target 10%,25% (actual 13.76%) `%F%`: 0.42ms
+  - FUNCSTAT contains target 50%,90% (actual 85.48%) `%A%`: 0.41ms
+  - State prefix target 1% (actual 0.91%) `Lou%`: 0.40ms
+  - State prefix target 10%,25%,50%,90% (actual 9.02%) `Ill%`: 0.45ms
+  - State suffix target 1% (actual 0.96%) `%ppi`: 0.40ms
+  - State suffix target 10% (actual 9.96%) `%nia`: 0.41ms
+  - State suffix target 25%,50%,90% (actual 13.08%) `%ota`: 0.42ms
+  - State contains target 1% (actual 0.91%) `%isi%`: 0.43ms
+  - State contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 0.40ms
 - like_summary:
-  - contains: avg median_ms **5.92** (n=9)
-  - prefix: avg median_ms **3.82** (n=6)
-  - suffix: avg median_ms **5.34** (n=9)
+  - contains: avg median_ms **2.82** (n=9)
+  - prefix: avg median_ms **0.91** (n=6)
+  - suffix: avg median_ms **2.29** (n=9)
 
 ## parquet_snappy
-- size_mb: **2.68**
-- compression_time_s: **0.063**
-- compression_ratio: **2.457**
+- size_mb: **2.63**
+- compression_time_s: **0.053**
+- compression_speed_mb_s: **125.374**
+- decompression_time_s: **0.037**
+- decompression_speed_mb_s: **70.881**
+- compression_ratio: **2.508**
 - encodings:
-  - column00: PLAIN_DICTIONARY
-  - column01: PLAIN_DICTIONARY
-  - column02: PLAIN_DICTIONARY
-  - column03: PLAIN
-  - column04: PLAIN_DICTIONARY
-  - column05: PLAIN_DICTIONARY
-  - column06: PLAIN_DICTIONARY
-  - column07: PLAIN_DICTIONARY
-  - column08: PLAIN_DICTIONARY
-  - column09: PLAIN_DICTIONARY
-  - column10: PLAIN_DICTIONARY
-  - column11: PLAIN_DICTIONARY
-  - column12: PLAIN_DICTIONARY
-  - column13: PLAIN_DICTIONARY
-  - column14: PLAIN_DICTIONARY
-  - column15: PLAIN_DICTIONARY
-  - column16: PLAIN_DICTIONARY
-  - column17: PLAIN_DICTIONARY
-- full_scan_min median_ms: **3.38**
-- selective_predicate median_ms: **3.80**
-- random_access median_ms: **5.95**
-- best_select_col: `column16` (avg median_ms **3.38**)
+  - CENSUS2010POP: PLAIN_DICTIONARY
+  - CONCIT: PLAIN_DICTIONARY
+  - COUSUB: PLAIN_DICTIONARY
+  - City: PLAIN
+  - County Code: PLAIN_DICTIONARY
+  - ESTIMATESBASE2010: PLAIN_DICTIONARY
+  - FUNCSTAT: PLAIN_DICTIONARY
+  - Number of Records: PLAIN_DICTIONARY
+  - PLACE: PLAIN_DICTIONARY
+  - POPESTIMATE2010: PLAIN_DICTIONARY
+  - POPESTIMATE2011: PLAIN_DICTIONARY
+  - POPESTIMATE2012: PLAIN_DICTIONARY
+  - POPESTIMATE2013: PLAIN_DICTIONARY
+  - POPESTIMATE2014: PLAIN_DICTIONARY
+  - PRIMGEO_FLAG: PLAIN_DICTIONARY
+  - SUMLEV: PLAIN_DICTIONARY
+  - State code: PLAIN_DICTIONARY
+  - State: PLAIN_DICTIONARY
+- full_scan_min median_ms: **0.44** (p95 **0.44**, cold **0.63**)
+- selective_predicate median_ms: **0.60** (p95 **0.86**, cold **0.61**)
+- random_access median_ms: **1.81** (p95 **1.84**, cold **1.96**)
+- best_select_col: `State code` (avg median_ms **0.63**)
 - validation_pass: **True**
 - selectivity:
-  - column01: 1%: 3.54ms, 10%: 3.62ms, 25%: 3.77ms, 50%: 3.62ms, 90%: 3.43ms
-  - column00: 1%: 3.87ms, 10%: 4.04ms, 25%: 4.05ms, 50%: 4.09ms, 90%: 3.91ms
-  - column02: 1%: 3.82ms, 10%: 3.90ms, 25%: 3.93ms, 50%: 3.86ms, 90%: 4.19ms
-  - column04: 1%: 3.41ms, 10%: 3.38ms, 25%: 3.68ms, 50%: 3.52ms, 90%: 3.73ms
-  - column05: 1%: 3.75ms, 10%: 3.78ms, 25%: 3.85ms, 50%: 3.95ms, 90%: 3.85ms
-  - column08: 1%: 3.95ms, 10%: 3.99ms, 25%: 3.81ms, 50%: 3.98ms, 90%: 3.99ms
-  - column09: 1%: 3.72ms, 10%: 3.96ms, 25%: 4.02ms, 50%: 3.73ms, 90%: 3.77ms
-  - column10: 1%: 3.65ms, 10%: 3.78ms, 25%: 3.75ms, 50%: 3.87ms, 90%: 3.73ms
-  - column11: 1%: 3.81ms, 10%: 3.63ms, 25%: 3.75ms, 50%: 3.85ms, 90%: 3.71ms
-  - column12: 1%: 3.62ms, 10%: 3.86ms, 25%: 4.06ms, 50%: 4.14ms, 90%: 4.06ms
-  - column13: 1%: 4.63ms, 10%: 3.79ms, 25%: 3.82ms, 50%: 3.93ms, 90%: 3.84ms
-  - column14: 1%: 3.63ms, 10%: 3.62ms, 25%: 3.84ms, 50%: 3.61ms, 90%: 3.49ms
-  - column15: 1%: 3.58ms, 10%: 3.52ms, 25%: 3.46ms, 50%: 3.44ms, 90%: 3.38ms
-  - column16: 1%: 3.22ms, 10%: 3.27ms, 25%: 3.42ms, 50%: 3.42ms, 90%: 3.60ms
+  - CENSUS2010POP: 1%: 0.53ms, 10%: 0.56ms, 25%: 0.91ms, 50%: 0.94ms, 90%: 0.90ms
+  - CONCIT: 1%: 0.79ms, 10%: 0.60ms, 25%: 0.59ms, 50%: 0.60ms, 90%: 0.59ms
+  - COUSUB: 1%: 0.90ms, 10%: 1.01ms, 25%: 0.93ms, 50%: 0.71ms, 90%: 0.91ms
+  - County Code: 1%: 0.75ms, 10%: 0.77ms, 25%: 0.59ms, 50%: 0.83ms, 90%: 0.64ms
+  - ESTIMATESBASE2010: 1%: 0.87ms, 10%: 0.69ms, 25%: 0.87ms, 50%: 0.82ms, 90%: 1.01ms
+  - PLACE: 1%: 0.79ms, 10%: 1.09ms, 25%: 0.77ms, 50%: 1.07ms, 90%: 0.93ms
+  - POPESTIMATE2010: 1%: 0.85ms, 10%: 0.90ms, 25%: 0.85ms, 50%: 1.15ms, 90%: 1.00ms
+  - POPESTIMATE2011: 1%: 0.80ms, 10%: 0.81ms, 25%: 0.74ms, 50%: 1.13ms, 90%: 1.11ms
+  - POPESTIMATE2012: 1%: 0.71ms, 10%: 0.84ms, 25%: 0.92ms, 50%: 0.82ms, 90%: 0.95ms
+  - POPESTIMATE2013: 1%: 0.64ms, 10%: 0.67ms, 25%: 0.73ms, 50%: 0.80ms, 90%: 1.11ms
+  - POPESTIMATE2014: 1%: 0.63ms, 10%: 0.83ms, 25%: 0.79ms, 50%: 1.01ms, 90%: 0.94ms
+  - PRIMGEO_FLAG: 1%: 0.71ms, 10%: 0.96ms, 25%: 0.69ms, 50%: 0.88ms, 90%: 0.67ms
+  - SUMLEV: 1%: 0.62ms, 10%: 0.92ms, 25%: 0.83ms, 50%: 0.77ms, 90%: 0.74ms
+  - State code: 1%: 0.61ms, 10%: 0.64ms, 25%: 0.64ms, 50%: 0.54ms, 90%: 0.72ms
 - like_predicates:
-  - column03 prefix target 1%,10%,25%,50%,90% (actual 1.11%) `Wes%`: 5.63ms
-  - column03 suffix target 1% (actual 0.00%) `%ona`: 8.96ms
-  - column03 suffix target 10% (actual 7.26%) `%nty`: 9.85ms
-  - column03 suffix target 25%,50%,90% (actual 30.93%) `%ity`: 9.19ms
-  - column03 contains target 1% (actual 1.01%) `% Gr%`: 9.06ms
-  - column03 contains target 10% (actual 8.04%) `%n t%`: 9.32ms
-  - column03 contains target 25% (actual 21.02%) `%ill%`: 10.14ms
-  - column03 contains target 50%,90% (actual 38.14%) `%own%`: 8.79ms
-  - column06 prefix target 1% (actual 0.45%) `S%`: 3.28ms
-  - column06 prefix target 10%,25% (actual 13.77%) `F%`: 3.60ms
-  - column06 prefix target 50%,90% (actual 85.46%) `A%`: 3.36ms
-  - column06 suffix target 1% (actual 0.45%) `%S`: 3.29ms
-  - column06 suffix target 10%,25% (actual 13.77%) `%F`: 3.26ms
-  - column06 suffix target 50%,90% (actual 85.46%) `%A`: 3.26ms
-  - column06 contains target 1% (actual 0.45%) `%S%`: 3.18ms
-  - column06 contains target 10%,25% (actual 13.77%) `%F%`: 3.45ms
-  - column06 contains target 50%,90% (actual 85.46%) `%A%`: 3.57ms
-  - column17 prefix target 1% (actual 0.91%) `Lou%`: 3.65ms
-  - column17 prefix target 10%,25%,50%,90% (actual 9.01%) `Ill%`: 3.41ms
-  - column17 suffix target 1% (actual 0.96%) `%ppi`: 3.48ms
-  - column17 suffix target 10% (actual 9.94%) `%nia`: 3.59ms
-  - column17 suffix target 25%,50%,90% (actual 13.07%) `%ota`: 3.67ms
-  - column17 contains target 1% (actual 0.91%) `%isi%`: 3.65ms
-  - column17 contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 3.88ms
+  - City prefix target 1%,10%,25%,50%,90% (actual 0.80%) `Gra%`: 3.22ms
+  - City suffix target 1% (actual 6.28%) `%t.)`: 5.95ms
+  - City suffix target 10% (actual 7.27%) `%nty`: 6.00ms
+  - City suffix target 25%,50%,90% (actual 30.94%) `%ity`: 5.93ms
+  - City contains target 1% (actual 1.00%) `%ek %`: 5.96ms
+  - City contains target 10% (actual 12.40%) `%on %`: 5.90ms
+  - City contains target 25% (actual 21.02%) `%ill%`: 5.71ms
+  - City contains target 50%,90% (actual 37.83%) `%tow%`: 5.75ms
+  - FUNCSTAT prefix target 1% (actual 0.44%) `S%`: 0.42ms
+  - FUNCSTAT prefix target 10%,25% (actual 13.76%) `F%`: 0.44ms
+  - FUNCSTAT prefix target 50%,90% (actual 85.48%) `A%`: 0.43ms
+  - FUNCSTAT suffix target 1% (actual 0.44%) `%S`: 0.44ms
+  - FUNCSTAT suffix target 10%,25% (actual 13.76%) `%F`: 0.44ms
+  - FUNCSTAT suffix target 50%,90% (actual 85.48%) `%A`: 0.43ms
+  - FUNCSTAT contains target 1% (actual 0.44%) `%S%`: 0.49ms
+  - FUNCSTAT contains target 10%,25% (actual 13.76%) `%F%`: 0.43ms
+  - FUNCSTAT contains target 50%,90% (actual 85.48%) `%A%`: 0.41ms
+  - State prefix target 1% (actual 0.91%) `Lou%`: 0.45ms
+  - State prefix target 10%,25%,50%,90% (actual 9.02%) `Ill%`: 0.53ms
+  - State suffix target 1% (actual 0.96%) `%ppi`: 0.42ms
+  - State suffix target 10% (actual 9.96%) `%nia`: 0.42ms
+  - State suffix target 25%,50%,90% (actual 13.08%) `%ota`: 0.42ms
+  - State contains target 1% (actual 0.91%) `%isi%`: 0.51ms
+  - State contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 0.52ms
 - like_summary:
-  - contains: avg median_ms **6.11** (n=9)
-  - prefix: avg median_ms **3.82** (n=6)
-  - suffix: avg median_ms **5.39** (n=9)
+  - contains: avg median_ms **2.85** (n=9)
+  - prefix: avg median_ms **0.91** (n=6)
+  - suffix: avg median_ms **2.27** (n=9)
 
 ## parquet_uncompressed
-- size_mb: **4.20**
-- compression_time_s: **0.087**
-- compression_ratio: **1.569**
+- size_mb: **3.65**
+- compression_time_s: **0.060**
+- compression_speed_mb_s: **109.670**
+- decompression_time_s: **0.037**
+- decompression_speed_mb_s: **99.829**
+- compression_ratio: **1.803**
 - encodings:
-  - column00: PLAIN_DICTIONARY
-  - column01: PLAIN_DICTIONARY
-  - column02: PLAIN_DICTIONARY
-  - column03: PLAIN
-  - column04: PLAIN_DICTIONARY
-  - column05: PLAIN_DICTIONARY
-  - column06: PLAIN_DICTIONARY
-  - column07: PLAIN_DICTIONARY
-  - column08: PLAIN_DICTIONARY
-  - column09: PLAIN_DICTIONARY
-  - column10: PLAIN_DICTIONARY
-  - column11: PLAIN_DICTIONARY
-  - column12: PLAIN_DICTIONARY
-  - column13: PLAIN_DICTIONARY
-  - column14: PLAIN_DICTIONARY
-  - column15: PLAIN_DICTIONARY
-  - column16: PLAIN_DICTIONARY
-  - column17: PLAIN_DICTIONARY
-- full_scan_min median_ms: **3.94**
-- selective_predicate median_ms: **3.46**
-- random_access median_ms: **4.35**
-- best_select_col: `column04` (avg median_ms **3.57**)
+  - CENSUS2010POP: PLAIN_DICTIONARY
+  - CONCIT: PLAIN_DICTIONARY
+  - COUSUB: PLAIN_DICTIONARY
+  - City: PLAIN
+  - County Code: PLAIN_DICTIONARY
+  - ESTIMATESBASE2010: PLAIN_DICTIONARY
+  - FUNCSTAT: PLAIN_DICTIONARY
+  - Number of Records: PLAIN_DICTIONARY
+  - PLACE: PLAIN_DICTIONARY
+  - POPESTIMATE2010: PLAIN_DICTIONARY
+  - POPESTIMATE2011: PLAIN_DICTIONARY
+  - POPESTIMATE2012: PLAIN_DICTIONARY
+  - POPESTIMATE2013: PLAIN_DICTIONARY
+  - POPESTIMATE2014: PLAIN_DICTIONARY
+  - PRIMGEO_FLAG: PLAIN_DICTIONARY
+  - SUMLEV: PLAIN_DICTIONARY
+  - State code: PLAIN_DICTIONARY
+  - State: PLAIN_DICTIONARY
+- full_scan_min median_ms: **0.42** (p95 **0.43**, cold **0.62**)
+- selective_predicate median_ms: **0.56** (p95 **0.58**, cold **0.84**)
+- random_access median_ms: **0.87** (p95 **0.90**, cold **1.05**)
+- best_select_col: `State code` (avg median_ms **0.54**)
 - validation_pass: **True**
 - selectivity:
-  - column01: 1%: 3.92ms, 10%: 3.60ms, 25%: 3.38ms, 50%: 4.37ms, 90%: 3.75ms
-  - column00: 1%: 4.12ms, 10%: 4.50ms, 25%: 4.57ms, 50%: 3.96ms, 90%: 4.37ms
-  - column02: 1%: 3.77ms, 10%: 3.88ms, 25%: 3.66ms, 50%: 3.82ms, 90%: 4.27ms
-  - column04: 1%: 3.35ms, 10%: 3.56ms, 25%: 3.70ms, 50%: 3.73ms, 90%: 3.49ms
-  - column05: 1%: 3.60ms, 10%: 3.64ms, 25%: 3.66ms, 50%: 3.77ms, 90%: 4.46ms
-  - column08: 1%: 4.21ms, 10%: 4.20ms, 25%: 3.65ms, 50%: 3.68ms, 90%: 4.24ms
-  - column09: 1%: 4.02ms, 10%: 4.33ms, 25%: 3.94ms, 50%: 3.89ms, 90%: 3.67ms
-  - column10: 1%: 3.54ms, 10%: 3.67ms, 25%: 3.74ms, 50%: 4.10ms, 90%: 4.00ms
-  - column11: 1%: 4.00ms, 10%: 3.70ms, 25%: 3.73ms, 50%: 4.07ms, 90%: 3.72ms
-  - column12: 1%: 3.63ms, 10%: 4.23ms, 25%: 4.49ms, 50%: 4.46ms, 90%: 4.51ms
-  - column13: 1%: 3.67ms, 10%: 3.65ms, 25%: 3.69ms, 50%: 3.72ms, 90%: 3.73ms
-  - column14: 1%: 3.54ms, 10%: 3.55ms, 25%: 3.69ms, 50%: 3.62ms, 90%: 3.55ms
-  - column15: 1%: 3.54ms, 10%: 3.66ms, 25%: 3.85ms, 50%: 4.22ms, 90%: 3.88ms
-  - column16: 1%: 3.76ms, 10%: 3.79ms, 25%: 3.61ms, 50%: 3.75ms, 90%: 3.61ms
+  - CENSUS2010POP: 1%: 0.53ms, 10%: 0.58ms, 25%: 0.61ms, 50%: 1.00ms, 90%: 0.62ms
+  - CONCIT: 1%: 0.77ms, 10%: 0.76ms, 25%: 0.74ms, 50%: 0.77ms, 90%: 0.60ms
+  - COUSUB: 1%: 0.74ms, 10%: 1.01ms, 25%: 1.00ms, 50%: 0.97ms, 90%: 1.17ms
+  - County Code: 1%: 0.77ms, 10%: 0.76ms, 25%: 0.73ms, 50%: 0.79ms, 90%: 0.65ms
+  - ESTIMATESBASE2010: 1%: 0.83ms, 10%: 0.88ms, 25%: 0.73ms, 50%: 0.96ms, 90%: 1.05ms
+  - PLACE: 1%: 1.02ms, 10%: 0.73ms, 25%: 0.72ms, 50%: 0.74ms, 90%: 0.90ms
+  - POPESTIMATE2010: 1%: 0.61ms, 10%: 0.74ms, 25%: 0.74ms, 50%: 0.85ms, 90%: 0.95ms
+  - POPESTIMATE2011: 1%: 0.64ms, 10%: 0.75ms, 25%: 0.80ms, 50%: 0.93ms, 90%: 1.03ms
+  - POPESTIMATE2012: 1%: 0.71ms, 10%: 0.70ms, 25%: 0.75ms, 50%: 0.80ms, 90%: 0.94ms
+  - POPESTIMATE2013: 1%: 0.72ms, 10%: 0.73ms, 25%: 0.72ms, 50%: 0.79ms, 90%: 0.94ms
+  - POPESTIMATE2014: 1%: 0.64ms, 10%: 0.74ms, 25%: 0.81ms, 50%: 0.89ms, 90%: 0.85ms
+  - PRIMGEO_FLAG: 1%: 0.69ms, 10%: 0.76ms, 25%: 0.72ms, 50%: 0.68ms, 90%: 0.51ms
+  - SUMLEV: 1%: 0.58ms, 10%: 0.69ms, 25%: 0.63ms, 50%: 0.67ms, 90%: 0.59ms
+  - State code: 1%: 0.50ms, 10%: 0.53ms, 25%: 0.50ms, 50%: 0.59ms, 90%: 0.57ms
 - like_predicates:
-  - column03 prefix target 1%,10%,25%,50%,90% (actual 1.11%) `Wes%`: 5.65ms
-  - column03 suffix target 1% (actual 0.00%) `%ona`: 8.79ms
-  - column03 suffix target 10% (actual 7.26%) `%nty`: 8.46ms
-  - column03 suffix target 25%,50%,90% (actual 30.93%) `%ity`: 8.29ms
-  - column03 contains target 1% (actual 1.01%) `% Gr%`: 8.23ms
-  - column03 contains target 10% (actual 8.04%) `%n t%`: 8.14ms
-  - column03 contains target 25% (actual 21.02%) `%ill%`: 8.31ms
-  - column03 contains target 50%,90% (actual 38.14%) `%own%`: 7.96ms
-  - column06 prefix target 1% (actual 0.45%) `S%`: 3.39ms
-  - column06 prefix target 10%,25% (actual 13.77%) `F%`: 3.29ms
-  - column06 prefix target 50%,90% (actual 85.46%) `A%`: 3.21ms
-  - column06 suffix target 1% (actual 0.45%) `%S`: 3.18ms
-  - column06 suffix target 10%,25% (actual 13.77%) `%F`: 3.22ms
-  - column06 suffix target 50%,90% (actual 85.46%) `%A`: 3.24ms
-  - column06 contains target 1% (actual 0.45%) `%S%`: 3.25ms
-  - column06 contains target 10%,25% (actual 13.77%) `%F%`: 3.31ms
-  - column06 contains target 50%,90% (actual 85.46%) `%A%`: 3.22ms
-  - column17 prefix target 1% (actual 0.91%) `Lou%`: 3.29ms
-  - column17 prefix target 10%,25%,50%,90% (actual 9.01%) `Ill%`: 3.38ms
-  - column17 suffix target 1% (actual 0.96%) `%ppi`: 3.31ms
-  - column17 suffix target 10% (actual 9.94%) `%nia`: 3.31ms
-  - column17 suffix target 25%,50%,90% (actual 13.07%) `%ota`: 3.16ms
-  - column17 contains target 1% (actual 0.91%) `%isi%`: 3.33ms
-  - column17 contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 3.21ms
+  - City prefix target 1%,10%,25%,50%,90% (actual 0.80%) `Gra%`: 2.20ms
+  - City suffix target 1% (actual 6.28%) `%t.)`: 5.13ms
+  - City suffix target 10% (actual 7.27%) `%nty`: 5.49ms
+  - City suffix target 25%,50%,90% (actual 30.94%) `%ity`: 5.10ms
+  - City contains target 1% (actual 1.00%) `%ek %`: 5.15ms
+  - City contains target 10% (actual 12.40%) `%on %`: 5.16ms
+  - City contains target 25% (actual 21.02%) `%ill%`: 4.91ms
+  - City contains target 50%,90% (actual 37.83%) `%tow%`: 4.89ms
+  - FUNCSTAT prefix target 1% (actual 0.44%) `S%`: 0.42ms
+  - FUNCSTAT prefix target 10%,25% (actual 13.76%) `F%`: 0.41ms
+  - FUNCSTAT prefix target 50%,90% (actual 85.48%) `A%`: 0.42ms
+  - FUNCSTAT suffix target 1% (actual 0.44%) `%S`: 0.41ms
+  - FUNCSTAT suffix target 10%,25% (actual 13.76%) `%F`: 0.52ms
+  - FUNCSTAT suffix target 50%,90% (actual 85.48%) `%A`: 0.40ms
+  - FUNCSTAT contains target 1% (actual 0.44%) `%S%`: 0.42ms
+  - FUNCSTAT contains target 10%,25% (actual 13.76%) `%F%`: 0.47ms
+  - FUNCSTAT contains target 50%,90% (actual 85.48%) `%A%`: 0.46ms
+  - State prefix target 1% (actual 0.91%) `Lou%`: 0.43ms
+  - State prefix target 10%,25%,50%,90% (actual 9.02%) `Ill%`: 0.50ms
+  - State suffix target 1% (actual 0.96%) `%ppi`: 0.49ms
+  - State suffix target 10% (actual 9.96%) `%nia`: 0.41ms
+  - State suffix target 25%,50%,90% (actual 13.08%) `%ota`: 0.42ms
+  - State contains target 1% (actual 0.91%) `%isi%`: 0.41ms
+  - State contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 0.42ms
 - like_summary:
-  - contains: avg median_ms **5.44** (n=9)
-  - prefix: avg median_ms **3.70** (n=6)
-  - suffix: avg median_ms **5.00** (n=9)
+  - contains: avg median_ms **2.48** (n=9)
+  - prefix: avg median_ms **0.73** (n=6)
+  - suffix: avg median_ms **2.04** (n=9)
 
 ## vortex_default
-- size_mb: **2.52**
-- compression_time_s: **0.056**
-- compression_ratio: **2.610**
+- size_mb: **2.49**
+- compression_time_s: **0.048**
+- compression_speed_mb_s: **136.384**
+- decompression_time_s: **0.021**
+- decompression_speed_mb_s: **116.829**
+- compression_ratio: **2.648**
 - encodings: unable to read vortex encodings: Type `u32` at position 1194 is unaligned.
 	while verifying table field `max` at position 1194
 	while verifying vector element 0 at position 24
 	while verifying table field `field_stats` at position 16
 
 
-- full_scan_min median_ms: **2.56**
-- selective_predicate median_ms: **3.17**
-- random_access median_ms: **2.57**
-- best_select_col: `column01` (avg median_ms **2.96**)
+- full_scan_min median_ms: **1.60** (p95 **1.65**, cold **1.76**)
+- selective_predicate median_ms: **2.17** (p95 **2.26**, cold **3.43**)
+- random_access median_ms: **1.71** (p95 **2.02**, cold **1.92**)
+- best_select_col: `POPESTIMATE2014` (avg median_ms **1.50**)
 - validation_pass: **True**
 - selectivity:
-  - column01: 1%: 3.09ms, 10%: 2.95ms, 25%: 2.92ms, 50%: 2.87ms, 90%: 2.97ms
-  - column00: 1%: 3.13ms, 10%: 3.17ms, 25%: 3.20ms, 50%: 3.16ms, 90%: 3.21ms
-  - column02: 1%: 2.88ms, 10%: 3.06ms, 25%: 3.05ms, 50%: 3.00ms, 90%: 3.08ms
-  - column04: 1%: 3.29ms, 10%: 3.29ms, 25%: 3.04ms, 50%: 3.08ms, 90%: 3.20ms
-  - column05: 1%: 3.01ms, 10%: 3.03ms, 25%: 2.94ms, 50%: 3.13ms, 90%: 3.06ms
-  - column08: 1%: 3.14ms, 10%: 3.21ms, 25%: 3.07ms, 50%: 3.06ms, 90%: 2.92ms
-  - column09: 1%: 3.03ms, 10%: 3.12ms, 25%: 3.14ms, 50%: 3.01ms, 90%: 3.14ms
-  - column10: 1%: 3.16ms, 10%: 3.10ms, 25%: 3.11ms, 50%: 3.12ms, 90%: 3.01ms
-  - column11: 1%: 2.98ms, 10%: 3.18ms, 25%: 2.95ms, 50%: 3.10ms, 90%: 3.09ms
-  - column12: 1%: 2.97ms, 10%: 2.98ms, 25%: 3.15ms, 50%: 3.15ms, 90%: 3.31ms
-  - column13: 1%: 3.18ms, 10%: 3.15ms, 25%: 3.23ms, 50%: 3.04ms, 90%: 3.20ms
-  - column14: 1%: 3.12ms, 10%: 3.20ms, 25%: 3.27ms, 50%: 3.15ms, 90%: 3.13ms
-  - column15: 1%: 3.19ms, 10%: 3.10ms, 25%: 3.34ms, 50%: 3.22ms, 90%: 3.21ms
-  - column16: 1%: 3.40ms, 10%: 3.46ms, 25%: 3.29ms, 50%: 3.46ms, 90%: 3.40ms
+  - CENSUS2010POP: 90%: 1.71ms
+  - CONCIT: 90%: 1.68ms
+  - COUSUB: 90%: 2.10ms
+  - County Code: 90%: 1.67ms
+  - ESTIMATESBASE2010: 90%: 1.65ms
+  - PLACE: 90%: 1.70ms
+  - POPESTIMATE2010: 90%: 2.16ms
+  - POPESTIMATE2011: 90%: 2.08ms
+  - POPESTIMATE2012: 90%: 2.05ms
+  - POPESTIMATE2013: 90%: 2.10ms
+  - POPESTIMATE2014: 90%: 1.50ms
+  - PRIMGEO_FLAG: 90%: 1.65ms
+  - SUMLEV: 90%: 1.50ms
+  - State code: 90%: 1.65ms
 - like_predicates:
-  - column03 prefix target 1%,10%,25%,50%,90% (actual 1.11%) `Wes%`: 2.72ms
-  - column03 suffix target 1% (actual 0.00%) `%ona`: 4.27ms
-  - column03 suffix target 10% (actual 7.26%) `%nty`: 4.56ms
-  - column03 suffix target 25%,50%,90% (actual 30.93%) `%ity`: 4.35ms
-  - column03 contains target 1% (actual 1.01%) `% Gr%`: 4.10ms
-  - column03 contains target 10% (actual 8.04%) `%n t%`: 4.14ms
-  - column03 contains target 25% (actual 21.02%) `%ill%`: 4.98ms
-  - column03 contains target 50%,90% (actual 38.14%) `%own%`: 3.98ms
-  - column06 prefix target 1% (actual 0.45%) `S%`: 2.64ms
-  - column06 prefix target 10%,25% (actual 13.77%) `F%`: 2.61ms
-  - column06 prefix target 50%,90% (actual 85.46%) `A%`: 2.66ms
-  - column06 suffix target 1% (actual 0.45%) `%S`: 2.67ms
-  - column06 suffix target 10%,25% (actual 13.77%) `%F`: 2.78ms
-  - column06 suffix target 50%,90% (actual 85.46%) `%A`: 2.62ms
-  - column06 contains target 1% (actual 0.45%) `%S%`: 2.62ms
-  - column06 contains target 10%,25% (actual 13.77%) `%F%`: 2.67ms
-  - column06 contains target 50%,90% (actual 85.46%) `%A%`: 2.75ms
-  - column17 prefix target 1% (actual 0.91%) `Lou%`: 2.79ms
-  - column17 prefix target 10%,25%,50%,90% (actual 9.01%) `Ill%`: 2.70ms
-  - column17 suffix target 1% (actual 0.96%) `%ppi`: 2.74ms
-  - column17 suffix target 10% (actual 9.94%) `%nia`: 2.72ms
-  - column17 suffix target 25%,50%,90% (actual 13.07%) `%ota`: 2.65ms
-  - column17 contains target 1% (actual 0.91%) `%isi%`: 2.64ms
-  - column17 contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 2.64ms
+  - City prefix target 1%,10%,25%,50%,90% (actual 0.80%) `Gra%`: 1.59ms
+  - City suffix target 1% (actual 6.28%) `%t.)`: 3.14ms
+  - City suffix target 10% (actual 7.27%) `%nty`: 3.04ms
+  - City suffix target 25%,50%,90% (actual 30.94%) `%ity`: 3.17ms
+  - City contains target 1% (actual 1.00%) `%ek %`: 3.27ms
+  - City contains target 10% (actual 12.40%) `%on %`: 3.23ms
+  - City contains target 25% (actual 21.02%) `%ill%`: 3.12ms
+  - City contains target 50%,90% (actual 37.83%) `%tow%`: 3.04ms
+  - FUNCSTAT prefix target 1% (actual 0.44%) `S%`: 1.54ms
+  - FUNCSTAT prefix target 10%,25% (actual 13.76%) `F%`: 1.62ms
+  - FUNCSTAT prefix target 50%,90% (actual 85.48%) `A%`: 1.61ms
+  - FUNCSTAT suffix target 1% (actual 0.44%) `%S`: 1.61ms
+  - FUNCSTAT suffix target 10%,25% (actual 13.76%) `%F`: 1.63ms
+  - FUNCSTAT suffix target 50%,90% (actual 85.48%) `%A`: 1.63ms
+  - FUNCSTAT contains target 1% (actual 0.44%) `%S%`: 1.65ms
+  - FUNCSTAT contains target 10%,25% (actual 13.76%) `%F%`: 1.67ms
+  - FUNCSTAT contains target 50%,90% (actual 85.48%) `%A%`: 1.70ms
+  - State prefix target 1% (actual 0.91%) `Lou%`: 1.69ms
+  - State prefix target 10%,25%,50%,90% (actual 9.02%) `Ill%`: 1.64ms
+  - State suffix target 1% (actual 0.96%) `%ppi`: 1.63ms
+  - State suffix target 10% (actual 9.96%) `%nia`: 1.66ms
+  - State suffix target 25%,50%,90% (actual 13.08%) `%ota`: 1.74ms
+  - State contains target 1% (actual 0.91%) `%isi%`: 1.68ms
+  - State contains target 10%,25%,50%,90% (actual 11.49%) `%lin%`: 1.69ms
 - like_summary:
-  - contains: avg median_ms **3.39** (n=9)
-  - prefix: avg median_ms **2.69** (n=6)
-  - suffix: avg median_ms **3.26** (n=9)
+  - contains: avg median_ms **2.34** (n=9)
+  - prefix: avg median_ms **1.62** (n=6)
+  - suffix: avg median_ms **2.14** (n=9)

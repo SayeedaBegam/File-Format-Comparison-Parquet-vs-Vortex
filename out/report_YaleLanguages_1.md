@@ -1,0 +1,1091 @@
+# Benchmark Report
+
+- Input: `/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/YaleLanguages_1.csv` (csv)
+- Rows: **806,586**
+- Input rows: **904,873**
+- Dropped rows: **98,287**
+- Drop note: rows dropped because --csv-ignore-errors skips malformed rows
+- Drop note: common causes: bad quotes, type conversion failures, inconsistent delimiters
+- Input size: **238.13 MB**
+- column_type_counts: numeric=8, text=20, date=2, bool=0, other=0
+- min_col: `BIB_ID`
+- filter_col: `BEGIN_PUB_DATE`
+- select_cols: `BIB_ID, CHARGE_DATE, DISCHARGE_DATE, ID, ID1, MFHD_ID, PATRON_GROUP_ID, PATRON_GROUP_ID1, RENEWAL_COUNT`
+- ndv_ratio_by_type: numeric=0.062, text=0.000, date=0.008
+- ndv_ratio_top_cols:
+  - MFHD_ID: 0.248
+  - BIB_ID: 0.246
+  - CHARGE_DATE: 0.008
+  - DISCHARGE_DATE: 0.007
+  - BEGIN_PUB_DATE: 0.000
+  - DATE: 0.000
+  - ID1: 0.000
+  - CLASS_LETTER: 0.000
+  - ID: 0.000
+  - LC_NARROW: 0.000
+- recommendations:
+  - storage-first: `parquet_zstd`
+    - reason: highest compression_ratio 23.322
+  - compression-speed-first: `parquet_zstd`
+    - reason: highest compression_speed_mb_s 642.78
+  - decompression-speed-first: `parquet_uncompressed`
+    - reason: highest decompression_speed_mb_s 256.46
+  - read-latency-first: `parquet_uncompressed`
+    - reason: lowest random_access median_ms 1.23
+  - scan-first: `parquet_uncompressed`
+    - reason: lowest full_scan_min median_ms 0.87
+
+## duckdb_table
+- size_mb: **238.13**
+- compression_time_s: **0.000**
+- compression_ratio: **1.000**
+- full_scan_min median_ms: **0.42** (p95 **0.53**, cold **0.61**)
+- selective_predicate median_ms: **1.55** (p95 **1.62**, cold **1.58**)
+- random_access median_ms: **0.92** (p95 **1.17**, cold **0.98**)
+- best_select_col: `DISCHARGE_DATE` (avg median_ms **0.51**)
+- selectivity:
+  - BIB_ID: 1%: 1.46ms, 10%: 1.49ms, 25%: 1.49ms, 50%: 1.58ms, 90%: 1.44ms
+  - CHARGE_DATE: 1%: 0.62ms, 10%: 0.57ms, 25%: 0.58ms, 50%: 0.63ms, 90%: 0.67ms
+  - DISCHARGE_DATE: 1%: 0.37ms, 10%: 0.53ms, 25%: 0.55ms, 50%: 0.47ms, 90%: 0.65ms
+  - ID: 1%: 1.63ms, 10%: 1.63ms, 25%: 1.67ms, 50%: 1.69ms, 90%: 1.74ms
+  - ID1: 1%: 1.59ms, 10%: 1.66ms, 25%: 1.64ms, 50%: 1.69ms, 90%: 1.50ms
+  - MFHD_ID: 1%: 1.54ms, 10%: 1.56ms, 25%: 1.57ms, 50%: 1.57ms, 90%: 1.81ms
+  - PATRON_GROUP_ID: 1%: 1.14ms, 10%: 1.10ms, 25%: 1.52ms, 50%: 1.61ms, 90%: 1.18ms
+  - PATRON_GROUP_ID1: 1%: 1.58ms, 10%: 1.66ms, 25%: 1.72ms, 50%: 1.77ms, 90%: 1.74ms
+  - RENEWAL_COUNT: 1%: 1.74ms, 10%: 1.78ms, 25%: 1.74ms, 50%: 1.78ms, 90%: 1.78ms
+- like_predicates:
+  - BEGIN_PUB_DATE prefix target 1% (actual 1.01%) `196%`: 3.83ms
+  - BEGIN_PUB_DATE prefix target 10% (actual 12.23%) `201%`: 4.06ms
+  - BEGIN_PUB_DATE prefix target 25% (actual 24.43%) `199%`: 3.96ms
+  - BEGIN_PUB_DATE prefix target 50%,90% (actual 52.63%) `200%`: 4.30ms
+  - BEGIN_PUB_DATE suffix target 1% (actual 0.87%) `%992`: 7.09ms
+  - BEGIN_PUB_DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 6.91ms
+  - BEGIN_PUB_DATE contains target 1% (actual 1.01%) `%196%`: 4.54ms
+  - BEGIN_PUB_DATE contains target 10% (actual 12.23%) `%201%`: 4.55ms
+  - BEGIN_PUB_DATE contains target 25% (actual 24.43%) `%199%`: 6.33ms
+  - BEGIN_PUB_DATE contains target 50%,90% (actual 52.63%) `%200%`: 4.51ms
+  - BIB_FORMAT prefix target 1% (actual 1.14%) `cm%`: 2.34ms
+  - BIB_FORMAT prefix target 10%,25% (actual 4.48%) `as%`: 2.64ms
+  - BIB_FORMAT prefix target 50%,90% (actual 94.24%) `am%`: 2.72ms
+  - BIB_FORMAT suffix target 1% (actual 1.14%) `%cm`: 3.73ms
+  - BIB_FORMAT suffix target 10%,25% (actual 4.48%) `%as`: 3.87ms
+  - BIB_FORMAT suffix target 50%,90% (actual 94.24%) `%am`: 3.54ms
+  - BIB_FORMAT contains target 1% (actual 1.14%) `%cm%`: 3.71ms
+  - BIB_FORMAT contains target 10%,25% (actual 4.48%) `%as%`: 3.96ms
+  - BIB_FORMAT contains target 50%,90% (actual 94.24%) `%am%`: 3.22ms
+  - CALL_NO_TYPE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `0%`: 2.32ms
+  - CALL_NO_TYPE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%0`: 2.92ms
+  - CALL_NO_TYPE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%0%`: 3.21ms
+  - CLASS_BROAD prefix target 1% (actual 1.10%) `Q -%`: 2.23ms
+  - CLASS_BROAD prefix target 10% (actual 9.63%) `H -%`: 2.36ms
+  - CLASS_BROAD prefix target 25%,50%,90% (actual 31.31%) `P -%`: 3.73ms
+  - CLASS_BROAD suffix target 1% (actual 0.87%) `%ine`: 24.60ms
+  - CLASS_BROAD suffix target 10% (actual 9.63%) `%ces`: 20.85ms
+  - CLASS_BROAD suffix target 25%,50%,90% (actual 31.64%) `%ure`: 24.47ms
+  - CLASS_BROAD contains target 1% (actual 0.87%) `%Med%`: 24.24ms
+  - CLASS_BROAD contains target 10% (actual 12.53%) `%Psy%`: 22.67ms
+  - CLASS_BROAD contains target 25% (actual 19.12%) `%ica%`: 20.88ms
+  - CLASS_BROAD contains target 50%,90% (actual 33.08%) `% an%`: 18.46ms
+  - CLASS_GROUP prefix target 1% (actual 2.21%) `Oth%`: 3.40ms
+  - CLASS_GROUP prefix target 10% (actual 4.13%) `Sci%`: 3.82ms
+  - CLASS_GROUP prefix target 25% (actual 16.79%) `Soc%`: 3.93ms
+  - CLASS_GROUP prefix target 50%,90% (actual 76.88%) `Hum%`: 3.89ms
+  - CLASS_GROUP suffix target 1%,10% (actual 2.21%) `%her`: 12.75ms
+  - CLASS_GROUP suffix target 25% (actual 20.92%) `%ces`: 12.39ms
+  - CLASS_GROUP suffix target 50%,90% (actual 76.88%) `%ies`: 10.38ms
+  - CLASS_GROUP contains target 1% (actual 2.21%) `%the%`: 12.30ms
+  - CLASS_GROUP contains target 10% (actual 16.79%) `% Sc%`: 11.42ms
+  - CLASS_GROUP contains target 25% (actual 20.92%) `%ien%`: 7.52ms
+  - CLASS_GROUP contains target 50%,90% (actual 76.88%) `%ani%`: 5.83ms
+  - CLASS_LETTER prefix target 1% (actual 0.97%) `JN%`: 3.52ms
+  - CLASS_LETTER prefix target 10% (actual 10.52%) `DG%`: 3.35ms
+  - CLASS_LETTER prefix target 25%,50%,90% (actual 12.53%) `B%`: 3.97ms
+  - CLASS_LETTER suffix target 1% (actual 0.97%) `%JN`: 5.11ms
+  - CLASS_LETTER suffix target 10%,25%,50%,90% (actual 10.52%) `%DG`: 4.05ms
+  - CLASS_LETTER contains target 1% (actual 0.97%) `%JN%`: 3.92ms
+  - CLASS_LETTER contains target 10% (actual 10.52%) `%DG%`: 3.90ms
+  - CLASS_LETTER contains target 25%,50%,90% (actual 14.31%) `%B%`: 4.15ms
+  - CLASS_NARROW prefix target 1% (actual 0.96%) `ND %`: 3.64ms
+  - CLASS_NARROW prefix target 10%,25%,50%,90% (actual 5.99%) `PN %`: 2.64ms
+  - CLASS_NARROW suffix target 1% (actual 0.98%) `%nce`: 15.18ms
+  - CLASS_NARROW suffix target 10% (actual 7.27%) `%ons`: 24.73ms
+  - CLASS_NARROW suffix target 25%,50%,90% (actual 25.24%) `%ure`: 22.99ms
+  - CLASS_NARROW contains target 1% (actual 1.03%) `%pec%`: 16.29ms
+  - CLASS_NARROW contains target 10% (actual 11.36%) `%olo%`: 24.03ms
+  - CLASS_NARROW contains target 25% (actual 22.35%) `%and%`: 21.34ms
+  - CLASS_NARROW contains target 50%,90% (actual 32.23%) `%era%`: 18.46ms
+  - DATE prefix target 1% (actual 1.01%) `196%`: 3.52ms
+  - DATE prefix target 10% (actual 12.23%) `201%`: 3.99ms
+  - DATE prefix target 25% (actual 24.43%) `199%`: 3.95ms
+  - DATE prefix target 50%,90% (actual 52.63%) `200%`: 4.03ms
+  - DATE suffix target 1% (actual 0.87%) `%992`: 7.36ms
+  - DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 7.72ms
+  - DATE contains target 1% (actual 1.01%) `%196%`: 6.50ms
+  - DATE contains target 10% (actual 12.23%) `%201%`: 6.60ms
+  - DATE contains target 25% (actual 24.43%) `%199%`: 7.23ms
+  - DATE contains target 50%,90% (actual 52.63%) `%200%`: 6.26ms
+  - DATE_RANGE_CENTURY prefix target 1%,10% (actual 0.32%) `180%`: 3.60ms
+  - DATE_RANGE_CENTURY prefix target 25% (actual 34.74%) `190%`: 3.96ms
+  - DATE_RANGE_CENTURY prefix target 50%,90% (actual 64.86%) `200%`: 4.04ms
+  - DATE_RANGE_CENTURY suffix target 1%,10% (actual 0.32%) `%899`: 11.25ms
+  - DATE_RANGE_CENTURY suffix target 25% (actual 34.74%) `%999`: 11.53ms
+  - DATE_RANGE_CENTURY suffix target 50%,90% (actual 64.86%) `%099`: 10.02ms
+  - DATE_RANGE_CENTURY contains target 1%,10% (actual 0.06%) `%kno%`: 10.41ms
+  - DATE_RANGE_CENTURY contains target 25% (actual 35.08%) `%0-1%`: 6.99ms
+  - DATE_RANGE_CENTURY contains target 50%,90% (actual 64.86%) `%0-2%`: 5.44ms
+  - DATE_RANGE_DECADE prefix target 1% (actual 1.01%) `196%`: 2.46ms
+  - DATE_RANGE_DECADE prefix target 10% (actual 12.23%) `201%`: 2.61ms
+  - DATE_RANGE_DECADE prefix target 25% (actual 24.43%) `199%`: 2.62ms
+  - DATE_RANGE_DECADE prefix target 50%,90% (actual 52.63%) `200%`: 2.84ms
+  - DATE_RANGE_DECADE suffix target 1% (actual 1.01%) `%969`: 7.21ms
+  - DATE_RANGE_DECADE suffix target 10% (actual 12.23%) `%019`: 7.16ms
+  - DATE_RANGE_DECADE suffix target 25% (actual 24.63%) `%999`: 6.91ms
+  - DATE_RANGE_DECADE suffix target 50%,90% (actual 52.63%) `%009`: 6.75ms
+  - DATE_RANGE_DECADE contains target 1%,10% (actual 0.06%) `%kno%`: 11.36ms
+  - DATE_RANGE_DECADE contains target 25% (actual 35.08%) `%0-1%`: 10.40ms
+  - DATE_RANGE_DECADE contains target 50%,90% (actual 64.86%) `%0-2%`: 8.44ms
+  - LANGUAGE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `ita%`: 3.80ms
+  - LANGUAGE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ita`: 4.90ms
+  - LANGUAGE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ita%`: 3.47ms
+  - LC_BROAD prefix target 1% (actual 1.10%) `Q%`: 3.35ms
+  - LC_BROAD prefix target 10% (actual 9.63%) `H%`: 3.43ms
+  - LC_BROAD prefix target 25%,50%,90% (actual 31.31%) `P%`: 3.87ms
+  - LC_BROAD suffix target 1% (actual 1.10%) `%Q`: 4.15ms
+  - LC_BROAD suffix target 10% (actual 9.63%) `%H`: 4.24ms
+  - LC_BROAD suffix target 25%,50%,90% (actual 31.31%) `%P`: 4.90ms
+  - LC_BROAD contains target 1% (actual 1.10%) `%Q%`: 4.62ms
+  - LC_BROAD contains target 10% (actual 9.63%) `%H%`: 4.77ms
+  - LC_BROAD contains target 25%,50%,90% (actual 31.31%) `%P%`: 4.98ms
+  - LC_NARROW prefix target 1% (actual 1.02%) `HQ%`: 3.50ms
+  - LC_NARROW prefix target 10%,25%,50%,90% (actual 12.53%) `B%`: 3.96ms
+  - LC_NARROW suffix target 1% (actual 1.02%) `%HQ`: 5.10ms
+  - LC_NARROW suffix target 10%,25%,50%,90% (actual 5.07%) `%B`: 5.11ms
+  - LC_NARROW contains target 1% (actual 1.02%) `%HQ%`: 5.09ms
+  - LC_NARROW contains target 10% (actual 5.77%) `%C%`: 3.96ms
+  - LC_NARROW contains target 25%,50%,90% (actual 14.31%) `%B%`: 5.72ms
+  - PATRON_GROUP_CODE prefix target 1% (actual 0.97%) `NAM%`: 3.01ms
+  - PATRON_GROUP_CODE prefix target 10%,25% (actual 12.07%) `FRO%`: 3.50ms
+  - PATRON_GROUP_CODE prefix target 50%,90% (actual 62.14%) `INP%`: 4.06ms
+  - PATRON_GROUP_CODE suffix target 1% (actual 0.97%) `%AME`: 10.01ms
+  - PATRON_GROUP_CODE suffix target 10%,25% (actual 12.07%) `%ROG`: 10.02ms
+  - PATRON_GROUP_CODE suffix target 50%,90% (actual 62.14%) `%ESS`: 9.30ms
+  - PATRON_GROUP_CODE contains target 1% (actual 0.97%) `%NAM%`: 9.59ms
+  - PATRON_GROUP_CODE contains target 10%,25% (actual 12.07%) `%FRO%`: 9.77ms
+  - PATRON_GROUP_CODE contains target 50%,90% (actual 62.14%) `%ROC%`: 7.56ms
+  - PATRON_GROUP_DISPLAY prefix target 1% (actual 0.97%) `OPA%`: 3.38ms
+  - PATRON_GROUP_DISPLAY prefix target 10%,25% (actual 12.07%) `Fro%`: 3.42ms
+  - PATRON_GROUP_DISPLAY prefix target 50%,90% (actual 62.14%) `In %`: 3.84ms
+  - PATRON_GROUP_DISPLAY suffix target 1% (actual 0.97%) `%lag`: 12.16ms
+  - PATRON_GROUP_DISPLAY suffix target 10%,25% (actual 12.07%) `%log`: 11.86ms
+  - PATRON_GROUP_DISPLAY suffix target 50%,90% (actual 62.14%) `%ess`: 12.69ms
+  - PATRON_GROUP_DISPLAY contains target 1% (actual 0.97%) `%ssa%`: 12.33ms
+  - PATRON_GROUP_DISPLAY contains target 10% (actual 10.31%) `%ent%`: 8.17ms
+  - PATRON_GROUP_DISPLAY contains target 25% (actual 12.07%) `%ont%`: 7.58ms
+  - PATRON_GROUP_DISPLAY contains target 50%,90% (actual 62.15%) `%Pro%`: 6.94ms
+  - PATRON_GROUP_NAME prefix target 1% (actual 0.97%) `OPA%`: 3.25ms
+  - PATRON_GROUP_NAME prefix target 10%,25% (actual 12.07%) `Fro%`: 3.03ms
+  - PATRON_GROUP_NAME prefix target 50%,90% (actual 62.14%) `In %`: 2.56ms
+  - PATRON_GROUP_NAME suffix target 1% (actual 0.97%) `%lag`: 10.37ms
+  - PATRON_GROUP_NAME suffix target 10%,25% (actual 12.07%) `%log`: 7.33ms
+  - PATRON_GROUP_NAME suffix target 50%,90% (actual 62.14%) `%ess`: 7.74ms
+  - PATRON_GROUP_NAME contains target 1% (actual 0.97%) `%ssa%`: 12.33ms
+  - PATRON_GROUP_NAME contains target 10%,25% (actual 12.07%) `%ont%`: 11.96ms
+  - PATRON_GROUP_NAME contains target 50%,90% (actual 62.15%) `%Pro%`: 10.08ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 1%,10%,25%,50% (actual 12.10%) `Pat%`: 3.67ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 90% (actual 87.90%) `Pse%`: 3.91ms
+  - PATRON_TYPE (Pseudo vs Patron) suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ron`: 11.58ms
+  - PATRON_TYPE (Pseudo vs Patron) contains target 1%,10%,25%,50%,90% (actual 87.90%) `%dop%`: 8.10ms
+  - PLACE_CODE prefix target 1%,10%,25%,50%,90% (actual 0.46%) `gw%`: 3.71ms
+  - PLACE_CODE suffix target 1%,10%,25%,50%,90% (actual 0.46%) `%gw`: 5.48ms
+  - PLACE_CODE contains target 1%,10%,25%,50%,90% (actual 0.46%) `%gw%`: 5.44ms
+  - Patron Group prefix target 1% (actual 1.04%) `Und%`: 3.73ms
+  - Patron Group prefix target 10%,25% (actual 4.97%) `Gra%`: 3.53ms
+  - Patron Group prefix target 50%,90% (actual 85.31%) `Pro%`: 4.28ms
+  - Patron Group suffix target 1% (actual 0.48%) `%rel`: 11.04ms
+  - Patron Group suffix target 10%,25% (actual 6.00%) `%ate`: 10.55ms
+  - Patron Group suffix target 50%,90% (actual 88.33%) `%ing`: 10.45ms
+  - Patron Group contains target 1% (actual 1.04%) `%gra%`: 11.98ms
+  - Patron Group contains target 10%,25% (actual 6.00%) `%adu%`: 10.62ms
+  - Patron Group contains target 50% (actual 85.31%) `%ces%`: 7.80ms
+  - Patron Group contains target 90% (actual 85.32%) `%ssi%`: 9.91ms
+  - Calculation_1810108111146429 prefix target 1% (actual 1.10%) `Q -%`: 3.23ms
+  - Calculation_1810108111146429 prefix target 10% (actual 9.63%) `H -%`: 3.44ms
+  - Calculation_1810108111146429 prefix target 25%,50%,90% (actual 31.31%) `P -%`: 3.80ms
+  - Calculation_1810108111146429 suffix target 1% (actual 0.87%) `%ine`: 21.14ms
+  - Calculation_1810108111146429 suffix target 10% (actual 9.63%) `%ces`: 19.51ms
+  - Calculation_1810108111146429 suffix target 25%,50%,90% (actual 31.64%) `%ure`: 23.81ms
+  - Calculation_1810108111146429 contains target 1% (actual 0.87%) `%Med%`: 14.67ms
+  - Calculation_1810108111146429 contains target 10% (actual 12.53%) `%Psy%`: 20.85ms
+  - Calculation_1810108111146429 contains target 25% (actual 19.12%) `%ica%`: 14.68ms
+  - Calculation_1810108111146429 contains target 50%,90% (actual 33.08%) `% an%`: 13.00ms
+- like_summary:
+  - contains: avg median_ms **9.58** (n=60)
+  - prefix: avg median_ms **3.45** (n=55)
+  - suffix: avg median_ms **10.51** (n=49)
+
+## parquet_zstd
+- size_mb: **10.21**
+- compression_time_s: **0.370**
+- compression_speed_mb_s: **642.779**
+- decompression_time_s: **0.096**
+- decompression_speed_mb_s: **106.890**
+- compression_ratio: **23.322**
+- encodings:
+  - BEGIN_PUB_DATE: PLAIN_DICTIONARY
+  - BIB_FORMAT: PLAIN_DICTIONARY
+  - BIB_ID: PLAIN
+  - CALL_NO_TYPE: PLAIN_DICTIONARY
+  - CHARGE_DATE: PLAIN_DICTIONARY
+  - CLASS_BROAD: PLAIN_DICTIONARY
+  - CLASS_GROUP: PLAIN_DICTIONARY
+  - CLASS_LETTER: PLAIN_DICTIONARY
+  - CLASS_NARROW: PLAIN_DICTIONARY
+  - DATE: PLAIN_DICTIONARY
+  - DATE_RANGE_CENTURY: PLAIN_DICTIONARY
+  - DATE_RANGE_DECADE: PLAIN_DICTIONARY
+  - DISCHARGE_DATE: PLAIN_DICTIONARY
+  - ID: PLAIN_DICTIONARY
+  - ID1: PLAIN_DICTIONARY
+  - LANGUAGE: PLAIN_DICTIONARY
+  - LC_BROAD: PLAIN_DICTIONARY
+  - LC_NARROW: PLAIN_DICTIONARY
+  - MFHD_ID: PLAIN
+  - Number of Records: PLAIN_DICTIONARY
+  - PATRON_GROUP_CODE: PLAIN_DICTIONARY
+  - PATRON_GROUP_DISPLAY: PLAIN_DICTIONARY
+  - PATRON_GROUP_ID: PLAIN_DICTIONARY
+  - PATRON_GROUP_ID1: PLAIN_DICTIONARY
+  - PATRON_GROUP_NAME: PLAIN_DICTIONARY
+  - PATRON_TYPE (Pseudo vs Patron): PLAIN_DICTIONARY
+  - PLACE_CODE: PLAIN_DICTIONARY
+  - Patron Group: PLAIN_DICTIONARY
+  - RENEWAL_COUNT: PLAIN_DICTIONARY
+  - Calculation_1810108111146429: PLAIN_DICTIONARY
+- full_scan_min median_ms: **1.58** (p95 **1.66**, cold **1.93**)
+- selective_predicate median_ms: **2.11** (p95 **2.90**, cold **2.24**)
+- random_access median_ms: **3.67** (p95 **4.12**, cold **4.98**)
+- best_select_col: `DISCHARGE_DATE` (avg median_ms **1.54**)
+- validation_pass: **True**
+- selectivity:
+  - BIB_ID: 1%: 2.25ms, 10%: 2.28ms, 25%: 2.24ms, 50%: 2.33ms, 90%: 2.46ms
+  - CHARGE_DATE: 1%: 2.26ms, 10%: 1.98ms, 25%: 2.42ms, 50%: 2.05ms, 90%: 2.26ms
+  - DISCHARGE_DATE: 1%: 1.12ms, 10%: 1.22ms, 25%: 1.39ms, 50%: 1.85ms, 90%: 2.11ms
+  - ID: 1%: 2.20ms, 10%: 2.23ms, 25%: 2.51ms, 50%: 2.44ms, 90%: 2.50ms
+  - ID1: 1%: 2.22ms, 10%: 2.13ms, 25%: 2.16ms, 50%: 2.11ms, 90%: 2.20ms
+  - MFHD_ID: 1%: 2.80ms, 10%: 2.88ms, 25%: 2.80ms, 50%: 2.88ms, 90%: 2.91ms
+  - PATRON_GROUP_ID: 1%: 1.82ms, 10%: 1.88ms, 25%: 2.05ms, 50%: 1.97ms, 90%: 1.94ms
+  - PATRON_GROUP_ID1: 1%: 1.77ms, 10%: 1.75ms, 25%: 2.19ms, 50%: 1.80ms, 90%: 1.83ms
+  - RENEWAL_COUNT: 1%: 1.97ms, 10%: 1.73ms, 25%: 1.88ms, 50%: 1.74ms, 90%: 1.84ms
+- like_predicates:
+  - BEGIN_PUB_DATE prefix target 1% (actual 1.01%) `196%`: 1.05ms
+  - BEGIN_PUB_DATE prefix target 10% (actual 12.23%) `201%`: 1.06ms
+  - BEGIN_PUB_DATE prefix target 25% (actual 24.43%) `199%`: 1.17ms
+  - BEGIN_PUB_DATE prefix target 50%,90% (actual 52.63%) `200%`: 1.22ms
+  - BEGIN_PUB_DATE suffix target 1% (actual 0.87%) `%992`: 1.02ms
+  - BEGIN_PUB_DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 1.23ms
+  - BEGIN_PUB_DATE contains target 1% (actual 1.01%) `%196%`: 1.10ms
+  - BEGIN_PUB_DATE contains target 10% (actual 12.23%) `%201%`: 1.10ms
+  - BEGIN_PUB_DATE contains target 25% (actual 24.43%) `%199%`: 1.22ms
+  - BEGIN_PUB_DATE contains target 50%,90% (actual 52.63%) `%200%`: 1.45ms
+  - BIB_FORMAT prefix target 1% (actual 1.14%) `cm%`: 0.99ms
+  - BIB_FORMAT prefix target 10%,25% (actual 4.48%) `as%`: 1.02ms
+  - BIB_FORMAT prefix target 50%,90% (actual 94.24%) `am%`: 1.01ms
+  - BIB_FORMAT suffix target 1% (actual 1.14%) `%cm`: 1.01ms
+  - BIB_FORMAT suffix target 10%,25% (actual 4.48%) `%as`: 0.97ms
+  - BIB_FORMAT suffix target 50%,90% (actual 94.24%) `%am`: 1.06ms
+  - BIB_FORMAT contains target 1% (actual 1.14%) `%cm%`: 0.94ms
+  - BIB_FORMAT contains target 10%,25% (actual 4.48%) `%as%`: 1.00ms
+  - BIB_FORMAT contains target 50%,90% (actual 94.24%) `%am%`: 1.11ms
+  - CALL_NO_TYPE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `0%`: 0.87ms
+  - CALL_NO_TYPE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%0`: 0.81ms
+  - CALL_NO_TYPE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%0%`: 0.78ms
+  - CLASS_BROAD prefix target 1% (actual 1.10%) `Q -%`: 0.99ms
+  - CLASS_BROAD prefix target 10% (actual 9.63%) `H -%`: 1.07ms
+  - CLASS_BROAD prefix target 25%,50%,90% (actual 31.31%) `P -%`: 1.16ms
+  - CLASS_BROAD suffix target 1% (actual 0.87%) `%ine`: 1.06ms
+  - CLASS_BROAD suffix target 10% (actual 9.63%) `%ces`: 1.09ms
+  - CLASS_BROAD suffix target 25%,50%,90% (actual 31.64%) `%ure`: 1.33ms
+  - CLASS_BROAD contains target 1% (actual 0.87%) `%Med%`: 1.00ms
+  - CLASS_BROAD contains target 10% (actual 12.53%) `%Psy%`: 1.15ms
+  - CLASS_BROAD contains target 25% (actual 19.12%) `%ica%`: 1.20ms
+  - CLASS_BROAD contains target 50%,90% (actual 33.08%) `% an%`: 1.27ms
+  - CLASS_GROUP prefix target 1% (actual 2.21%) `Oth%`: 0.98ms
+  - CLASS_GROUP prefix target 10% (actual 4.13%) `Sci%`: 0.99ms
+  - CLASS_GROUP prefix target 25% (actual 16.79%) `Soc%`: 1.05ms
+  - CLASS_GROUP prefix target 50%,90% (actual 76.88%) `Hum%`: 1.07ms
+  - CLASS_GROUP suffix target 1%,10% (actual 2.21%) `%her`: 1.01ms
+  - CLASS_GROUP suffix target 25% (actual 20.92%) `%ces`: 1.08ms
+  - CLASS_GROUP suffix target 50%,90% (actual 76.88%) `%ies`: 1.11ms
+  - CLASS_GROUP contains target 1% (actual 2.21%) `%the%`: 0.97ms
+  - CLASS_GROUP contains target 10% (actual 16.79%) `% Sc%`: 1.00ms
+  - CLASS_GROUP contains target 25% (actual 20.92%) `%ien%`: 1.00ms
+  - CLASS_GROUP contains target 50%,90% (actual 76.88%) `%ani%`: 1.08ms
+  - CLASS_LETTER prefix target 1% (actual 0.97%) `JN%`: 1.12ms
+  - CLASS_LETTER prefix target 10% (actual 10.52%) `DG%`: 1.12ms
+  - CLASS_LETTER prefix target 25%,50%,90% (actual 12.53%) `B%`: 1.14ms
+  - CLASS_LETTER suffix target 1% (actual 0.97%) `%JN`: 1.03ms
+  - CLASS_LETTER suffix target 10%,25%,50%,90% (actual 10.52%) `%DG`: 1.08ms
+  - CLASS_LETTER contains target 1% (actual 0.97%) `%JN%`: 1.03ms
+  - CLASS_LETTER contains target 10% (actual 10.52%) `%DG%`: 1.13ms
+  - CLASS_LETTER contains target 25%,50%,90% (actual 14.31%) `%B%`: 1.12ms
+  - CLASS_NARROW prefix target 1% (actual 0.96%) `ND %`: 1.06ms
+  - CLASS_NARROW prefix target 10%,25%,50%,90% (actual 5.99%) `PN %`: 1.09ms
+  - CLASS_NARROW suffix target 1% (actual 0.98%) `%nce`: 1.03ms
+  - CLASS_NARROW suffix target 10% (actual 7.27%) `%ons`: 1.03ms
+  - CLASS_NARROW suffix target 25%,50%,90% (actual 25.24%) `%ure`: 1.24ms
+  - CLASS_NARROW contains target 1% (actual 1.03%) `%pec%`: 1.00ms
+  - CLASS_NARROW contains target 10% (actual 11.36%) `%olo%`: 1.14ms
+  - CLASS_NARROW contains target 25% (actual 22.35%) `%and%`: 1.22ms
+  - CLASS_NARROW contains target 50%,90% (actual 32.23%) `%era%`: 1.30ms
+  - DATE prefix target 1% (actual 1.01%) `196%`: 0.96ms
+  - DATE prefix target 10% (actual 12.23%) `201%`: 1.04ms
+  - DATE prefix target 25% (actual 24.43%) `199%`: 1.12ms
+  - DATE prefix target 50%,90% (actual 52.63%) `200%`: 1.26ms
+  - DATE suffix target 1% (actual 0.87%) `%992`: 1.03ms
+  - DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 1.14ms
+  - DATE contains target 1% (actual 1.01%) `%196%`: 1.02ms
+  - DATE contains target 10% (actual 12.23%) `%201%`: 1.14ms
+  - DATE contains target 25% (actual 24.43%) `%199%`: 1.14ms
+  - DATE contains target 50%,90% (actual 52.63%) `%200%`: 1.17ms
+  - DATE_RANGE_CENTURY prefix target 1%,10% (actual 0.32%) `180%`: 0.92ms
+  - DATE_RANGE_CENTURY prefix target 25% (actual 34.74%) `190%`: 1.06ms
+  - DATE_RANGE_CENTURY prefix target 50%,90% (actual 64.86%) `200%`: 1.08ms
+  - DATE_RANGE_CENTURY suffix target 1%,10% (actual 0.32%) `%899`: 0.89ms
+  - DATE_RANGE_CENTURY suffix target 25% (actual 34.74%) `%999`: 1.10ms
+  - DATE_RANGE_CENTURY suffix target 50%,90% (actual 64.86%) `%099`: 1.12ms
+  - DATE_RANGE_CENTURY contains target 1%,10% (actual 0.06%) `%kno%`: 0.89ms
+  - DATE_RANGE_CENTURY contains target 25% (actual 35.08%) `%0-1%`: 1.02ms
+  - DATE_RANGE_CENTURY contains target 50%,90% (actual 64.86%) `%0-2%`: 1.11ms
+  - DATE_RANGE_DECADE prefix target 1% (actual 1.01%) `196%`: 0.97ms
+  - DATE_RANGE_DECADE prefix target 10% (actual 12.23%) `201%`: 1.02ms
+  - DATE_RANGE_DECADE prefix target 25% (actual 24.43%) `199%`: 1.05ms
+  - DATE_RANGE_DECADE prefix target 50%,90% (actual 52.63%) `200%`: 1.11ms
+  - DATE_RANGE_DECADE suffix target 1% (actual 1.01%) `%969`: 1.01ms
+  - DATE_RANGE_DECADE suffix target 10% (actual 12.23%) `%019`: 0.97ms
+  - DATE_RANGE_DECADE suffix target 25% (actual 24.63%) `%999`: 1.08ms
+  - DATE_RANGE_DECADE suffix target 50%,90% (actual 52.63%) `%009`: 1.11ms
+  - DATE_RANGE_DECADE contains target 1%,10% (actual 0.06%) `%kno%`: 0.93ms
+  - DATE_RANGE_DECADE contains target 25% (actual 35.08%) `%0-1%`: 1.08ms
+  - DATE_RANGE_DECADE contains target 50%,90% (actual 64.86%) `%0-2%`: 1.10ms
+  - LANGUAGE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `ita%`: 0.76ms
+  - LANGUAGE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ita`: 0.73ms
+  - LANGUAGE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ita%`: 0.76ms
+  - LC_BROAD prefix target 1% (actual 1.10%) `Q%`: 0.95ms
+  - LC_BROAD prefix target 10% (actual 9.63%) `H%`: 1.04ms
+  - LC_BROAD prefix target 25%,50%,90% (actual 31.31%) `P%`: 1.07ms
+  - LC_BROAD suffix target 1% (actual 1.10%) `%Q`: 0.97ms
+  - LC_BROAD suffix target 10% (actual 9.63%) `%H`: 0.98ms
+  - LC_BROAD suffix target 25%,50%,90% (actual 31.31%) `%P`: 1.12ms
+  - LC_BROAD contains target 1% (actual 1.10%) `%Q%`: 0.97ms
+  - LC_BROAD contains target 10% (actual 9.63%) `%H%`: 1.06ms
+  - LC_BROAD contains target 25%,50%,90% (actual 31.31%) `%P%`: 1.10ms
+  - LC_NARROW prefix target 1% (actual 1.02%) `HQ%`: 1.00ms
+  - LC_NARROW prefix target 10%,25%,50%,90% (actual 12.53%) `B%`: 1.11ms
+  - LC_NARROW suffix target 1% (actual 1.02%) `%HQ`: 1.05ms
+  - LC_NARROW suffix target 10%,25%,50%,90% (actual 5.07%) `%B`: 0.99ms
+  - LC_NARROW contains target 1% (actual 1.02%) `%HQ%`: 1.01ms
+  - LC_NARROW contains target 10% (actual 5.77%) `%C%`: 1.05ms
+  - LC_NARROW contains target 25%,50%,90% (actual 14.31%) `%B%`: 1.20ms
+  - PATRON_GROUP_CODE prefix target 1% (actual 0.97%) `NAM%`: 1.08ms
+  - PATRON_GROUP_CODE prefix target 10%,25% (actual 12.07%) `FRO%`: 1.01ms
+  - PATRON_GROUP_CODE prefix target 50%,90% (actual 62.14%) `INP%`: 1.24ms
+  - PATRON_GROUP_CODE suffix target 1% (actual 0.97%) `%AME`: 0.98ms
+  - PATRON_GROUP_CODE suffix target 10%,25% (actual 12.07%) `%ROG`: 1.04ms
+  - PATRON_GROUP_CODE suffix target 50%,90% (actual 62.14%) `%ESS`: 1.16ms
+  - PATRON_GROUP_CODE contains target 1% (actual 0.97%) `%NAM%`: 1.02ms
+  - PATRON_GROUP_CODE contains target 10%,25% (actual 12.07%) `%FRO%`: 0.99ms
+  - PATRON_GROUP_CODE contains target 50%,90% (actual 62.14%) `%ROC%`: 1.18ms
+  - PATRON_GROUP_DISPLAY prefix target 1% (actual 0.97%) `OPA%`: 1.00ms
+  - PATRON_GROUP_DISPLAY prefix target 10%,25% (actual 12.07%) `Fro%`: 0.99ms
+  - PATRON_GROUP_DISPLAY prefix target 50%,90% (actual 62.14%) `In %`: 1.26ms
+  - PATRON_GROUP_DISPLAY suffix target 1% (actual 0.97%) `%lag`: 1.00ms
+  - PATRON_GROUP_DISPLAY suffix target 10%,25% (actual 12.07%) `%log`: 1.22ms
+  - PATRON_GROUP_DISPLAY suffix target 50%,90% (actual 62.14%) `%ess`: 1.22ms
+  - PATRON_GROUP_DISPLAY contains target 1% (actual 0.97%) `%ssa%`: 1.11ms
+  - PATRON_GROUP_DISPLAY contains target 10% (actual 10.31%) `%ent%`: 1.23ms
+  - PATRON_GROUP_DISPLAY contains target 25% (actual 12.07%) `%ont%`: 1.13ms
+  - PATRON_GROUP_DISPLAY contains target 50%,90% (actual 62.15%) `%Pro%`: 1.20ms
+  - PATRON_GROUP_NAME prefix target 1% (actual 0.97%) `OPA%`: 1.10ms
+  - PATRON_GROUP_NAME prefix target 10%,25% (actual 12.07%) `Fro%`: 1.12ms
+  - PATRON_GROUP_NAME prefix target 50%,90% (actual 62.14%) `In %`: 1.13ms
+  - PATRON_GROUP_NAME suffix target 1% (actual 0.97%) `%lag`: 1.01ms
+  - PATRON_GROUP_NAME suffix target 10%,25% (actual 12.07%) `%log`: 1.03ms
+  - PATRON_GROUP_NAME suffix target 50%,90% (actual 62.14%) `%ess`: 1.17ms
+  - PATRON_GROUP_NAME contains target 1% (actual 0.97%) `%ssa%`: 1.05ms
+  - PATRON_GROUP_NAME contains target 10%,25% (actual 12.07%) `%ont%`: 0.99ms
+  - PATRON_GROUP_NAME contains target 50%,90% (actual 62.15%) `%Pro%`: 1.28ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 1%,10%,25%,50% (actual 12.10%) `Pat%`: 1.07ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 90% (actual 87.90%) `Pse%`: 1.23ms
+  - PATRON_TYPE (Pseudo vs Patron) suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ron`: 1.00ms
+  - PATRON_TYPE (Pseudo vs Patron) contains target 1%,10%,25%,50%,90% (actual 87.90%) `%dop%`: 1.26ms
+  - PLACE_CODE prefix target 1%,10%,25%,50%,90% (actual 0.46%) `gw%`: 1.14ms
+  - PLACE_CODE suffix target 1%,10%,25%,50%,90% (actual 0.46%) `%gw`: 1.16ms
+  - PLACE_CODE contains target 1%,10%,25%,50%,90% (actual 0.46%) `%gw%`: 1.06ms
+  - Patron Group prefix target 1% (actual 1.04%) `Und%`: 0.96ms
+  - Patron Group prefix target 10%,25% (actual 4.97%) `Gra%`: 1.05ms
+  - Patron Group prefix target 50%,90% (actual 85.31%) `Pro%`: 1.15ms
+  - Patron Group suffix target 1% (actual 0.48%) `%rel`: 0.96ms
+  - Patron Group suffix target 10%,25% (actual 6.00%) `%ate`: 1.03ms
+  - Patron Group suffix target 50%,90% (actual 88.33%) `%ing`: 1.24ms
+  - Patron Group contains target 1% (actual 1.04%) `%gra%`: 0.95ms
+  - Patron Group contains target 10%,25% (actual 6.00%) `%adu%`: 0.97ms
+  - Patron Group contains target 50% (actual 85.31%) `%ces%`: 1.15ms
+  - Patron Group contains target 90% (actual 85.32%) `%ssi%`: 1.08ms
+  - Calculation_1810108111146429 prefix target 1% (actual 1.10%) `Q -%`: 0.95ms
+  - Calculation_1810108111146429 prefix target 10% (actual 9.63%) `H -%`: 1.05ms
+  - Calculation_1810108111146429 prefix target 25%,50%,90% (actual 31.31%) `P -%`: 1.11ms
+  - Calculation_1810108111146429 suffix target 1% (actual 0.87%) `%ine`: 0.99ms
+  - Calculation_1810108111146429 suffix target 10% (actual 9.63%) `%ces`: 1.04ms
+  - Calculation_1810108111146429 suffix target 25%,50%,90% (actual 31.64%) `%ure`: 1.07ms
+  - Calculation_1810108111146429 contains target 1% (actual 0.87%) `%Med%`: 1.04ms
+  - Calculation_1810108111146429 contains target 10% (actual 12.53%) `%Psy%`: 1.17ms
+  - Calculation_1810108111146429 contains target 25% (actual 19.12%) `%ica%`: 1.17ms
+  - Calculation_1810108111146429 contains target 50%,90% (actual 33.08%) `% an%`: 1.15ms
+- like_summary:
+  - contains: avg median_ms **1.09** (n=60)
+  - prefix: avg median_ms **1.06** (n=55)
+  - suffix: avg median_ms **1.06** (n=49)
+
+## parquet_snappy
+- size_mb: **14.36**
+- compression_time_s: **0.403**
+- compression_speed_mb_s: **590.337**
+- decompression_time_s: **0.086**
+- decompression_speed_mb_s: **167.080**
+- compression_ratio: **16.583**
+- encodings:
+  - BEGIN_PUB_DATE: PLAIN_DICTIONARY
+  - BIB_FORMAT: PLAIN_DICTIONARY
+  - BIB_ID: PLAIN
+  - CALL_NO_TYPE: PLAIN_DICTIONARY
+  - CHARGE_DATE: PLAIN_DICTIONARY
+  - CLASS_BROAD: PLAIN_DICTIONARY
+  - CLASS_GROUP: PLAIN_DICTIONARY
+  - CLASS_LETTER: PLAIN_DICTIONARY
+  - CLASS_NARROW: PLAIN_DICTIONARY
+  - DATE: PLAIN_DICTIONARY
+  - DATE_RANGE_CENTURY: PLAIN_DICTIONARY
+  - DATE_RANGE_DECADE: PLAIN_DICTIONARY
+  - DISCHARGE_DATE: PLAIN_DICTIONARY
+  - ID: PLAIN_DICTIONARY
+  - ID1: PLAIN_DICTIONARY
+  - LANGUAGE: PLAIN_DICTIONARY
+  - LC_BROAD: PLAIN_DICTIONARY
+  - LC_NARROW: PLAIN_DICTIONARY
+  - MFHD_ID: PLAIN
+  - Number of Records: PLAIN_DICTIONARY
+  - PATRON_GROUP_CODE: PLAIN_DICTIONARY
+  - PATRON_GROUP_DISPLAY: PLAIN_DICTIONARY
+  - PATRON_GROUP_ID: PLAIN_DICTIONARY
+  - PATRON_GROUP_ID1: PLAIN_DICTIONARY
+  - PATRON_GROUP_NAME: PLAIN_DICTIONARY
+  - PATRON_TYPE (Pseudo vs Patron): PLAIN_DICTIONARY
+  - PLACE_CODE: PLAIN_DICTIONARY
+  - Patron Group: PLAIN_DICTIONARY
+  - RENEWAL_COUNT: PLAIN_DICTIONARY
+  - Calculation_1810108111146429: PLAIN_DICTIONARY
+- full_scan_min median_ms: **0.94** (p95 **1.09**, cold **1.56**)
+- selective_predicate median_ms: **1.50** (p95 **1.59**, cold **1.55**)
+- random_access median_ms: **2.78** (p95 **4.12**, cold **3.30**)
+- best_select_col: `DISCHARGE_DATE` (avg median_ms **1.09**)
+- validation_pass: **True**
+- selectivity:
+  - BIB_ID: 1%: 1.66ms, 10%: 1.67ms, 25%: 1.59ms, 50%: 1.71ms, 90%: 1.80ms
+  - CHARGE_DATE: 1%: 1.60ms, 10%: 1.45ms, 25%: 1.64ms, 50%: 1.48ms, 90%: 1.47ms
+  - DISCHARGE_DATE: 1%: 0.92ms, 10%: 1.04ms, 25%: 0.99ms, 50%: 1.23ms, 90%: 1.26ms
+  - ID: 1%: 1.33ms, 10%: 1.52ms, 25%: 1.49ms, 50%: 1.76ms, 90%: 1.54ms
+  - ID1: 1%: 1.56ms, 10%: 1.65ms, 25%: 1.65ms, 50%: 1.66ms, 90%: 1.80ms
+  - MFHD_ID: 1%: 1.77ms, 10%: 1.87ms, 25%: 2.01ms, 50%: 1.76ms, 90%: 1.87ms
+  - PATRON_GROUP_ID: 1%: 1.47ms, 10%: 1.40ms, 25%: 1.55ms, 50%: 1.60ms, 90%: 1.58ms
+  - PATRON_GROUP_ID1: 1%: 1.47ms, 10%: 1.52ms, 25%: 1.57ms, 50%: 1.74ms, 90%: 1.65ms
+  - RENEWAL_COUNT: 1%: 1.53ms, 10%: 1.30ms, 25%: 1.40ms, 50%: 1.70ms, 90%: 1.39ms
+- like_predicates:
+  - BEGIN_PUB_DATE prefix target 1% (actual 1.01%) `196%`: 1.30ms
+  - BEGIN_PUB_DATE prefix target 10% (actual 12.23%) `201%`: 1.19ms
+  - BEGIN_PUB_DATE prefix target 25% (actual 24.43%) `199%`: 1.19ms
+  - BEGIN_PUB_DATE prefix target 50%,90% (actual 52.63%) `200%`: 1.27ms
+  - BEGIN_PUB_DATE suffix target 1% (actual 0.87%) `%992`: 1.12ms
+  - BEGIN_PUB_DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 1.19ms
+  - BEGIN_PUB_DATE contains target 1% (actual 1.01%) `%196%`: 1.09ms
+  - BEGIN_PUB_DATE contains target 10% (actual 12.23%) `%201%`: 1.18ms
+  - BEGIN_PUB_DATE contains target 25% (actual 24.43%) `%199%`: 1.14ms
+  - BEGIN_PUB_DATE contains target 50%,90% (actual 52.63%) `%200%`: 1.25ms
+  - BIB_FORMAT prefix target 1% (actual 1.14%) `cm%`: 0.91ms
+  - BIB_FORMAT prefix target 10%,25% (actual 4.48%) `as%`: 1.04ms
+  - BIB_FORMAT prefix target 50%,90% (actual 94.24%) `am%`: 1.03ms
+  - BIB_FORMAT suffix target 1% (actual 1.14%) `%cm`: 0.97ms
+  - BIB_FORMAT suffix target 10%,25% (actual 4.48%) `%as`: 0.92ms
+  - BIB_FORMAT suffix target 50%,90% (actual 94.24%) `%am`: 1.06ms
+  - BIB_FORMAT contains target 1% (actual 1.14%) `%cm%`: 0.98ms
+  - BIB_FORMAT contains target 10%,25% (actual 4.48%) `%as%`: 1.03ms
+  - BIB_FORMAT contains target 50%,90% (actual 94.24%) `%am%`: 0.98ms
+  - CALL_NO_TYPE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `0%`: 0.85ms
+  - CALL_NO_TYPE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%0`: 0.79ms
+  - CALL_NO_TYPE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%0%`: 0.79ms
+  - CLASS_BROAD prefix target 1% (actual 1.10%) `Q -%`: 1.01ms
+  - CLASS_BROAD prefix target 10% (actual 9.63%) `H -%`: 1.05ms
+  - CLASS_BROAD prefix target 25%,50%,90% (actual 31.31%) `P -%`: 1.09ms
+  - CLASS_BROAD suffix target 1% (actual 0.87%) `%ine`: 1.05ms
+  - CLASS_BROAD suffix target 10% (actual 9.63%) `%ces`: 1.12ms
+  - CLASS_BROAD suffix target 25%,50%,90% (actual 31.64%) `%ure`: 1.22ms
+  - CLASS_BROAD contains target 1% (actual 0.87%) `%Med%`: 0.99ms
+  - CLASS_BROAD contains target 10% (actual 12.53%) `%Psy%`: 1.07ms
+  - CLASS_BROAD contains target 25% (actual 19.12%) `%ica%`: 1.04ms
+  - CLASS_BROAD contains target 50%,90% (actual 33.08%) `% an%`: 1.09ms
+  - CLASS_GROUP prefix target 1% (actual 2.21%) `Oth%`: 1.03ms
+  - CLASS_GROUP prefix target 10% (actual 4.13%) `Sci%`: 1.04ms
+  - CLASS_GROUP prefix target 25% (actual 16.79%) `Soc%`: 1.05ms
+  - CLASS_GROUP prefix target 50%,90% (actual 76.88%) `Hum%`: 1.04ms
+  - CLASS_GROUP suffix target 1%,10% (actual 2.21%) `%her`: 0.95ms
+  - CLASS_GROUP suffix target 25% (actual 20.92%) `%ces`: 1.02ms
+  - CLASS_GROUP suffix target 50%,90% (actual 76.88%) `%ies`: 1.16ms
+  - CLASS_GROUP contains target 1% (actual 2.21%) `%the%`: 1.03ms
+  - CLASS_GROUP contains target 10% (actual 16.79%) `% Sc%`: 1.12ms
+  - CLASS_GROUP contains target 25% (actual 20.92%) `%ien%`: 1.06ms
+  - CLASS_GROUP contains target 50%,90% (actual 76.88%) `%ani%`: 1.17ms
+  - CLASS_LETTER prefix target 1% (actual 0.97%) `JN%`: 0.98ms
+  - CLASS_LETTER prefix target 10% (actual 10.52%) `DG%`: 1.13ms
+  - CLASS_LETTER prefix target 25%,50%,90% (actual 12.53%) `B%`: 1.07ms
+  - CLASS_LETTER suffix target 1% (actual 0.97%) `%JN`: 1.00ms
+  - CLASS_LETTER suffix target 10%,25%,50%,90% (actual 10.52%) `%DG`: 1.01ms
+  - CLASS_LETTER contains target 1% (actual 0.97%) `%JN%`: 0.97ms
+  - CLASS_LETTER contains target 10% (actual 10.52%) `%DG%`: 1.05ms
+  - CLASS_LETTER contains target 25%,50%,90% (actual 14.31%) `%B%`: 1.02ms
+  - CLASS_NARROW prefix target 1% (actual 0.96%) `ND %`: 0.97ms
+  - CLASS_NARROW prefix target 10%,25%,50%,90% (actual 5.99%) `PN %`: 1.08ms
+  - CLASS_NARROW suffix target 1% (actual 0.98%) `%nce`: 1.05ms
+  - CLASS_NARROW suffix target 10% (actual 7.27%) `%ons`: 1.13ms
+  - CLASS_NARROW suffix target 25%,50%,90% (actual 25.24%) `%ure`: 1.22ms
+  - CLASS_NARROW contains target 1% (actual 1.03%) `%pec%`: 1.04ms
+  - CLASS_NARROW contains target 10% (actual 11.36%) `%olo%`: 1.14ms
+  - CLASS_NARROW contains target 25% (actual 22.35%) `%and%`: 1.16ms
+  - CLASS_NARROW contains target 50%,90% (actual 32.23%) `%era%`: 1.31ms
+  - DATE prefix target 1% (actual 1.01%) `196%`: 1.11ms
+  - DATE prefix target 10% (actual 12.23%) `201%`: 1.18ms
+  - DATE prefix target 25% (actual 24.43%) `199%`: 1.24ms
+  - DATE prefix target 50%,90% (actual 52.63%) `200%`: 1.19ms
+  - DATE suffix target 1% (actual 0.87%) `%992`: 1.06ms
+  - DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 1.13ms
+  - DATE contains target 1% (actual 1.01%) `%196%`: 1.14ms
+  - DATE contains target 10% (actual 12.23%) `%201%`: 1.25ms
+  - DATE contains target 25% (actual 24.43%) `%199%`: 1.16ms
+  - DATE contains target 50%,90% (actual 52.63%) `%200%`: 1.18ms
+  - DATE_RANGE_CENTURY prefix target 1%,10% (actual 0.32%) `180%`: 1.04ms
+  - DATE_RANGE_CENTURY prefix target 25% (actual 34.74%) `190%`: 1.13ms
+  - DATE_RANGE_CENTURY prefix target 50%,90% (actual 64.86%) `200%`: 1.15ms
+  - DATE_RANGE_CENTURY suffix target 1%,10% (actual 0.32%) `%899`: 1.01ms
+  - DATE_RANGE_CENTURY suffix target 25% (actual 34.74%) `%999`: 1.18ms
+  - DATE_RANGE_CENTURY suffix target 50%,90% (actual 64.86%) `%099`: 1.12ms
+  - DATE_RANGE_CENTURY contains target 1%,10% (actual 0.06%) `%kno%`: 0.97ms
+  - DATE_RANGE_CENTURY contains target 25% (actual 35.08%) `%0-1%`: 1.21ms
+  - DATE_RANGE_CENTURY contains target 50%,90% (actual 64.86%) `%0-2%`: 1.06ms
+  - DATE_RANGE_DECADE prefix target 1% (actual 1.01%) `196%`: 1.06ms
+  - DATE_RANGE_DECADE prefix target 10% (actual 12.23%) `201%`: 1.13ms
+  - DATE_RANGE_DECADE prefix target 25% (actual 24.43%) `199%`: 1.19ms
+  - DATE_RANGE_DECADE prefix target 50%,90% (actual 52.63%) `200%`: 1.15ms
+  - DATE_RANGE_DECADE suffix target 1% (actual 1.01%) `%969`: 1.11ms
+  - DATE_RANGE_DECADE suffix target 10% (actual 12.23%) `%019`: 1.10ms
+  - DATE_RANGE_DECADE suffix target 25% (actual 24.63%) `%999`: 1.19ms
+  - DATE_RANGE_DECADE suffix target 50%,90% (actual 52.63%) `%009`: 1.38ms
+  - DATE_RANGE_DECADE contains target 1%,10% (actual 0.06%) `%kno%`: 1.00ms
+  - DATE_RANGE_DECADE contains target 25% (actual 35.08%) `%0-1%`: 1.15ms
+  - DATE_RANGE_DECADE contains target 50%,90% (actual 64.86%) `%0-2%`: 1.33ms
+  - LANGUAGE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `ita%`: 0.91ms
+  - LANGUAGE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ita`: 0.82ms
+  - LANGUAGE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ita%`: 0.93ms
+  - LC_BROAD prefix target 1% (actual 1.10%) `Q%`: 0.98ms
+  - LC_BROAD prefix target 10% (actual 9.63%) `H%`: 1.21ms
+  - LC_BROAD prefix target 25%,50%,90% (actual 31.31%) `P%`: 1.29ms
+  - LC_BROAD suffix target 1% (actual 1.10%) `%Q`: 1.13ms
+  - LC_BROAD suffix target 10% (actual 9.63%) `%H`: 1.12ms
+  - LC_BROAD suffix target 25%,50%,90% (actual 31.31%) `%P`: 1.25ms
+  - LC_BROAD contains target 1% (actual 1.10%) `%Q%`: 0.97ms
+  - LC_BROAD contains target 10% (actual 9.63%) `%H%`: 1.08ms
+  - LC_BROAD contains target 25%,50%,90% (actual 31.31%) `%P%`: 1.31ms
+  - LC_NARROW prefix target 1% (actual 1.02%) `HQ%`: 1.13ms
+  - LC_NARROW prefix target 10%,25%,50%,90% (actual 12.53%) `B%`: 1.26ms
+  - LC_NARROW suffix target 1% (actual 1.02%) `%HQ`: 1.11ms
+  - LC_NARROW suffix target 10%,25%,50%,90% (actual 5.07%) `%B`: 1.16ms
+  - LC_NARROW contains target 1% (actual 1.02%) `%HQ%`: 1.10ms
+  - LC_NARROW contains target 10% (actual 5.77%) `%C%`: 1.05ms
+  - LC_NARROW contains target 25%,50%,90% (actual 14.31%) `%B%`: 1.21ms
+  - PATRON_GROUP_CODE prefix target 1% (actual 0.97%) `NAM%`: 0.93ms
+  - PATRON_GROUP_CODE prefix target 10%,25% (actual 12.07%) `FRO%`: 1.07ms
+  - PATRON_GROUP_CODE prefix target 50%,90% (actual 62.14%) `INP%`: 1.31ms
+  - PATRON_GROUP_CODE suffix target 1% (actual 0.97%) `%AME`: 1.10ms
+  - PATRON_GROUP_CODE suffix target 10%,25% (actual 12.07%) `%ROG`: 1.14ms
+  - PATRON_GROUP_CODE suffix target 50%,90% (actual 62.14%) `%ESS`: 1.08ms
+  - PATRON_GROUP_CODE contains target 1% (actual 0.97%) `%NAM%`: 0.96ms
+  - PATRON_GROUP_CODE contains target 10%,25% (actual 12.07%) `%FRO%`: 1.02ms
+  - PATRON_GROUP_CODE contains target 50%,90% (actual 62.14%) `%ROC%`: 1.18ms
+  - PATRON_GROUP_DISPLAY prefix target 1% (actual 0.97%) `OPA%`: 0.94ms
+  - PATRON_GROUP_DISPLAY prefix target 10%,25% (actual 12.07%) `Fro%`: 0.99ms
+  - PATRON_GROUP_DISPLAY prefix target 50%,90% (actual 62.14%) `In %`: 1.24ms
+  - PATRON_GROUP_DISPLAY suffix target 1% (actual 0.97%) `%lag`: 1.00ms
+  - PATRON_GROUP_DISPLAY suffix target 10%,25% (actual 12.07%) `%log`: 1.00ms
+  - PATRON_GROUP_DISPLAY suffix target 50%,90% (actual 62.14%) `%ess`: 1.15ms
+  - PATRON_GROUP_DISPLAY contains target 1% (actual 0.97%) `%ssa%`: 1.06ms
+  - PATRON_GROUP_DISPLAY contains target 10% (actual 10.31%) `%ent%`: 1.06ms
+  - PATRON_GROUP_DISPLAY contains target 25% (actual 12.07%) `%ont%`: 1.11ms
+  - PATRON_GROUP_DISPLAY contains target 50%,90% (actual 62.15%) `%Pro%`: 1.17ms
+  - PATRON_GROUP_NAME prefix target 1% (actual 0.97%) `OPA%`: 1.02ms
+  - PATRON_GROUP_NAME prefix target 10%,25% (actual 12.07%) `Fro%`: 1.00ms
+  - PATRON_GROUP_NAME prefix target 50%,90% (actual 62.14%) `In %`: 1.04ms
+  - PATRON_GROUP_NAME suffix target 1% (actual 0.97%) `%lag`: 1.05ms
+  - PATRON_GROUP_NAME suffix target 10%,25% (actual 12.07%) `%log`: 1.12ms
+  - PATRON_GROUP_NAME suffix target 50%,90% (actual 62.14%) `%ess`: 1.17ms
+  - PATRON_GROUP_NAME contains target 1% (actual 0.97%) `%ssa%`: 0.97ms
+  - PATRON_GROUP_NAME contains target 10%,25% (actual 12.07%) `%ont%`: 1.01ms
+  - PATRON_GROUP_NAME contains target 50%,90% (actual 62.15%) `%Pro%`: 1.17ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 1%,10%,25%,50% (actual 12.10%) `Pat%`: 1.04ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 90% (actual 87.90%) `Pse%`: 1.16ms
+  - PATRON_TYPE (Pseudo vs Patron) suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ron`: 1.00ms
+  - PATRON_TYPE (Pseudo vs Patron) contains target 1%,10%,25%,50%,90% (actual 87.90%) `%dop%`: 1.04ms
+  - PLACE_CODE prefix target 1%,10%,25%,50%,90% (actual 0.46%) `gw%`: 0.98ms
+  - PLACE_CODE suffix target 1%,10%,25%,50%,90% (actual 0.46%) `%gw`: 1.02ms
+  - PLACE_CODE contains target 1%,10%,25%,50%,90% (actual 0.46%) `%gw%`: 0.99ms
+  - Patron Group prefix target 1% (actual 1.04%) `Und%`: 0.96ms
+  - Patron Group prefix target 10%,25% (actual 4.97%) `Gra%`: 1.04ms
+  - Patron Group prefix target 50%,90% (actual 85.31%) `Pro%`: 1.06ms
+  - Patron Group suffix target 1% (actual 0.48%) `%rel`: 0.90ms
+  - Patron Group suffix target 10%,25% (actual 6.00%) `%ate`: 1.09ms
+  - Patron Group suffix target 50%,90% (actual 88.33%) `%ing`: 1.10ms
+  - Patron Group contains target 1% (actual 1.04%) `%gra%`: 1.04ms
+  - Patron Group contains target 10%,25% (actual 6.00%) `%adu%`: 1.02ms
+  - Patron Group contains target 50% (actual 85.31%) `%ces%`: 1.18ms
+  - Patron Group contains target 90% (actual 85.32%) `%ssi%`: 1.24ms
+  - Calculation_1810108111146429 prefix target 1% (actual 1.10%) `Q -%`: 1.09ms
+  - Calculation_1810108111146429 prefix target 10% (actual 9.63%) `H -%`: 1.10ms
+  - Calculation_1810108111146429 prefix target 25%,50%,90% (actual 31.31%) `P -%`: 1.12ms
+  - Calculation_1810108111146429 suffix target 1% (actual 0.87%) `%ine`: 1.02ms
+  - Calculation_1810108111146429 suffix target 10% (actual 9.63%) `%ces`: 1.10ms
+  - Calculation_1810108111146429 suffix target 25%,50%,90% (actual 31.64%) `%ure`: 1.20ms
+  - Calculation_1810108111146429 contains target 1% (actual 0.87%) `%Med%`: 0.93ms
+  - Calculation_1810108111146429 contains target 10% (actual 12.53%) `%Psy%`: 1.16ms
+  - Calculation_1810108111146429 contains target 25% (actual 19.12%) `%ica%`: 1.43ms
+  - Calculation_1810108111146429 contains target 50%,90% (actual 33.08%) `% an%`: 1.35ms
+- like_summary:
+  - contains: avg median_ms **1.10** (n=60)
+  - prefix: avg median_ms **1.09** (n=55)
+  - suffix: avg median_ms **1.08** (n=49)
+
+## parquet_uncompressed
+- size_mb: **19.61**
+- compression_time_s: **0.417**
+- compression_speed_mb_s: **571.685**
+- decompression_time_s: **0.076**
+- decompression_speed_mb_s: **256.457**
+- compression_ratio: **12.141**
+- encodings:
+  - BEGIN_PUB_DATE: PLAIN_DICTIONARY
+  - BIB_FORMAT: PLAIN_DICTIONARY
+  - BIB_ID: PLAIN
+  - CALL_NO_TYPE: PLAIN_DICTIONARY
+  - CHARGE_DATE: PLAIN_DICTIONARY
+  - CLASS_BROAD: PLAIN_DICTIONARY
+  - CLASS_GROUP: PLAIN_DICTIONARY
+  - CLASS_LETTER: PLAIN_DICTIONARY
+  - CLASS_NARROW: PLAIN_DICTIONARY
+  - DATE: PLAIN_DICTIONARY
+  - DATE_RANGE_CENTURY: PLAIN_DICTIONARY
+  - DATE_RANGE_DECADE: PLAIN_DICTIONARY
+  - DISCHARGE_DATE: PLAIN_DICTIONARY
+  - ID: PLAIN_DICTIONARY
+  - ID1: PLAIN_DICTIONARY
+  - LANGUAGE: PLAIN_DICTIONARY
+  - LC_BROAD: PLAIN_DICTIONARY
+  - LC_NARROW: PLAIN_DICTIONARY
+  - MFHD_ID: PLAIN
+  - Number of Records: PLAIN_DICTIONARY
+  - PATRON_GROUP_CODE: PLAIN_DICTIONARY
+  - PATRON_GROUP_DISPLAY: PLAIN_DICTIONARY
+  - PATRON_GROUP_ID: PLAIN_DICTIONARY
+  - PATRON_GROUP_ID1: PLAIN_DICTIONARY
+  - PATRON_GROUP_NAME: PLAIN_DICTIONARY
+  - PATRON_TYPE (Pseudo vs Patron): PLAIN_DICTIONARY
+  - PLACE_CODE: PLAIN_DICTIONARY
+  - Patron Group: PLAIN_DICTIONARY
+  - RENEWAL_COUNT: PLAIN_DICTIONARY
+  - Calculation_1810108111146429: PLAIN_DICTIONARY
+- full_scan_min median_ms: **0.87** (p95 **1.00**, cold **1.19**)
+- selective_predicate median_ms: **1.21** (p95 **1.33**, cold **1.23**)
+- random_access median_ms: **1.23** (p95 **1.33**, cold **2.09**)
+- best_select_col: `DISCHARGE_DATE` (avg median_ms **0.92**)
+- validation_pass: **True**
+- selectivity:
+  - BIB_ID: 1%: 1.65ms, 10%: 1.51ms, 25%: 1.52ms, 50%: 1.32ms, 90%: 1.44ms
+  - CHARGE_DATE: 1%: 1.16ms, 10%: 1.08ms, 25%: 1.13ms, 50%: 1.22ms, 90%: 1.45ms
+  - DISCHARGE_DATE: 1%: 0.91ms, 10%: 0.84ms, 25%: 0.81ms, 50%: 0.96ms, 90%: 1.10ms
+  - ID: 1%: 1.23ms, 10%: 1.29ms, 25%: 1.31ms, 50%: 1.22ms, 90%: 1.47ms
+  - ID1: 1%: 1.15ms, 10%: 1.23ms, 25%: 1.25ms, 50%: 1.34ms, 90%: 1.31ms
+  - MFHD_ID: 1%: 1.82ms, 10%: 1.55ms, 25%: 1.68ms, 50%: 1.76ms, 90%: 1.54ms
+  - PATRON_GROUP_ID: 1%: 1.11ms, 10%: 1.29ms, 25%: 1.33ms, 50%: 1.33ms, 90%: 1.22ms
+  - PATRON_GROUP_ID1: 1%: 1.13ms, 10%: 1.27ms, 25%: 1.27ms, 50%: 1.32ms, 90%: 1.31ms
+  - RENEWAL_COUNT: 1%: 1.20ms, 10%: 1.18ms, 25%: 1.20ms, 50%: 1.27ms, 90%: 1.24ms
+- like_predicates:
+  - BEGIN_PUB_DATE prefix target 1% (actual 1.01%) `196%`: 1.03ms
+  - BEGIN_PUB_DATE prefix target 10% (actual 12.23%) `201%`: 1.03ms
+  - BEGIN_PUB_DATE prefix target 25% (actual 24.43%) `199%`: 1.00ms
+  - BEGIN_PUB_DATE prefix target 50%,90% (actual 52.63%) `200%`: 1.08ms
+  - BEGIN_PUB_DATE suffix target 1% (actual 0.87%) `%992`: 0.98ms
+  - BEGIN_PUB_DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 0.99ms
+  - BEGIN_PUB_DATE contains target 1% (actual 1.01%) `%196%`: 0.93ms
+  - BEGIN_PUB_DATE contains target 10% (actual 12.23%) `%201%`: 1.01ms
+  - BEGIN_PUB_DATE contains target 25% (actual 24.43%) `%199%`: 0.93ms
+  - BEGIN_PUB_DATE contains target 50%,90% (actual 52.63%) `%200%`: 1.02ms
+  - BIB_FORMAT prefix target 1% (actual 1.14%) `cm%`: 0.89ms
+  - BIB_FORMAT prefix target 10%,25% (actual 4.48%) `as%`: 0.89ms
+  - BIB_FORMAT prefix target 50%,90% (actual 94.24%) `am%`: 0.98ms
+  - BIB_FORMAT suffix target 1% (actual 1.14%) `%cm`: 0.88ms
+  - BIB_FORMAT suffix target 10%,25% (actual 4.48%) `%as`: 0.91ms
+  - BIB_FORMAT suffix target 50%,90% (actual 94.24%) `%am`: 0.94ms
+  - BIB_FORMAT contains target 1% (actual 1.14%) `%cm%`: 0.88ms
+  - BIB_FORMAT contains target 10%,25% (actual 4.48%) `%as%`: 1.00ms
+  - BIB_FORMAT contains target 50%,90% (actual 94.24%) `%am%`: 0.97ms
+  - CALL_NO_TYPE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `0%`: 0.77ms
+  - CALL_NO_TYPE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%0`: 0.85ms
+  - CALL_NO_TYPE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%0%`: 0.81ms
+  - CLASS_BROAD prefix target 1% (actual 1.10%) `Q -%`: 0.98ms
+  - CLASS_BROAD prefix target 10% (actual 9.63%) `H -%`: 0.93ms
+  - CLASS_BROAD prefix target 25%,50%,90% (actual 31.31%) `P -%`: 1.21ms
+  - CLASS_BROAD suffix target 1% (actual 0.87%) `%ine`: 0.94ms
+  - CLASS_BROAD suffix target 10% (actual 9.63%) `%ces`: 1.01ms
+  - CLASS_BROAD suffix target 25%,50%,90% (actual 31.64%) `%ure`: 1.07ms
+  - CLASS_BROAD contains target 1% (actual 0.87%) `%Med%`: 1.02ms
+  - CLASS_BROAD contains target 10% (actual 12.53%) `%Psy%`: 0.99ms
+  - CLASS_BROAD contains target 25% (actual 19.12%) `%ica%`: 1.13ms
+  - CLASS_BROAD contains target 50%,90% (actual 33.08%) `% an%`: 1.11ms
+  - CLASS_GROUP prefix target 1% (actual 2.21%) `Oth%`: 1.03ms
+  - CLASS_GROUP prefix target 10% (actual 4.13%) `Sci%`: 0.98ms
+  - CLASS_GROUP prefix target 25% (actual 16.79%) `Soc%`: 1.06ms
+  - CLASS_GROUP prefix target 50%,90% (actual 76.88%) `Hum%`: 1.06ms
+  - CLASS_GROUP suffix target 1%,10% (actual 2.21%) `%her`: 0.96ms
+  - CLASS_GROUP suffix target 25% (actual 20.92%) `%ces`: 1.03ms
+  - CLASS_GROUP suffix target 50%,90% (actual 76.88%) `%ies`: 0.99ms
+  - CLASS_GROUP contains target 1% (actual 2.21%) `%the%`: 1.00ms
+  - CLASS_GROUP contains target 10% (actual 16.79%) `% Sc%`: 1.12ms
+  - CLASS_GROUP contains target 25% (actual 20.92%) `%ien%`: 1.06ms
+  - CLASS_GROUP contains target 50%,90% (actual 76.88%) `%ani%`: 1.14ms
+  - CLASS_LETTER prefix target 1% (actual 0.97%) `JN%`: 0.90ms
+  - CLASS_LETTER prefix target 10% (actual 10.52%) `DG%`: 1.15ms
+  - CLASS_LETTER prefix target 25%,50%,90% (actual 12.53%) `B%`: 1.04ms
+  - CLASS_LETTER suffix target 1% (actual 0.97%) `%JN`: 0.92ms
+  - CLASS_LETTER suffix target 10%,25%,50%,90% (actual 10.52%) `%DG`: 1.06ms
+  - CLASS_LETTER contains target 1% (actual 0.97%) `%JN%`: 0.86ms
+  - CLASS_LETTER contains target 10% (actual 10.52%) `%DG%`: 1.05ms
+  - CLASS_LETTER contains target 25%,50%,90% (actual 14.31%) `%B%`: 1.00ms
+  - CLASS_NARROW prefix target 1% (actual 0.96%) `ND %`: 0.93ms
+  - CLASS_NARROW prefix target 10%,25%,50%,90% (actual 5.99%) `PN %`: 1.06ms
+  - CLASS_NARROW suffix target 1% (actual 0.98%) `%nce`: 0.88ms
+  - CLASS_NARROW suffix target 10% (actual 7.27%) `%ons`: 1.00ms
+  - CLASS_NARROW suffix target 25%,50%,90% (actual 25.24%) `%ure`: 1.17ms
+  - CLASS_NARROW contains target 1% (actual 1.03%) `%pec%`: 0.93ms
+  - CLASS_NARROW contains target 10% (actual 11.36%) `%olo%`: 1.03ms
+  - CLASS_NARROW contains target 25% (actual 22.35%) `%and%`: 1.15ms
+  - CLASS_NARROW contains target 50%,90% (actual 32.23%) `%era%`: 1.17ms
+  - DATE prefix target 1% (actual 1.01%) `196%`: 0.86ms
+  - DATE prefix target 10% (actual 12.23%) `201%`: 1.08ms
+  - DATE prefix target 25% (actual 24.43%) `199%`: 1.10ms
+  - DATE prefix target 50%,90% (actual 52.63%) `200%`: 1.05ms
+  - DATE suffix target 1% (actual 0.87%) `%992`: 0.96ms
+  - DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 1.02ms
+  - DATE contains target 1% (actual 1.01%) `%196%`: 0.95ms
+  - DATE contains target 10% (actual 12.23%) `%201%`: 1.02ms
+  - DATE contains target 25% (actual 24.43%) `%199%`: 1.00ms
+  - DATE contains target 50%,90% (actual 52.63%) `%200%`: 1.22ms
+  - DATE_RANGE_CENTURY prefix target 1%,10% (actual 0.32%) `180%`: 0.92ms
+  - DATE_RANGE_CENTURY prefix target 25% (actual 34.74%) `190%`: 1.09ms
+  - DATE_RANGE_CENTURY prefix target 50%,90% (actual 64.86%) `200%`: 1.03ms
+  - DATE_RANGE_CENTURY suffix target 1%,10% (actual 0.32%) `%899`: 0.90ms
+  - DATE_RANGE_CENTURY suffix target 25% (actual 34.74%) `%999`: 0.97ms
+  - DATE_RANGE_CENTURY suffix target 50%,90% (actual 64.86%) `%099`: 1.15ms
+  - DATE_RANGE_CENTURY contains target 1%,10% (actual 0.06%) `%kno%`: 0.96ms
+  - DATE_RANGE_CENTURY contains target 25% (actual 35.08%) `%0-1%`: 1.10ms
+  - DATE_RANGE_CENTURY contains target 50%,90% (actual 64.86%) `%0-2%`: 1.14ms
+  - DATE_RANGE_DECADE prefix target 1% (actual 1.01%) `196%`: 0.98ms
+  - DATE_RANGE_DECADE prefix target 10% (actual 12.23%) `201%`: 1.02ms
+  - DATE_RANGE_DECADE prefix target 25% (actual 24.43%) `199%`: 0.97ms
+  - DATE_RANGE_DECADE prefix target 50%,90% (actual 52.63%) `200%`: 1.19ms
+  - DATE_RANGE_DECADE suffix target 1% (actual 1.01%) `%969`: 0.91ms
+  - DATE_RANGE_DECADE suffix target 10% (actual 12.23%) `%019`: 1.18ms
+  - DATE_RANGE_DECADE suffix target 25% (actual 24.63%) `%999`: 1.09ms
+  - DATE_RANGE_DECADE suffix target 50%,90% (actual 52.63%) `%009`: 1.19ms
+  - DATE_RANGE_DECADE contains target 1%,10% (actual 0.06%) `%kno%`: 0.97ms
+  - DATE_RANGE_DECADE contains target 25% (actual 35.08%) `%0-1%`: 1.13ms
+  - DATE_RANGE_DECADE contains target 50%,90% (actual 64.86%) `%0-2%`: 1.20ms
+  - LANGUAGE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `ita%`: 0.86ms
+  - LANGUAGE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ita`: 0.76ms
+  - LANGUAGE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ita%`: 0.79ms
+  - LC_BROAD prefix target 1% (actual 1.10%) `Q%`: 1.09ms
+  - LC_BROAD prefix target 10% (actual 9.63%) `H%`: 1.02ms
+  - LC_BROAD prefix target 25%,50%,90% (actual 31.31%) `P%`: 1.07ms
+  - LC_BROAD suffix target 1% (actual 1.10%) `%Q`: 0.87ms
+  - LC_BROAD suffix target 10% (actual 9.63%) `%H`: 1.07ms
+  - LC_BROAD suffix target 25%,50%,90% (actual 31.31%) `%P`: 1.11ms
+  - LC_BROAD contains target 1% (actual 1.10%) `%Q%`: 0.95ms
+  - LC_BROAD contains target 10% (actual 9.63%) `%H%`: 1.04ms
+  - LC_BROAD contains target 25%,50%,90% (actual 31.31%) `%P%`: 1.12ms
+  - LC_NARROW prefix target 1% (actual 1.02%) `HQ%`: 1.07ms
+  - LC_NARROW prefix target 10%,25%,50%,90% (actual 12.53%) `B%`: 1.10ms
+  - LC_NARROW suffix target 1% (actual 1.02%) `%HQ`: 1.01ms
+  - LC_NARROW suffix target 10%,25%,50%,90% (actual 5.07%) `%B`: 1.06ms
+  - LC_NARROW contains target 1% (actual 1.02%) `%HQ%`: 0.98ms
+  - LC_NARROW contains target 10% (actual 5.77%) `%C%`: 1.06ms
+  - LC_NARROW contains target 25%,50%,90% (actual 14.31%) `%B%`: 1.11ms
+  - PATRON_GROUP_CODE prefix target 1% (actual 0.97%) `NAM%`: 1.03ms
+  - PATRON_GROUP_CODE prefix target 10%,25% (actual 12.07%) `FRO%`: 0.98ms
+  - PATRON_GROUP_CODE prefix target 50%,90% (actual 62.14%) `INP%`: 1.07ms
+  - PATRON_GROUP_CODE suffix target 1% (actual 0.97%) `%AME`: 0.97ms
+  - PATRON_GROUP_CODE suffix target 10%,25% (actual 12.07%) `%ROG`: 0.96ms
+  - PATRON_GROUP_CODE suffix target 50%,90% (actual 62.14%) `%ESS`: 1.09ms
+  - PATRON_GROUP_CODE contains target 1% (actual 0.97%) `%NAM%`: 1.04ms
+  - PATRON_GROUP_CODE contains target 10%,25% (actual 12.07%) `%FRO%`: 0.97ms
+  - PATRON_GROUP_CODE contains target 50%,90% (actual 62.14%) `%ROC%`: 1.01ms
+  - PATRON_GROUP_DISPLAY prefix target 1% (actual 0.97%) `OPA%`: 0.91ms
+  - PATRON_GROUP_DISPLAY prefix target 10%,25% (actual 12.07%) `Fro%`: 0.93ms
+  - PATRON_GROUP_DISPLAY prefix target 50%,90% (actual 62.14%) `In %`: 1.18ms
+  - PATRON_GROUP_DISPLAY suffix target 1% (actual 0.97%) `%lag`: 1.00ms
+  - PATRON_GROUP_DISPLAY suffix target 10%,25% (actual 12.07%) `%log`: 1.02ms
+  - PATRON_GROUP_DISPLAY suffix target 50%,90% (actual 62.14%) `%ess`: 1.01ms
+  - PATRON_GROUP_DISPLAY contains target 1% (actual 0.97%) `%ssa%`: 0.99ms
+  - PATRON_GROUP_DISPLAY contains target 10% (actual 10.31%) `%ent%`: 0.95ms
+  - PATRON_GROUP_DISPLAY contains target 25% (actual 12.07%) `%ont%`: 0.90ms
+  - PATRON_GROUP_DISPLAY contains target 50%,90% (actual 62.15%) `%Pro%`: 1.08ms
+  - PATRON_GROUP_NAME prefix target 1% (actual 0.97%) `OPA%`: 0.92ms
+  - PATRON_GROUP_NAME prefix target 10%,25% (actual 12.07%) `Fro%`: 0.92ms
+  - PATRON_GROUP_NAME prefix target 50%,90% (actual 62.14%) `In %`: 1.06ms
+  - PATRON_GROUP_NAME suffix target 1% (actual 0.97%) `%lag`: 0.91ms
+  - PATRON_GROUP_NAME suffix target 10%,25% (actual 12.07%) `%log`: 1.04ms
+  - PATRON_GROUP_NAME suffix target 50%,90% (actual 62.14%) `%ess`: 1.10ms
+  - PATRON_GROUP_NAME contains target 1% (actual 0.97%) `%ssa%`: 0.90ms
+  - PATRON_GROUP_NAME contains target 10%,25% (actual 12.07%) `%ont%`: 0.88ms
+  - PATRON_GROUP_NAME contains target 50%,90% (actual 62.15%) `%Pro%`: 1.05ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 1%,10%,25%,50% (actual 12.10%) `Pat%`: 0.94ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 90% (actual 87.90%) `Pse%`: 0.97ms
+  - PATRON_TYPE (Pseudo vs Patron) suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ron`: 0.90ms
+  - PATRON_TYPE (Pseudo vs Patron) contains target 1%,10%,25%,50%,90% (actual 87.90%) `%dop%`: 1.07ms
+  - PLACE_CODE prefix target 1%,10%,25%,50%,90% (actual 0.46%) `gw%`: 0.92ms
+  - PLACE_CODE suffix target 1%,10%,25%,50%,90% (actual 0.46%) `%gw`: 0.94ms
+  - PLACE_CODE contains target 1%,10%,25%,50%,90% (actual 0.46%) `%gw%`: 0.93ms
+  - Patron Group prefix target 1% (actual 1.04%) `Und%`: 0.87ms
+  - Patron Group prefix target 10%,25% (actual 4.97%) `Gra%`: 0.93ms
+  - Patron Group prefix target 50%,90% (actual 85.31%) `Pro%`: 1.01ms
+  - Patron Group suffix target 1% (actual 0.48%) `%rel`: 0.99ms
+  - Patron Group suffix target 10%,25% (actual 6.00%) `%ate`: 1.01ms
+  - Patron Group suffix target 50%,90% (actual 88.33%) `%ing`: 1.05ms
+  - Patron Group contains target 1% (actual 1.04%) `%gra%`: 0.93ms
+  - Patron Group contains target 10%,25% (actual 6.00%) `%adu%`: 0.91ms
+  - Patron Group contains target 50% (actual 85.31%) `%ces%`: 1.00ms
+  - Patron Group contains target 90% (actual 85.32%) `%ssi%`: 1.12ms
+  - Calculation_1810108111146429 prefix target 1% (actual 1.10%) `Q -%`: 0.86ms
+  - Calculation_1810108111146429 prefix target 10% (actual 9.63%) `H -%`: 1.01ms
+  - Calculation_1810108111146429 prefix target 25%,50%,90% (actual 31.31%) `P -%`: 0.99ms
+  - Calculation_1810108111146429 suffix target 1% (actual 0.87%) `%ine`: 0.94ms
+  - Calculation_1810108111146429 suffix target 10% (actual 9.63%) `%ces`: 1.00ms
+  - Calculation_1810108111146429 suffix target 25%,50%,90% (actual 31.64%) `%ure`: 1.17ms
+  - Calculation_1810108111146429 contains target 1% (actual 0.87%) `%Med%`: 0.96ms
+  - Calculation_1810108111146429 contains target 10% (actual 12.53%) `%Psy%`: 1.02ms
+  - Calculation_1810108111146429 contains target 25% (actual 19.12%) `%ica%`: 1.00ms
+  - Calculation_1810108111146429 contains target 50%,90% (actual 33.08%) `% an%`: 1.16ms
+- like_summary:
+  - contains: avg median_ms **1.01** (n=60)
+  - prefix: avg median_ms **1.00** (n=55)
+  - suffix: avg median_ms **1.00** (n=49)
+
+## vortex_default
+- size_mb: **16.35**
+- compression_time_s: **0.531**
+- compression_speed_mb_s: **448.583**
+- decompression_time_s: **0.433**
+- decompression_speed_mb_s: **37.788**
+- compression_ratio: **14.569**
+- encodings: unable to read vortex encodings: Type `u32` at position 1942 is unaligned.
+	while verifying table field `max` at position 1942
+	while verifying vector element 0 at position 24
+	while verifying table field `field_stats` at position 16
+
+
+- full_scan_min median_ms: **1.61** (p95 **2.04**, cold **22.62**)
+- selective_predicate median_ms: **2.85** (p95 **3.03**, cold **14.85**)
+- random_access median_ms: **3.15** (p95 **3.28**, cold **107.27**)
+- best_select_col: `BIB_ID` (avg median_ms **2.11**)
+- validation_pass: **True**
+- selectivity:
+  - BIB_ID: 1%: 2.21ms, 10%: 1.97ms, 25%: 2.35ms, 50%: 1.87ms, 90%: 2.13ms
+  - CHARGE_DATE: 1%: 3.13ms, 10%: 3.37ms, 25%: 3.66ms, 50%: 3.55ms, 90%: 3.33ms
+  - DISCHARGE_DATE: 1%: 2.83ms, 10%: 2.81ms, 25%: 2.79ms, 50%: 2.77ms, 90%: 2.81ms
+  - ID: 1%: 2.38ms, 10%: 2.24ms, 25%: 2.00ms, 50%: 2.08ms, 90%: 2.73ms
+  - ID1: 1%: 2.21ms, 10%: 1.99ms, 25%: 1.99ms, 50%: 2.62ms, 90%: 2.49ms
+  - MFHD_ID: 1%: 2.62ms, 10%: 2.20ms, 25%: 2.38ms, 50%: 2.88ms, 90%: 2.75ms
+  - PATRON_GROUP_ID: 1%: 2.58ms, 10%: 2.67ms, 25%: 2.87ms, 50%: 2.58ms, 90%: 2.47ms
+  - PATRON_GROUP_ID1: 1%: 2.88ms, 10%: 2.84ms, 25%: 2.86ms, 50%: 2.85ms, 90%: 2.60ms
+  - RENEWAL_COUNT: 1%: 2.01ms, 10%: 2.08ms, 25%: 2.36ms, 50%: 2.07ms, 90%: 2.08ms
+- like_predicates:
+  - BEGIN_PUB_DATE prefix target 1% (actual 1.01%) `196%`: 1.71ms
+  - BEGIN_PUB_DATE prefix target 10% (actual 12.23%) `201%`: 1.81ms
+  - BEGIN_PUB_DATE prefix target 25% (actual 24.43%) `199%`: 2.26ms
+  - BEGIN_PUB_DATE prefix target 50%,90% (actual 52.63%) `200%`: 2.16ms
+  - BEGIN_PUB_DATE suffix target 1% (actual 0.87%) `%992`: 1.72ms
+  - BEGIN_PUB_DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 2.00ms
+  - BEGIN_PUB_DATE contains target 1% (actual 1.01%) `%196%`: 1.74ms
+  - BEGIN_PUB_DATE contains target 10% (actual 12.23%) `%201%`: 1.77ms
+  - BEGIN_PUB_DATE contains target 25% (actual 24.43%) `%199%`: 2.14ms
+  - BEGIN_PUB_DATE contains target 50%,90% (actual 52.63%) `%200%`: 2.15ms
+  - BIB_FORMAT prefix target 1% (actual 1.14%) `cm%`: 1.78ms
+  - BIB_FORMAT prefix target 10%,25% (actual 4.48%) `as%`: 1.98ms
+  - BIB_FORMAT prefix target 50%,90% (actual 94.24%) `am%`: 2.08ms
+  - BIB_FORMAT suffix target 1% (actual 1.14%) `%cm`: 1.89ms
+  - BIB_FORMAT suffix target 10%,25% (actual 4.48%) `%as`: 2.02ms
+  - BIB_FORMAT suffix target 50%,90% (actual 94.24%) `%am`: 2.15ms
+  - BIB_FORMAT contains target 1% (actual 1.14%) `%cm%`: 1.84ms
+  - BIB_FORMAT contains target 10%,25% (actual 4.48%) `%as%`: 2.01ms
+  - BIB_FORMAT contains target 50%,90% (actual 94.24%) `%am%`: 1.97ms
+  - CALL_NO_TYPE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `0%`: 1.55ms
+  - CALL_NO_TYPE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%0`: 1.59ms
+  - CALL_NO_TYPE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%0%`: 1.58ms
+  - CLASS_BROAD prefix target 1% (actual 1.10%) `Q -%`: 1.79ms
+  - CLASS_BROAD prefix target 10% (actual 9.63%) `H -%`: 1.90ms
+  - CLASS_BROAD prefix target 25%,50%,90% (actual 31.31%) `P -%`: 2.20ms
+  - CLASS_BROAD suffix target 1% (actual 0.87%) `%ine`: 1.76ms
+  - CLASS_BROAD suffix target 10% (actual 9.63%) `%ces`: 1.84ms
+  - CLASS_BROAD suffix target 25%,50%,90% (actual 31.64%) `%ure`: 2.39ms
+  - CLASS_BROAD contains target 1% (actual 0.87%) `%Med%`: 1.73ms
+  - CLASS_BROAD contains target 10% (actual 12.53%) `%Psy%`: 1.91ms
+  - CLASS_BROAD contains target 25% (actual 19.12%) `%ica%`: 2.17ms
+  - CLASS_BROAD contains target 50%,90% (actual 33.08%) `% an%`: 2.36ms
+  - CLASS_GROUP prefix target 1% (actual 2.21%) `Oth%`: 1.68ms
+  - CLASS_GROUP prefix target 10% (actual 4.13%) `Sci%`: 1.77ms
+  - CLASS_GROUP prefix target 25% (actual 16.79%) `Soc%`: 1.96ms
+  - CLASS_GROUP prefix target 50%,90% (actual 76.88%) `Hum%`: 2.19ms
+  - CLASS_GROUP suffix target 1%,10% (actual 2.21%) `%her`: 1.75ms
+  - CLASS_GROUP suffix target 25% (actual 20.92%) `%ces`: 1.94ms
+  - CLASS_GROUP suffix target 50%,90% (actual 76.88%) `%ies`: 2.13ms
+  - CLASS_GROUP contains target 1% (actual 2.21%) `%the%`: 1.75ms
+  - CLASS_GROUP contains target 10% (actual 16.79%) `% Sc%`: 1.91ms
+  - CLASS_GROUP contains target 25% (actual 20.92%) `%ien%`: 2.11ms
+  - CLASS_GROUP contains target 50%,90% (actual 76.88%) `%ani%`: 2.17ms
+  - CLASS_LETTER prefix target 1% (actual 0.97%) `JN%`: 1.82ms
+  - CLASS_LETTER prefix target 10% (actual 10.52%) `DG%`: 1.82ms
+  - CLASS_LETTER prefix target 25%,50%,90% (actual 12.53%) `B%`: 1.83ms
+  - CLASS_LETTER suffix target 1% (actual 0.97%) `%JN`: 1.90ms
+  - CLASS_LETTER suffix target 10%,25%,50%,90% (actual 10.52%) `%DG`: 1.89ms
+  - CLASS_LETTER contains target 1% (actual 0.97%) `%JN%`: 1.89ms
+  - CLASS_LETTER contains target 10% (actual 10.52%) `%DG%`: 2.01ms
+  - CLASS_LETTER contains target 25%,50%,90% (actual 14.31%) `%B%`: 2.15ms
+  - CLASS_NARROW prefix target 1% (actual 0.96%) `ND %`: 1.72ms
+  - CLASS_NARROW prefix target 10%,25%,50%,90% (actual 5.99%) `PN %`: 1.98ms
+  - CLASS_NARROW suffix target 1% (actual 0.98%) `%nce`: 1.77ms
+  - CLASS_NARROW suffix target 10% (actual 7.27%) `%ons`: 1.93ms
+  - CLASS_NARROW suffix target 25%,50%,90% (actual 25.24%) `%ure`: 2.45ms
+  - CLASS_NARROW contains target 1% (actual 1.03%) `%pec%`: 1.79ms
+  - CLASS_NARROW contains target 10% (actual 11.36%) `%olo%`: 2.03ms
+  - CLASS_NARROW contains target 25% (actual 22.35%) `%and%`: 2.18ms
+  - CLASS_NARROW contains target 50%,90% (actual 32.23%) `%era%`: 2.37ms
+  - DATE prefix target 1% (actual 1.01%) `196%`: 1.81ms
+  - DATE prefix target 10% (actual 12.23%) `201%`: 1.78ms
+  - DATE prefix target 25% (actual 24.43%) `199%`: 2.23ms
+  - DATE prefix target 50%,90% (actual 52.63%) `200%`: 2.36ms
+  - DATE suffix target 1% (actual 0.87%) `%992`: 1.73ms
+  - DATE suffix target 10%,25%,50%,90% (actual 6.40%) `%000`: 1.88ms
+  - DATE contains target 1% (actual 1.01%) `%196%`: 1.75ms
+  - DATE contains target 10% (actual 12.23%) `%201%`: 1.75ms
+  - DATE contains target 25% (actual 24.43%) `%199%`: 2.25ms
+  - DATE contains target 50%,90% (actual 52.63%) `%200%`: 2.08ms
+  - DATE_RANGE_CENTURY prefix target 1%,10% (actual 0.32%) `180%`: 1.79ms
+  - DATE_RANGE_CENTURY prefix target 25% (actual 34.74%) `190%`: 2.24ms
+  - DATE_RANGE_CENTURY prefix target 50%,90% (actual 64.86%) `200%`: 2.21ms
+  - DATE_RANGE_CENTURY suffix target 1%,10% (actual 0.32%) `%899`: 1.76ms
+  - DATE_RANGE_CENTURY suffix target 25% (actual 34.74%) `%999`: 2.06ms
+  - DATE_RANGE_CENTURY suffix target 50%,90% (actual 64.86%) `%099`: 2.24ms
+  - DATE_RANGE_CENTURY contains target 1%,10% (actual 0.06%) `%kno%`: 1.72ms
+  - DATE_RANGE_CENTURY contains target 25% (actual 35.08%) `%0-1%`: 2.02ms
+  - DATE_RANGE_CENTURY contains target 50%,90% (actual 64.86%) `%0-2%`: 2.00ms
+  - DATE_RANGE_DECADE prefix target 1% (actual 1.01%) `196%`: 1.77ms
+  - DATE_RANGE_DECADE prefix target 10% (actual 12.23%) `201%`: 1.78ms
+  - DATE_RANGE_DECADE prefix target 25% (actual 24.43%) `199%`: 2.29ms
+  - DATE_RANGE_DECADE prefix target 50%,90% (actual 52.63%) `200%`: 2.08ms
+  - DATE_RANGE_DECADE suffix target 1% (actual 1.01%) `%969`: 1.74ms
+  - DATE_RANGE_DECADE suffix target 10% (actual 12.23%) `%019`: 1.64ms
+  - DATE_RANGE_DECADE suffix target 25% (actual 24.63%) `%999`: 2.15ms
+  - DATE_RANGE_DECADE suffix target 50%,90% (actual 52.63%) `%009`: 2.28ms
+  - DATE_RANGE_DECADE contains target 1%,10% (actual 0.06%) `%kno%`: 1.74ms
+  - DATE_RANGE_DECADE contains target 25% (actual 35.08%) `%0-1%`: 2.29ms
+  - DATE_RANGE_DECADE contains target 50%,90% (actual 64.86%) `%0-2%`: 2.06ms
+  - LANGUAGE prefix target 1%,10%,25%,50%,90% (actual 100.00%) `ita%`: 1.62ms
+  - LANGUAGE suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ita`: 1.60ms
+  - LANGUAGE contains target 1%,10%,25%,50%,90% (actual 100.00%) `%ita%`: 1.77ms
+  - LC_BROAD prefix target 1% (actual 1.10%) `Q%`: 1.75ms
+  - LC_BROAD prefix target 10% (actual 9.63%) `H%`: 1.94ms
+  - LC_BROAD prefix target 25%,50%,90% (actual 31.31%) `P%`: 2.38ms
+  - LC_BROAD suffix target 1% (actual 1.10%) `%Q`: 1.69ms
+  - LC_BROAD suffix target 10% (actual 9.63%) `%H`: 1.83ms
+  - LC_BROAD suffix target 25%,50%,90% (actual 31.31%) `%P`: 2.14ms
+  - LC_BROAD contains target 1% (actual 1.10%) `%Q%`: 1.69ms
+  - LC_BROAD contains target 10% (actual 9.63%) `%H%`: 1.86ms
+  - LC_BROAD contains target 25%,50%,90% (actual 31.31%) `%P%`: 2.32ms
+  - LC_NARROW prefix target 1% (actual 1.02%) `HQ%`: 1.68ms
+  - LC_NARROW prefix target 10%,25%,50%,90% (actual 12.53%) `B%`: 1.85ms
+  - LC_NARROW suffix target 1% (actual 1.02%) `%HQ`: 1.80ms
+  - LC_NARROW suffix target 10%,25%,50%,90% (actual 5.07%) `%B`: 1.85ms
+  - LC_NARROW contains target 1% (actual 1.02%) `%HQ%`: 1.80ms
+  - LC_NARROW contains target 10% (actual 5.77%) `%C%`: 1.78ms
+  - LC_NARROW contains target 25%,50%,90% (actual 14.31%) `%B%`: 1.92ms
+  - PATRON_GROUP_CODE prefix target 1% (actual 0.97%) `NAM%`: 2.40ms
+  - PATRON_GROUP_CODE prefix target 10%,25% (actual 12.07%) `FRO%`: 2.51ms
+  - PATRON_GROUP_CODE prefix target 50%,90% (actual 62.14%) `INP%`: 2.89ms
+  - PATRON_GROUP_CODE suffix target 1% (actual 0.97%) `%AME`: 2.39ms
+  - PATRON_GROUP_CODE suffix target 10%,25% (actual 12.07%) `%ROG`: 2.49ms
+  - PATRON_GROUP_CODE suffix target 50%,90% (actual 62.14%) `%ESS`: 2.83ms
+  - PATRON_GROUP_CODE contains target 1% (actual 0.97%) `%NAM%`: 2.48ms
+  - PATRON_GROUP_CODE contains target 10%,25% (actual 12.07%) `%FRO%`: 2.29ms
+  - PATRON_GROUP_CODE contains target 50%,90% (actual 62.14%) `%ROC%`: 2.83ms
+  - PATRON_GROUP_DISPLAY prefix target 1% (actual 0.97%) `OPA%`: 2.37ms
+  - PATRON_GROUP_DISPLAY prefix target 10%,25% (actual 12.07%) `Fro%`: 2.33ms
+  - PATRON_GROUP_DISPLAY prefix target 50%,90% (actual 62.14%) `In %`: 2.56ms
+  - PATRON_GROUP_DISPLAY suffix target 1% (actual 0.97%) `%lag`: 2.22ms
+  - PATRON_GROUP_DISPLAY suffix target 10%,25% (actual 12.07%) `%log`: 2.45ms
+  - PATRON_GROUP_DISPLAY suffix target 50%,90% (actual 62.14%) `%ess`: 2.66ms
+  - PATRON_GROUP_DISPLAY contains target 1% (actual 0.97%) `%ssa%`: 2.21ms
+  - PATRON_GROUP_DISPLAY contains target 10% (actual 10.31%) `%ent%`: 2.47ms
+  - PATRON_GROUP_DISPLAY contains target 25% (actual 12.07%) `%ont%`: 2.35ms
+  - PATRON_GROUP_DISPLAY contains target 50%,90% (actual 62.15%) `%Pro%`: 2.59ms
+  - PATRON_GROUP_NAME prefix target 1% (actual 0.97%) `OPA%`: 2.26ms
+  - PATRON_GROUP_NAME prefix target 10%,25% (actual 12.07%) `Fro%`: 2.31ms
+  - PATRON_GROUP_NAME prefix target 50%,90% (actual 62.14%) `In %`: 2.91ms
+  - PATRON_GROUP_NAME suffix target 1% (actual 0.97%) `%lag`: 2.33ms
+  - PATRON_GROUP_NAME suffix target 10%,25% (actual 12.07%) `%log`: 2.75ms
+  - PATRON_GROUP_NAME suffix target 50%,90% (actual 62.14%) `%ess`: 2.71ms
+  - PATRON_GROUP_NAME contains target 1% (actual 0.97%) `%ssa%`: 2.40ms
+  - PATRON_GROUP_NAME contains target 10%,25% (actual 12.07%) `%ont%`: 2.43ms
+  - PATRON_GROUP_NAME contains target 50%,90% (actual 62.15%) `%Pro%`: 2.89ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 1%,10%,25%,50% (actual 12.10%) `Pat%`: 1.88ms
+  - PATRON_TYPE (Pseudo vs Patron) prefix target 90% (actual 87.90%) `Pse%`: 1.85ms
+  - PATRON_TYPE (Pseudo vs Patron) suffix target 1%,10%,25%,50%,90% (actual 100.00%) `%ron`: 1.67ms
+  - PATRON_TYPE (Pseudo vs Patron) contains target 1%,10%,25%,50%,90% (actual 87.90%) `%dop%`: 1.91ms
+  - PLACE_CODE prefix target 1%,10%,25%,50%,90% (actual 0.46%) `gw%`: 1.70ms
+  - PLACE_CODE suffix target 1%,10%,25%,50%,90% (actual 0.46%) `%gw`: 1.74ms
+  - PLACE_CODE contains target 1%,10%,25%,50%,90% (actual 0.46%) `%gw%`: 1.85ms
+  - Patron Group prefix target 1% (actual 1.04%) `Und%`: 2.19ms
+  - Patron Group prefix target 10%,25% (actual 4.97%) `Gra%`: 2.13ms
+  - Patron Group prefix target 50%,90% (actual 85.31%) `Pro%`: 2.49ms
+  - Patron Group suffix target 1% (actual 0.48%) `%rel`: 2.02ms
+  - Patron Group suffix target 10%,25% (actual 6.00%) `%ate`: 2.19ms
+  - Patron Group suffix target 50%,90% (actual 88.33%) `%ing`: 2.40ms
+  - Patron Group contains target 1% (actual 1.04%) `%gra%`: 2.10ms
+  - Patron Group contains target 10%,25% (actual 6.00%) `%adu%`: 2.28ms
+  - Patron Group contains target 50% (actual 85.31%) `%ces%`: 2.56ms
+  - Patron Group contains target 90% (actual 85.32%) `%ssi%`: 2.49ms
+  - Calculation_1810108111146429 prefix target 1% (actual 1.10%) `Q -%`: 1.77ms
+  - Calculation_1810108111146429 prefix target 10% (actual 9.63%) `H -%`: 1.89ms
+  - Calculation_1810108111146429 prefix target 25%,50%,90% (actual 31.31%) `P -%`: 2.19ms
+  - Calculation_1810108111146429 suffix target 1% (actual 0.87%) `%ine`: 1.71ms
+  - Calculation_1810108111146429 suffix target 10% (actual 9.63%) `%ces`: 1.80ms
+  - Calculation_1810108111146429 suffix target 25%,50%,90% (actual 31.64%) `%ure`: 2.26ms
+  - Calculation_1810108111146429 contains target 1% (actual 0.87%) `%Med%`: 1.81ms
+  - Calculation_1810108111146429 contains target 10% (actual 12.53%) `%Psy%`: 1.88ms
+  - Calculation_1810108111146429 contains target 25% (actual 19.12%) `%ica%`: 2.14ms
+  - Calculation_1810108111146429 contains target 50%,90% (actual 33.08%) `% an%`: 2.31ms
+- like_summary:
+  - contains: avg median_ms **2.08** (n=60)
+  - prefix: avg median_ms **2.04** (n=55)
+  - suffix: avg median_ms **2.04** (n=49)

@@ -52,7 +52,8 @@ def timed_query(
 def quantile_thresholds(
     con: duckdb.DuckDBPyConnection, table_name: str, col: str, ps: List[float]
 ) -> List[Tuple[float, Any]]:
-    select_expr = ", ".join([f"quantile_cont({col}, {p}) AS q_{str(p).replace('.','_')}" for p in ps])
+    qcol = _quote_ident(col)
+    select_expr = ", ".join([f"quantile_cont({qcol}, {p}) AS q_{str(p).replace('.','_')}" for p in ps])
     row = con.execute(f"SELECT {select_expr} FROM {table_name};").fetchone()
     return [(p, row[i]) for i, p in enumerate(ps)]
 

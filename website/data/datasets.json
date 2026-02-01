@@ -1,8 +1,24 @@
 {
   "datasets": [
     {
-      "name": "IGlocations1_1",
-      "report": "../out/report_IGlocations1_1.json"
+      "name": "Arade_1",
+      "report": "../out/report_Arade_1.json"
+    },
+    {
+      "name": "Bimbo_1",
+      "report": "../out/report_Bimbo_1.json"
+    },
+    {
+      "name": "CityMaxCapita_1",
+      "report": "../out/report_CityMaxCapita_1.json"
+    },
+    {
+      "name": "Euro2016_1",
+      "report": "../out/report_Euro2016_1.json"
+    },
+    {
+      "name": "MLB_18",
+      "report": "../out/report_MLB_18.json"
     },
     {
       "name": "MedPayment1_1",
@@ -13,20 +29,48 @@
       "report": "../out/report_MedPayment2_1.json"
     },
     {
-      "name": "NYC_1",
-      "report": "../out/report_NYC_1.json"
+      "name": "Medicare1_1",
+      "report": "../out/report_Medicare1_1.json"
+    },
+    {
+      "name": "Medicare2_1",
+      "report": "../out/report_Medicare2_1.json"
+    },
+    {
+      "name": "Medicare3_1",
+      "report": "../out/report_Medicare3_1.json"
     },
     {
       "name": "Physicians_1",
       "report": "../out/report_Physicians_1.json"
     },
     {
-      "name": "Uberlandia_1",
-      "report": "../out/report_Uberlandia_1.json"
+      "name": "Rentabilidad_1",
+      "report": "../out/report_Rentabilidad_1.json"
     },
     {
-      "name": "Hatred_1",
-      "report": "./out/report_Hatred_1.json"
+      "name": "Romance_1",
+      "report": "../out/report_Romance_1.json"
+    },
+    {
+      "name": "HashTags_1",
+      "report": "../out/report_HashTags_1.json"
+    },
+    {
+      "name": "dummy",
+      "report": "./out/report_dummy.json"
+    },
+    {
+      "name": "Corporations_1",
+      "report": "./out/report_Corporations_1.json"
+    },
+    {
+      "name": "YaleLanguages_1",
+      "report": "./out/report_YaleLanguages_1.json"
+    },
+    {
+      "name": "IGlocations1_1",
+      "report": "../out/report_IGlocations1_1.json"
     }
   ]
 }

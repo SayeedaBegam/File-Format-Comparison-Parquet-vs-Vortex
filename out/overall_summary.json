@@ -1,5 +1,5 @@
 {
-  "dataset_count": 13,
+  "dataset_count": 17,
   "datasets": [
     {
       "column_type_counts": {
@@ -88,6 +88,50 @@
         "text": 0.24300327844571756
       },
       "rows": 2052497
+    },
+    {
+      "column_type_counts": {
+        "bool": 2,
+        "date": 1,
+        "numeric": 41,
+        "other": 0,
+        "text": 57
+      },
+      "dropped_rows": 0,
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/HashTags_1.csv",
+      "input_rows": 511511,
+      "input_size_bytes": 671269373,
+      "name": "HashTags_1",
+      "ndv_ratio_by_type": {
+        "bool": 3.909984340512716e-06,
+        "date": 0.39841958432956476,
+        "numeric": 0.029907899365204518,
+        "other": null,
+        "text": 0.20061272198464486
+      },
+      "rows": 511511
+    },
+    {
+      "column_type_counts": {
+        "bool": 0,
+        "date": 0,
+        "numeric": 15,
+        "other": 0,
+        "text": 3
+      },
+      "dropped_rows": 184,
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/IGlocations1_1.csv",
+      "input_rows": 81611,
+      "input_size_bytes": 6904315,
+      "name": "IGlocations1_1",
+      "ndv_ratio_by_type": {
+        "bool": null,
+        "date": null,
+        "numeric": 0.11485133923637122,
+        "other": null,
+        "text": 0.13036216488388372
+      },
+      "rows": 81427
     },
     {
       "column_type_counts": {
@@ -286,6 +330,50 @@
         "text": 0.541099096509827
       },
       "rows": 1586588
+    },
+    {
+      "column_type_counts": {
+        "bool": 0,
+        "date": 2,
+        "numeric": 8,
+        "other": 0,
+        "text": 20
+      },
+      "dropped_rows": 98287,
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/YaleLanguages_1.csv",
+      "input_rows": 904873,
+      "input_size_bytes": 249701770,
+      "name": "YaleLanguages_1",
+      "ndv_ratio_by_type": {
+        "bool": null,
+        "date": 0.007757387308978831,
+        "numeric": 0.061941163124576926,
+        "other": null,
+        "text": 9.893551338604938e-05
+      },
+      "rows": 806586
+    },
+    {
+      "column_type_counts": {
+        "bool": 1,
+        "date": 0,
+        "numeric": 2,
+        "other": 0,
+        "text": 1
+      },
+      "dropped_rows": 0,
+      "input": "/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/dummy.csv",
+      "input_rows": 3,
+      "input_size_bytes": 71,
+      "name": "dummy",
+      "ndv_ratio_by_type": {
+        "bool": 0.6666666666666666,
+        "date": null,
+        "numeric": 1.0,
+        "other": null,
+        "text": 1.0
+      },
+      "rows": 3
     }
   ],
   "formats": {
@@ -293,95 +381,95 @@
       "compression_ratio_geomean": 1.0,
       "compression_speed_mb_s_geomean": null,
       "compression_time_s_geomean": null,
-      "datasets": 13,
+      "datasets": 17,
       "decompression_speed_mb_s_geomean": null,
       "decompression_time_s_geomean": null,
       "like_median_ms_geomean": {
-        "contains": 17.445342609057974,
-        "prefix": 5.172682886526955,
-        "suffix": 17.16079425522678
+        "contains": 11.078541266424397,
+        "prefix": 3.554100030029269,
+        "suffix": 10.88538002636889
       },
-      "output_size_bytes_geomean": 876277640.445172,
+      "output_size_bytes_geomean": 230613485.3518146,
       "query_median_ms_geomean": {
-        "full_scan_min": 1.2311623463310057,
-        "random_access": 6.271194348315015,
-        "selective_predicate": 2.3442629511947004
+        "full_scan_min": 0.9125609726447087,
+        "random_access": 3.6229379222586062,
+        "selective_predicate": 1.6304022769338025
       }
     },
     "parquet_snappy": {
-      "compression_ratio_geomean": 3.643920659911041,
-      "compression_speed_mb_s_geomean": 296.04906781509226,
-      "compression_time_s_geomean": 2.822787066688511,
-      "datasets": 13,
-      "decompression_speed_mb_s_geomean": 811.4920520540672,
-      "decompression_time_s_geomean": 0.28261072155043554,
+      "compression_ratio_geomean": 3.1777304888126814,
+      "compression_speed_mb_s_geomean": 162.37269905751654,
+      "compression_time_s_geomean": 1.3544774415497578,
+      "datasets": 17,
+      "decompression_speed_mb_s_geomean": 423.43277511062723,
+      "decompression_time_s_geomean": 0.16344937134640242,
       "like_median_ms_geomean": {
-        "contains": 26.288417223206615,
-        "prefix": 22.668442581024312,
-        "suffix": 25.769965277421647
+        "contains": 13.624495636525642,
+        "prefix": 10.503799510937212,
+        "suffix": 13.041425802881605
       },
-      "output_size_bytes_geomean": 240476597.11300194,
+      "output_size_bytes_geomean": 72571757.15929906,
       "query_median_ms_geomean": {
-        "full_scan_min": 22.10232097738101,
-        "random_access": 40.2024961881636,
-        "selective_predicate": 25.896260713824976
+        "full_scan_min": 9.993618647515534,
+        "random_access": 22.03841050423151,
+        "selective_predicate": 11.826404008511497
       }
     },
     "parquet_uncompressed": {
-      "compression_ratio_geomean": 2.519767154976852,
-      "compression_speed_mb_s_geomean": 220.10663340315284,
-      "compression_time_s_geomean": 3.796721011142694,
-      "datasets": 13,
-      "decompression_speed_mb_s_geomean": 1256.9991170312837,
-      "decompression_time_s_geomean": 0.26384352076263906,
+      "compression_ratio_geomean": 2.188024842571502,
+      "compression_speed_mb_s_geomean": 123.60359153012035,
+      "compression_time_s_geomean": 1.779318507450975,
+      "datasets": 17,
+      "decompression_speed_mb_s_geomean": 661.7603781809216,
+      "decompression_time_s_geomean": 0.15189090742556915,
       "like_median_ms_geomean": {
-        "contains": 25.60163193939374,
-        "prefix": 21.86264900874934,
-        "suffix": 25.049675838869696
+        "contains": 13.054532037005858,
+        "prefix": 9.820402279462783,
+        "suffix": 12.520426044668104
       },
-      "output_size_bytes_geomean": 347761355.137285,
+      "output_size_bytes_geomean": 105398019.64989682,
       "query_median_ms_geomean": {
-        "full_scan_min": 22.704885756140833,
-        "random_access": 27.511515885046613,
-        "selective_predicate": 26.133073349375238
+        "full_scan_min": 9.972260871493766,
+        "random_access": 14.13561929943089,
+        "selective_predicate": 11.431592609350815
       }
     },
     "parquet_zstd": {
-      "compression_ratio_geomean": 4.870641516681957,
-      "compression_speed_mb_s_geomean": 344.7703464092573,
-      "compression_time_s_geomean": 2.423884444927409,
-      "datasets": 13,
-      "decompression_speed_mb_s_geomean": 598.048467716632,
-      "decompression_time_s_geomean": 0.2868925486090696,
+      "compression_ratio_geomean": 4.203821460774554,
+      "compression_speed_mb_s_geomean": 184.07402795037981,
+      "compression_time_s_geomean": 1.1947919021810056,
+      "datasets": 17,
+      "decompression_speed_mb_s_geomean": 313.626310178488,
+      "decompression_time_s_geomean": 0.16681228626116867,
       "like_median_ms_geomean": {
-        "contains": 26.452926783127236,
-        "prefix": 22.262588560539562,
-        "suffix": 25.554344143361106
+        "contains": 13.595899465149143,
+        "prefix": 10.365852594379264,
+        "suffix": 12.94302165059833
       },
-      "output_size_bytes_geomean": 179910107.8254105,
+      "output_size_bytes_geomean": 54858058.912264906,
       "query_median_ms_geomean": {
-        "full_scan_min": 22.39527762971296,
-        "random_access": 53.330261678999854,
-        "selective_predicate": 26.77433904417248
+        "full_scan_min": 10.515258023007487,
+        "random_access": 28.470760449886555,
+        "selective_predicate": 12.553092240015832
       }
     },
     "vortex_default": {
-      "compression_ratio_geomean": 3.42971414950497,
-      "compression_speed_mb_s_geomean": 322.8789187665486,
-      "compression_time_s_geomean": 2.5882255891034425,
-      "datasets": 13,
-      "decompression_speed_mb_s_geomean": 341.7360725441419,
-      "decompression_time_s_geomean": 0.7130058084108014,
+      "compression_ratio_geomean": 2.6491275800236367,
+      "compression_speed_mb_s_geomean": 160.10527947867607,
+      "compression_time_s_geomean": 1.3736596239241794,
+      "datasets": 17,
+      "decompression_speed_mb_s_geomean": 198.22560470094967,
+      "decompression_time_s_geomean": 0.41881493544644516,
       "like_median_ms_geomean": {
-        "contains": 12.60532067317475,
-        "prefix": 7.4381315166866475,
-        "suffix": 11.512201160613362
+        "contains": 8.504871116761077,
+        "prefix": 5.352698437270849,
+        "suffix": 7.8448815944647
       },
-      "output_size_bytes_geomean": 255495823.33899522,
+      "output_size_bytes_geomean": 87052615.7708709,
       "query_median_ms_geomean": {
-        "full_scan_min": 6.144501524614001,
-        "random_access": 18.222511973551754,
-        "selective_predicate": 6.3531554140195015
+        "full_scan_min": 4.580777621148149,
+        "random_access": 12.17340345831358,
+        "selective_predicate": 5.12762846381359
       }
     }
   }

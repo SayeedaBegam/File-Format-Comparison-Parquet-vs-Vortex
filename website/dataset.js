@@ -352,7 +352,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
     let lx = padding.left + index * groupWidth + groupWidth * 0.5;
     const ly = height - 40;
     const minX = padding.left + 6;
-    const maxX = width - padding.right - 6;
+    const maxX = plotWidth - padding.right - 6;
     lx = Math.min(Math.max(lx, minX), maxX);
     label.setAttribute("x", lx);
     label.setAttribute("y", ly);
@@ -444,6 +444,12 @@ const buildFormatCard = (name, data, best) => {
     <div class="kv ${isBestMax(write.compression_speed_mb_s, best.comp_speed) ? "is-best" : ""}">
       <span>Compression speed</span><strong>${formatNumber(write.compression_speed_mb_s, 2)} MB/s</strong>
     </div>
+    <div class="kv ${isBestMax(write.decompression_speed_mb_s, best.decomp_speed) ? "is-best" : ""}">
+      <span>Decompression speed</span><strong>${formatNumber(write.decompression_speed_mb_s, 2)} MB/s</strong>
+    </div>
+    <div class="kv ${isBestMin(write.decompression_time_s, best.decomp_time) ? "is-best" : ""}">
+      <span>Decompression time</span><strong>${formatNumber(write.decompression_time_s, 2)} s</strong>
+    </div>
     <div class="kv ${isBestMin(queries.full_scan_min?.median_ms, best.full_scan) ? "is-best" : ""}">
       <span>Full scan*</span><strong>${formatMsWithP95(
         queries.full_scan_min?.median_ms,
@@ -488,6 +494,8 @@ const computeBestMetrics = (formats) => {
     output_size_bytes: min(getNums((item) => item.write?.output_size_bytes)),
     write_time: min(getNums((item) => item.write?.compression_time_s)),
     comp_speed: max(getNums((item) => item.write?.compression_speed_mb_s)),
+    decomp_speed: max(getNums((item) => item.write?.decompression_speed_mb_s)),
+    decomp_time: min(getNums((item) => item.write?.decompression_time_s)),
     full_scan: min(getNums((item) => item.queries?.full_scan_min?.median_ms)),
     selective: min(getNums((item) => item.queries?.selective_predicate?.median_ms)),
     random_access: min(getNums((item) => item.queries?.random_access?.median_ms)),
@@ -663,10 +671,25 @@ const renderNdvRatios = (dataset) => {
   });
 };
 
-const renderRecommendations = (formats) => {
+const renderRecommendations = (formats, recommendations) => {
   const container = document.getElementById("recommendations");
   if (!container) return;
   container.innerHTML = "";
+  if (recommendations && Object.keys(recommendations).length) {
+    Object.entries(recommendations).forEach(([key, item]) => {
+      const card = document.createElement("div");
+      card.className = "rec-card is-selected";
+      const label = key.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
+      const reason = item?.reason ? `<div class="rec-reason">${item.reason}</div>` : "";
+      card.innerHTML = `
+        <div class="rec-label">${label}</div>
+        <div class="rec-value">${item?.name || "N/A"}</div>
+        ${reason}
+      `;
+      container.appendChild(card);
+    });
+    return;
+  }
   const values = Object.entries(formats || {});
   if (!values.length) {
     container.textContent = "No recommendations available.";
@@ -945,29 +968,37 @@ const initLikeSelect = (formats) => {
     if (index === 0) select.value = name;
   });
 
-  const render = () => {
+  const renderForFormat = () => {
     const match = entries.find(([name]) => name === select.value);
-    if (match) {
-      const likeByCol = match[1].queries?.like_by_col || {};
-      if (columnSelect) {
-        columnSelect.innerHTML = "";
-        Object.keys(likeByCol).forEach((col, index) => {
-          const option = document.createElement("option");
-          option.value = col;
-          option.textContent = col;
-          columnSelect.appendChild(option);
-          if (index === 0) columnSelect.value = col;
-        });
-      }
-      const activeColumn = columnSelect?.value;
-      renderLikeChart(match[0], match[1], activeColumn);
-      renderLikeSummary(formats, match[0], activeColumn);
+    if (!match) return;
+    const likeByCol = match[1].queries?.like_by_col || {};
+    if (columnSelect) {
+      columnSelect.innerHTML = "";
+      Object.keys(likeByCol).forEach((col, index) => {
+        const option = document.createElement("option");
+        option.value = col;
+        option.textContent = col;
+        columnSelect.appendChild(option);
+        if (index === 0) columnSelect.value = col;
+      });
     }
+    const activeColumn = columnSelect?.value;
+    renderLikeChart(match[0], match[1], activeColumn);
+    renderLikeSummary(formats, match[0], activeColumn);
   };
-  render();
-  select.addEventListener("change", render);
+
+  const renderForColumn = () => {
+    const match = entries.find(([name]) => name === select.value);
+    if (!match) return;
+    const activeColumn = columnSelect?.value;
+    renderLikeChart(match[0], match[1], activeColumn);
+    renderLikeSummary(formats, match[0], activeColumn);
+  };
+
+  renderForFormat();
+  select.addEventListener("change", renderForFormat);
   if (columnSelect) {
-    columnSelect.addEventListener("change", render);
+    columnSelect.addEventListener("change", renderForColumn);
   }
 };
 
@@ -995,7 +1026,7 @@ const initSelectivitySelect = (formats) => {
 const renderDetails = (report) => {
   renderColumnTypes(report.dataset || {});
   renderNdvRatios(report.dataset || {});
-  renderRecommendations(report.formats || {});
+  renderRecommendations(report.formats || {}, report.recommendations || {});
   renderEncodings(report.formats || {});
   initSelectivitySelect(report.formats || {});
   initLikeSelect(report.formats || {});
@@ -1013,7 +1044,7 @@ const renderDiagnostics = (report) => {
   head.innerHTML = "";
   body.innerHTML = "";
   const headerRow = document.createElement("tr");
-  ["Format", "Full scan (ms)", "Cold (ms)", "Note"].forEach((label) => {
+  ["Format", "Warm (ms)", "Cold (ms)", "Note"].forEach((label) => {
     const th = document.createElement("th");
     th.textContent = label;
     headerRow.appendChild(th);
@@ -1080,6 +1111,21 @@ const renderDatasetChart = (report, metric) => {
       label: "Compression time",
       getValue: (data) => data.write?.compression_time_s,
       format: (value) => `${formatNumber(value, 2)} s`,
+    },
+    compression_speed: {
+      label: "Compression speed",
+      getValue: (data) => data.write?.compression_speed_mb_s,
+      format: (value) => `${formatNumber(value, 2)} MB/s`,
+    },
+    decompression_time: {
+      label: "Decompression time",
+      getValue: (data) => data.write?.decompression_time_s,
+      format: (value) => `${formatNumber(value, 2)} s`,
+    },
+    decompression_speed: {
+      label: "Decompression speed",
+      getValue: (data) => data.write?.decompression_speed_mb_s,
+      format: (value) => `${formatNumber(value, 2)} MB/s`,
     },
     full_scan: {
       label: "Full scan median",
@@ -1157,6 +1203,14 @@ const renderOverallUpload = (summary) => {
         data.compression_speed_mb_s_geomean,
         2
       )} MB/s</strong></div>
+      <div class="kv"><span>Decompression speed</span><strong>${formatNumber(
+        data.decompression_speed_mb_s_geomean,
+        2
+      )} MB/s</strong></div>
+      <div class="kv"><span>Decompression time</span><strong>${formatNumber(
+        data.decompression_time_s_geomean,
+        2
+      )} s</strong></div>
       <div class="kv"><span>Full scan median</span><strong>${formatMs(
         data.query_median_ms_geomean?.full_scan_min
       )}</strong></div>

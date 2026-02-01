@@ -755,7 +755,7 @@ const renderDiagnostics = (report) => {
   head.innerHTML = "";
   body.innerHTML = "";
   const headerRow = document.createElement("tr");
-  ["Format", "Full scan (ms)", "Cold (ms)", "Note"].forEach((label) => {
+  ["Format", "Warm (ms)", "Cold (ms)", "Note"].forEach((label) => {
     const th = document.createElement("th");
     th.textContent = label;
     headerRow.appendChild(th);
@@ -845,6 +845,14 @@ const buildFormatCard = (name, data, isOverall, best) => {
         data.compression_speed_mb_s_geomean,
         2
       )} MB/s</strong></div>
+      <div class="kv"><span>Decompression speed</span><strong>${formatNumber(
+        data.decompression_speed_mb_s_geomean,
+        2
+      )} MB/s</strong></div>
+      <div class="kv"><span>Decompression time</span><strong>${formatNumber(
+        data.decompression_time_s_geomean,
+        2
+      )} s</strong></div>
       <div class="kv"><span>Full scan*</span><strong>${formatMsWithP95(
         data.query_median_ms_geomean?.full_scan_min,
         undefined
@@ -869,6 +877,12 @@ const buildFormatCard = (name, data, isOverall, best) => {
       </div>
       <div class="kv ${isBestMax(data.write?.compression_speed_mb_s, best.comp_speed) ? "is-best" : ""}">
         <span>Compression speed</span><strong>${formatNumber(data.write?.compression_speed_mb_s, 2)} MB/s</strong>
+      </div>
+      <div class="kv ${isBestMax(data.write?.decompression_speed_mb_s, best.decomp_speed) ? "is-best" : ""}">
+        <span>Decompression speed</span><strong>${formatNumber(data.write?.decompression_speed_mb_s, 2)} MB/s</strong>
+      </div>
+      <div class="kv ${isBestMin(data.write?.decompression_time_s, best.decomp_time) ? "is-best" : ""}">
+        <span>Decompression time</span><strong>${formatNumber(data.write?.decompression_time_s, 2)} s</strong>
       </div>
       <div class="kv ${allowBest && isBestMin(data.queries?.full_scan_min?.median_ms, best.full_scan) ? "is-best" : ""}">
         <span>Full scan*</span><strong>${formatMsWithP95(
@@ -904,6 +918,8 @@ const computeBestMetrics = (formats) => {
     output_size_bytes: min(getNums((item) => item.write?.output_size_bytes)),
     write_time: min(getNums((item) => item.write?.compression_time_s)),
     comp_speed: max(getNums((item) => item.write?.compression_speed_mb_s)),
+    decomp_speed: max(getNums((item) => item.write?.decompression_speed_mb_s)),
+    decomp_time: min(getNums((item) => item.write?.decompression_time_s)),
     full_scan: min(getNums((item) => item.queries?.full_scan_min?.median_ms)),
     random_access: min(getNums((item) => item.queries?.random_access?.median_ms)),
   };
@@ -1124,11 +1140,7 @@ const initCustomQuery = () => {
         throw new Error(err.error || "Query failed");
       }
       const data = await response.json();
-      output.textContent = `Avg: ${formatMs(data.avg_ms)} · Min: ${formatMs(
-        data.min_ms
-      )} · Max: ${formatMs(data.max_ms)} · Runs: ${data.runs} · Result: ${
-        data.result_value ?? "--"
-      }`;
+      renderCustomQueryResults(output, data);
     } catch (err) {
       output.textContent = err.message || "Query failed";
     }
@@ -1155,6 +1167,21 @@ const renderUploadChart = (report, metric) => {
       label: "Compression time",
       getValue: (data) => data.write?.compression_time_s,
       format: (value) => `${formatNumber(value, 2)} s`,
+    },
+    compression_speed: {
+      label: "Compression speed",
+      getValue: (data) => data.write?.compression_speed_mb_s,
+      format: (value) => `${formatNumber(value, 2)} MB/s`,
+    },
+    decompression_time: {
+      label: "Decompression time",
+      getValue: (data) => data.write?.decompression_time_s,
+      format: (value) => `${formatNumber(value, 2)} s`,
+    },
+    decompression_speed: {
+      label: "Decompression speed",
+      getValue: (data) => data.write?.decompression_speed_mb_s,
+      format: (value) => `${formatNumber(value, 2)} MB/s`,
     },
     full_scan: {
       label: "Full scan median",
@@ -1395,7 +1422,7 @@ const initUploadLikeSelect = (formats) => {
     if (index === 0) select.value = name;
   });
 
-  const render = () => {
+  const renderForFormat = () => {
     const match = entries.find(([name]) => name === select.value);
     if (!match) return;
     const likeByCol = match[1].queries?.like_by_col || {};
@@ -1412,10 +1439,18 @@ const initUploadLikeSelect = (formats) => {
     renderUploadLikeSummary(formats, match[0], activeColumn);
   };
 
-  render();
-  select.addEventListener("change", render);
-  columnSelect.addEventListener("change", render);
-  scaleSelect?.addEventListener("change", render);
+  const renderForColumn = () => {
+    const match = entries.find(([name]) => name === select.value);
+    if (!match) return;
+    const activeColumn = columnSelect.value;
+    renderUploadLikeChart(match[0], match[1], activeColumn);
+    renderUploadLikeSummary(formats, match[0], activeColumn);
+  };
+
+  renderForFormat();
+  select.addEventListener("change", renderForFormat);
+  columnSelect.addEventListener("change", renderForColumn);
+  scaleSelect?.addEventListener("change", renderForColumn);
 };
 
 const initPlotModal = () => {

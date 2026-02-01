@@ -200,18 +200,13 @@ def _timed_query(
   median = times_sorted[len(times_sorted) // 2]
   p95 = times_sorted[int(0.95 * (len(times_sorted) - 1))]
   payload = {
-    
     "median_ms": median,
-   
     "p95_ms": p95,
     "avg_ms": sum(times) / len(times),
     "min_ms": min(times),
     "max_ms": max(times),
-   
     "runs": len(times),
-   
-    "result_value": _jsonify_value(result_value,
-  ),
+    "result_value": _jsonify_value(result_value),
   }
   if return_rows:
     payload["columns"] = result_cols or []

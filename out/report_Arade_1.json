@@ -3445,6 +3445,28 @@
       }
     }
   },
+  "recommendations": {
+    "compression_speed_first": {
+      "name": "vortex_default",
+      "reason": "highest compression_speed_mb_s 584.73"
+    },
+    "decompression_speed_first": {
+      "name": "parquet_uncompressed",
+      "reason": "highest decompression_speed_mb_s 2382.08"
+    },
+    "read_latency_first": {
+      "name": "vortex_default",
+      "reason": "lowest random_access median_ms 18.48"
+    },
+    "scan_first": {
+      "name": "vortex_default",
+      "reason": "lowest full_scan_min median_ms 8.58"
+    },
+    "storage_first": {
+      "name": "vortex_default",
+      "reason": "highest compression_ratio 5.977"
+    }
+  },
   "system": {
     "machine": "pool01-p-11.lnx.utn.de",
     "platform": "Linux-5.15.0-164-generic-x86_64-with-glibc2.35",

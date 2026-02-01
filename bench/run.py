@@ -39,6 +39,7 @@ from utils_run import (
     _parquet_encodings,
     _quote_ident,
     _pick_random_access,
+    _recommendations,
     _row,
     _select_cols,
     _vortex_encodings,
@@ -133,7 +134,7 @@ def main() -> None:
             read_csv_options["nullstr"] = args.csv_nullstr
         has_header = args.csv_header == "true" if args.csv_header is not None else False
         input_rows, input_size_bytes = _count_csv_rows_and_size(args.input, has_header)
-        create_base_table_from_csv(
+        args.table = create_base_table_from_csv(
             con,
             args.table,
             args.input,
@@ -254,8 +255,10 @@ def main() -> None:
         if input_size_bytes:
             duckdb_ratio = input_size_bytes / input_size_bytes
 
-        q_full_base = f"SELECT min({args.min_col}) FROM {args.table};"
-        q_sel_pred_base = f"SELECT min({args.min_col}) FROM {args.table} WHERE {args.filter_col} = {filter_val_sql};"
+        q_min_col = _quote_ident(args.min_col)
+        q_filter_col = _quote_ident(args.filter_col)
+        q_full_base = f"SELECT min({q_min_col}) FROM {args.table};"
+        q_sel_pred_base = f"SELECT min({q_min_col}) FROM {args.table} WHERE {q_filter_col} = {filter_val_sql};"
         m_full_base = _time(q_full_base)
         m_sel_pred_base = _time(q_sel_pred_base)
 
@@ -273,7 +276,8 @@ def main() -> None:
             sel_results = []
             for p, thr in thresholds:
                 thr_sql = format_value_sql(thr)
-                q_sel = f"SELECT min({args.min_col}) FROM {args.table} WHERE {sel_col} <= {thr_sql};"
+                q_sel_col = _quote_ident(sel_col)
+                q_sel = f"SELECT min({q_min_col}) FROM {args.table} WHERE {q_sel_col} <= {thr_sql};"
                 m_sel = _time(q_sel)
                 sel_results.append({"p": p, "threshold": thr, **m_sel})
                 rows_csv.append(
@@ -352,11 +356,11 @@ def main() -> None:
 
     if args.validate_io:
         base_count = con.execute(f"SELECT COUNT(*) FROM {args.table};").fetchone()[0]
-        base_min = con.execute(f"SELECT min({args.min_col}) FROM {args.table};").fetchone()[0]
+        base_min = con.execute(f"SELECT min({_quote_ident(args.min_col)}) FROM {args.table};").fetchone()[0]
         base_nulls_min = _null_count(con, args.table, args.min_col)
         base_nulls_filter = _null_count(con, args.table, args.filter_col)
         base_filtered = con.execute(
-            f"SELECT COUNT(*) FROM {args.table} WHERE {args.filter_col} = {filter_val_sql};"
+            f"SELECT COUNT(*) FROM {args.table} WHERE {_quote_ident(args.filter_col)} = {filter_val_sql};"
         ).fetchone()[0]
 
     dataset_label = _dataset_label(args.input)
@@ -377,8 +381,10 @@ def main() -> None:
             parquet_meta["compression_speed_mb_s"] = None
         parquet_scan = parquet_backend.scan_expr(parquet_meta.get("parquet_path", parquet_out))
 
-        q_full = f"SELECT min({args.min_col}) FROM {parquet_scan};"
-        q_sel_pred = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
+        q_min_col = _quote_ident(args.min_col)
+        q_filter_col = _quote_ident(args.filter_col)
+        q_full = f"SELECT min({q_min_col}) FROM {parquet_scan};"
+        q_sel_pred = f"SELECT min({q_min_col}) FROM {parquet_scan} WHERE {q_filter_col} = {filter_val_sql};"
         m_full = _time(q_full)
         m_sel_pred = _time(q_sel_pred)
 
@@ -396,7 +402,8 @@ def main() -> None:
             sel_results = []
             for p, thr in thresholds:
                 thr_sql = format_value_sql(thr)
-                q_sel = f"SELECT min({args.min_col}) FROM {parquet_scan} WHERE {sel_col} <= {thr_sql};"
+                q_sel_col = _quote_ident(sel_col)
+                q_sel = f"SELECT min({q_min_col}) FROM {parquet_scan} WHERE {q_sel_col} <= {thr_sql};"
                 m_sel = _time(q_sel)
                 sel_results.append({"p": p, "threshold": thr, **m_sel})
                 rows_csv.append(_row(args, "parquet", f"parquet_{codec}", "selectivity", p, parquet_meta, m_sel, select_col=sel_col))
@@ -475,11 +482,11 @@ def main() -> None:
         }
         if args.validate_io:
             pq_count = con.execute(f"SELECT COUNT(*) FROM {parquet_scan};").fetchone()[0]
-            pq_min = con.execute(f"SELECT min({args.min_col}) FROM {parquet_scan};").fetchone()[0]
+            pq_min = con.execute(f"SELECT min({_quote_ident(args.min_col)}) FROM {parquet_scan};").fetchone()[0]
             pq_nulls_min = _null_count(con, parquet_scan, args.min_col)
             pq_nulls_filter = _null_count(con, parquet_scan, args.filter_col)
             pq_filtered = con.execute(
-                f"SELECT COUNT(*) FROM {parquet_scan} WHERE {args.filter_col} = {filter_val_sql};"
+                f"SELECT COUNT(*) FROM {parquet_scan} WHERE {_quote_ident(args.filter_col)} = {filter_val_sql};"
             ).fetchone()[0]
             report["formats"][f"parquet_{codec}"]["validation"] = {
                 "base_count": base_count,
@@ -543,7 +550,8 @@ def main() -> None:
             vx_text_cols = {c for c, t in _describe_types(con, "vortex_dataset").items() if t in {"VARCHAR", "TEXT"}}
 
             q_full_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset;"
-            q_sel_pred_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset WHERE {args.filter_col} = {filter_val_sql_vx};"
+            q_filter_col_vx = _quote_ident(args.filter_col)
+            q_sel_pred_vx = f"SELECT min({min_col_expr_vx}) FROM vortex_dataset WHERE {q_filter_col_vx} = {filter_val_sql_vx};"
             m_full_vx = _time(q_full_vx)
             m_sel_pred_vx = _time(q_sel_pred_vx)
 
@@ -561,13 +569,13 @@ def main() -> None:
                 sel_results = []
                 for p, thr in thresholds:
                     thr_sql = format_value_sql(thr)
-                    q_sel = (
-                        f"SELECT min({min_col_expr_vx}) FROM vortex_dataset "
-                        f"WHERE {sel_col_exprs_vx[sel_col]} <= {thr_sql};"
-                    )
-                    m_sel = _time(q_sel)
-                    sel_results.append({"p": p, "threshold": thr, **m_sel})
-                    rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "selectivity", p, vortex_meta, m_sel, select_col=sel_col))
+                q_sel = (
+                    f"SELECT min({min_col_expr_vx}) FROM vortex_dataset "
+                    f"WHERE {sel_col_exprs_vx[sel_col]} <= {thr_sql};"
+                )
+                m_sel = _time(q_sel)
+                sel_results.append({"p": p, "threshold": thr, **m_sel})
+                rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "selectivity", p, vortex_meta, m_sel, select_col=sel_col))
                 sel_results_by_col_vx[sel_col] = sel_results
                 ms_values = [r["median_ms"] for r in sel_results if r.get("median_ms") is not None]
                 if ms_values:
@@ -645,11 +653,11 @@ def main() -> None:
             }
             if args.validate_io:
                 base_count = con.execute(f"SELECT COUNT(*) FROM {args.table};").fetchone()[0]
-                base_min = con.execute(f"SELECT min({args.min_col}) FROM {args.table};").fetchone()[0]
+                base_min = con.execute(f"SELECT min({_quote_ident(args.min_col)}) FROM {args.table};").fetchone()[0]
                 base_nulls_min = _null_count(con, args.table, args.min_col)
                 base_nulls_filter = _null_count(con, args.table, args.filter_col)
                 base_filtered = con.execute(
-                    f"SELECT COUNT(*) FROM {args.table} WHERE {args.filter_col} = {filter_val_sql};"
+                    f"SELECT COUNT(*) FROM {args.table} WHERE {_quote_ident(args.filter_col)} = {filter_val_sql};"
                 ).fetchone()[0]
 
                 vx_count = con.execute("SELECT COUNT(*) FROM vortex_dataset;").fetchone()[0]
@@ -657,7 +665,7 @@ def main() -> None:
                 vx_nulls_min = _null_count(con, "vortex_dataset", args.min_col)
                 vx_nulls_filter = _null_count(con, "vortex_dataset", args.filter_col)
                 vx_filtered = con.execute(
-                    f"SELECT COUNT(*) FROM vortex_dataset WHERE {args.filter_col} = {filter_val_sql_vx};"
+                    f"SELECT COUNT(*) FROM vortex_dataset WHERE {q_filter_col_vx} = {filter_val_sql_vx};"
                 ).fetchone()[0]
                 report["formats"][vortex_meta.get("variant", "vortex_default")]["validation"] = {
                     "base_count": base_count,
@@ -688,6 +696,7 @@ def main() -> None:
     results_path = out_dir / f"results_{dataset_label}.csv"
     report_json_path = out_dir / f"report_{dataset_label}.json"
     report_md_path = out_dir / f"report_{dataset_label}.md"
+    report["recommendations"] = _recommendations(report)
     # write_csv(rows_csv, str(results_path))
     write_json(report, str(report_json_path))
     write_markdown(_markdown_summary(report), str(report_md_path))

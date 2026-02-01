@@ -28,20 +28,26 @@
       <section class="panel">
         <div class="panel-header">
           <h2>Parquet vs Vortex</h2>
-          <p>High‑level differences in layout, encoding, and typical access patterns.</p>
+          <p>A scannable primer on how the two formats behave.</p>
         </div>
         <div class="detail-row">
           <div class="detail-card">
             <h3>Parquet</h3>
-            <p>Columnar, file‑based format with row groups and per‑column encodings.</p>
-            <p>Optimized for scan‑heavy analytics and predicate pushdown.</p>
-            <p>Widely supported across query engines.</p>
+            <p class="panel-note">Portable, multi-engine storage format.</p>
+            <ul class="clean-list">
+              <li>File-based columnar format with row groups and encodings.</li>
+              <li>Strong for scan-heavy analytics and predicate pushdown.</li>
+              <li>Wide ecosystem support across tools and engines.</li>
+            </ul>
           </div>
           <div class="detail-card">
             <h3>Vortex (DuckDB)</h3>
-            <p>Columnar format integrated with DuckDB’s Vortex extension.</p>
-            <p>Designed for high‑performance scans and fast decompression.</p>
-            <p>Best used inside DuckDB where the extension is available.</p>
+            <p class="panel-note">DuckDB-native format tuned for local scans.</p>
+            <ul class="clean-list">
+              <li>Columnar format via DuckDB's Vortex extension.</li>
+              <li>Tuned for fast scans and decompression inside DuckDB.</li>
+              <li>Best when your workflow stays inside DuckDB.</li>
+            </ul>
           </div>
         </div>
       </section>
@@ -49,18 +55,29 @@
       <section class="panel">
         <div class="panel-header">
           <h2>How the benchmark compares them</h2>
-          <p>Both formats are written from the same in‑memory table and scanned using DuckDB.</p>
+          <p>Same data, same SQL, different storage layout.</p>
         </div>
         <div class="detail-row">
           <div class="detail-card">
             <h3>Write path</h3>
-            <p>Parquet: <code>COPY (SELECT * FROM t) TO 'file.parquet' (FORMAT PARQUET)</code></p>
-            <p>Vortex: <code>COPY (SELECT * FROM t) TO 'file.vortex' (FORMAT VORTEX)</code></p>
+            <div class="stack">
+              <div><strong>Parquet</strong> <code>COPY (SELECT * FROM t) TO 'file.parquet' (FORMAT PARQUET)</code></div>
+              <div><strong>Vortex</strong> <code>COPY (SELECT * FROM t) TO 'file.vortex' (FORMAT VORTEX)</code></div>
+            </div>
           </div>
           <div class="detail-card">
             <h3>Read path</h3>
-            <p>Parquet: <code>read_parquet('file.parquet')</code></p>
-            <p>Vortex: <code>read_vortex('file.vortex')</code></p>
+            <div class="stack">
+              <div><strong>Parquet</strong> <code>read_parquet('file.parquet')</code></div>
+              <div><strong>Vortex</strong> <code>read_vortex('file.vortex')</code></div>
+            </div>
+          </div>
+          <div class="detail-card">
+            <h3>Query suite</h3>
+            <div class="stack">
+              <div><strong>Scans</strong> full scan, selective predicate, random access</div>
+              <div><strong>Text</strong> LIKE prefix / suffix / contains</div>
+            </div>
           </div>
         </div>
       </section>
@@ -68,16 +85,24 @@
       <section class="panel">
         <div class="panel-header">
           <h2>When each shines</h2>
-          <p>Use the recommendations panel in reports to choose based on your goals.</p>
+          <p>Use the recommendations panel in reports to choose the best fit.</p>
         </div>
         <div class="detail-row">
           <div class="detail-card">
-            <h3>Parquet is strong when…</h3>
-            <p>You need interoperability, established tooling, and stable long‑term storage.</p>
+            <h3>Parquet is strong when...</h3>
+            <ul class="clean-list">
+              <li>You need interoperability and long-term storage.</li>
+              <li>Multiple engines must read the same data.</li>
+              <li>Row-group pruning benefits your workload.</li>
+            </ul>
           </div>
           <div class="detail-card">
-            <h3>Vortex is strong when…</h3>
-            <p>Your workflow runs in DuckDB and you want the best scan performance within that engine.</p>
+            <h3>Vortex is strong when...</h3>
+            <ul class="clean-list">
+              <li>Your workflow runs entirely in DuckDB.</li>
+              <li>Scan throughput in DuckDB is the priority.</li>
+              <li>You want a tight DuckDB-native pipeline.</li>
+            </ul>
           </div>
         </div>
       </section>

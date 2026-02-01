@@ -1,151 +1,96 @@
 # File-Format-Comparison-Parquet-vs-Vortex
 
-Benchmark suite and web dashboard to compare Parquet vs Vortex (and a DuckDB in-table baseline) under the same query engine. The pipeline ingests a dataset into DuckDB, writes each format, and runs a consistent set of queries to measure storage size, latency, and selectivity behavior.
+Benchmark suite and web dashboard to compare Parquet vs Vortex (and a DuckDB in-table baseline) under the same query engine.
 
-This README documents:
-- What is measured and why
-- Where results are stored
-- How to run the benchmark and website
-- What new diagnostics mean (cold vs warm, row groups, sorting)
+## Objective
+Provide a repeatable, comparison of:
+- Storage efficiency (size, compression ratio, write time)
+- Scan/query latency (full scans, selective predicates, point lookups)
+- Selectivity behavior across thresholds
+- Text LIKE predicate behavior
+- Validation of logical correctness vs the base table
+
+The goal is not to declare a universal "winner", but to make trade-offs visible per dataset, codec, and query shape.
 
 ---
 
-## High-level approach
+## High-level pipeline
 1) Ingest CSV or Parquet into a DuckDB table.
-2) Optionally sort the data by a chosen column.
-3) Write Parquet and (if available) Vortex from that table.
-4) Run the same queries against each format scan.
-5) Save results to CSV, JSON, Markdown and render plots.
+2) Optionally sort the data by one or more columns.
+3) Write Parquet (multiple codecs) and Vortex from that table.
+4) Run the same query set against each format scan plus a DuckDB table baseline.
+5) Save JSON + Markdown + CSV reports and render plots.
+6) Aggregate per-dataset reports into an overall summary.
 
 ---
 
-## Metrics captured
+## What is measured
 
 ### Storage metrics
-- **output_size_bytes**: size of the generated file(s) for each format
-- **compression_ratio**: input_size_bytes / output_size_bytes (higher is better)
-- **compression_time_s**: time to write each format
-- **compression_speed_mb_s**: input_size_mb / compression_time_s (higher is better)
-- **decompression_time_s**: time to materialize a full scan into an in-memory table
-- **decompression_speed_mb_s**: output_size_mb / decompression_time_s (higher is better)
+- **output_size_bytes**
+- **compression_ratio** = input_size_bytes / output_size_bytes (higher is better)
+- **compression_time_s**
+- **compression_speed_mb_s**
+- **decompression_time_s** (materialize scan into a temp table)
+- **decompression_speed_mb_s**
 
 ### Query latency metrics (per format)
-All query latencies include:
-- **median_ms** (typical run; robust to outliers)
-- **p95_ms** (tail latency; 95% of runs are faster)
+All timings report:
+- **median_ms**
+- **p95_ms**
 - **runs**
 - **cold_ms** (optional; one cold run before warmup)
-Markdown reports include cold timing when available (shown inline with median/p95).
 
 Queries:
 - **full_scan_min**: `min(min_col)` over the full table
 - **selective_predicate**: `min(min_col)` with `filter_col = filter_val`
 - **random_access**: `SELECT * ... WHERE random_access_col = value LIMIT 1`
-- **selectivity**: `min(min_col)` with `select_col <= threshold` at 1%, 10%, 25%, 50%, 90%
+- **selectivity**: `min(min_col)` with `select_col <= threshold` for multiple thresholds
 - **LIKE predicates** (if enabled): prefix/suffix/contains patterns on text columns
 
-### Encoding metadata (format-specific)
-- **Parquet encodings**: extracted from Parquet metadata (via DuckDB/Parquet metadata inspection)
-- **Vortex encodings**: best-effort (exposed as notes if available)
-
 ### Data profiling
-- **NDV ratio** per column and by type (NDV / rows)
-- **column_type_counts** (numeric/text/date/bool/other)
-- **dropped_rows** + drop notes when CSV parsing skips malformed rows
-- **input_rows** and **input_size_bytes** (raw CSV stats, when available)
-
-### LIKE predicate metrics (text columns)
-- Patterns: **prefix**, **suffix**, **contains**
-- For each: **median_ms**, **p95_ms**, **runs**, **result_value**, and **selectivity**
-- Summaries are shown per column and aggregated by pattern type
+- **NDV ratio** per column and by type
+- **column_type_counts**
+- **input_rows**, **dropped_rows**, **drop_notes** (CSV parsing)
+- **input_size_bytes**
 
 ### Validation (optional, default on)
 Compares row count, min(), filtered counts, and null counts between base table and each format.
 
-### Diagnostics (new)
-These are critical to explain surprising results:
-- **cold_ms**: cold run timing (before warmup)
-- **duckdb_table** baseline: same queries directly on the DuckDB table
-- **row_group_count** (Parquet): a proxy for block-level reads
-- **sorted_by** (dataset metadata): indicates if data was sorted before writing
-
-### Additional report fields
-- **best_select_col** and **best_select_col_avg_median_ms** per format
-- **random_access_col** and **random_access_val** used for point lookups
-- **match_count** and **target_selectivities** for LIKE patterns
-- **validation** details: base vs format row counts, mins, filtered counts, null counts
-- **recommendations**: storage‑first, read‑latency‑first, scan‑first (overall summary)
-
----
-
-## Why these diagnostics matter
-They help answer questions like:
-- *Why is Vortex faster than uncompressed Parquet?*  
-  Compare Vortex vs Parquet vs DuckDB baseline + cold/warm runs.
-- *Are results influenced by caching?*  
-  Compare cold vs warm timings.
-- *Does sorting improve pruning?*  
-  Sort by a filter/select column and compare row_group_count + latency deltas.
-- *Why does performance change with selectivity?*  
-  Check selectivity curves by column and format.
-
 ---
 
 ## Output locations
-All outputs go under `out/`:
-- **Per-dataset results**:
-  - `out/report_<dataset>.json`
-  - `out/report_<dataset>.md`
-  - `out/results_<dataset>.csv`
-  - `out/plots/<dataset>/*.png`
-- **Overall results**:
-  - `out/overall_summary.json`
-  - `out/overall_summary.md`
-  - `out/plots/overall/*.png`
+All outputs go under `out/`.
 
-The web UI reads from these outputs.
+Per-dataset outputs:
+- `out/report_<dataset>.json`
+- `out/report_<dataset>.md`
+- `out/results_<dataset>.csv`
+- `out/plots/<dataset>/*.png`
+- `out/parquet_<codec>_<dataset>_<timestamp>.parquet`
+- `out/vortex/<table>.vortex`
+
+Overall outputs:
+- `out/overall_summary.json`
+- `out/overall_summary.md`
+- `out/plots/overall/*.png`
+
+Upload artifacts:
+- `out/uploads/<uploaded file>`
+- `out/uploads/<dataset>_schema.sql` (optional)
+
+Note: overall_summary is built from all `out/report_*.json` files present, not just those listed in the UI manifest.
 
 ---
 
-## Website (dashboard UI)
-The website is a front-end for `out/` reports.
-It includes:
-- Overall summary
-- Per-dataset drilldowns
-- Interactive charts
-- Diagnostics (cold vs warm, baseline, row groups)
-- Upload workflow (CSV + optional schema)
-- Custom SQL timing on uploaded data
-- First 10 rows preview
+## Quickstart (CLI)
 
-### Run the site (full features)
+Install dependencies:
 ```bash
-python -m pip install -r website/requirements.txt
 python -m pip install -r bench/requirements.txt
-python website/server.py
 ```
-Open:
-- `http://localhost:5000/website/index.html`
-- `http://localhost:5000/website/dataset.html`
-- `http://localhost:5000/website/upload.html`
 
-### Upload workflow
-On the Upload page you can:
-- Upload CSV
-- Provide optional schema (SQL)
-- Provide optional sort column
-- Run a custom SELECT query with timings
-
-Uploaded datasets are written to `out/` and appended to:
-- `website/data/datasets.json`
-
-The UI reloads automatically using cache-busting and localStorage fallback.
-
----
-
-## CLI usage (bench/run.py)
-
-### Basic CSV run
+Basic CSV run:
 ```bash
 python bench/run.py \
   --input data/my.csv \
@@ -154,7 +99,7 @@ python bench/run.py \
   --out out
 ```
 
-### With schema
+With schema:
 ```bash
 python bench/run.py \
   --input data/my.csv \
@@ -165,7 +110,7 @@ python bench/run.py \
   --out out
 ```
 
-### With sorting (cold timings + baseline are on by default)
+With sorting:
 ```bash
 python bench/run.py \
   --input data/my.csv \
@@ -174,6 +119,41 @@ python bench/run.py \
   --sorted-by my_filter_column \
   --out out
 ```
+
+---
+
+## Website (dashboard UI)
+The dashboard reads JSON outputs and provides:
+- Overall summary
+- Per-dataset drilldowns
+- Interactive charts + diagnostics
+- Upload workflow
+- Custom SQL timings across formats
+- 10-row preview for uploaded data
+
+Run the site:
+```bash
+python -m pip install -r website/requirements.txt
+python -m pip install -r bench/requirements.txt
+python website/server.py
+```
+
+Open:
+- `http://localhost:5000/website/index.html`
+- `http://localhost:5000/website/dataset.html`
+- `http://localhost:5000/website/upload.html`
+
+The UI dataset selector reads `website/data/datasets.json`.
+
+---
+
+## Upload workflow
+The upload page:
+- Saves the dataset to `out/uploads/`
+- Optionally saves a schema SQL file
+- Runs the benchmark via `bench/run.py`
+- Updates `website/data/datasets.json`
+- Returns plots and report JSON to the UI
 
 ---
 
@@ -197,36 +177,45 @@ python bench/run.py \
 - `--parquet-row-group-size`
 
 ### Vortex
-- `--vortex-compact` (label only)
+- `--vortex-compact` (label only; DuckDB defaults used)
 - `--vortex-cast`, `--vortex-drop-cols`
 
 ### Diagnostics
-- `--include-cold` / `--no-include-cold`: record cold run time (default: on)
+- `--include-cold` / `--no-include-cold`: record cold timing (default: on)
 - `--baseline-duckdb` / `--no-baseline-duckdb`: include DuckDB table baseline (default: on)
-- `--sorted-by`: sort by a column before writing formats
+- `--sorted-by`: sort by column(s) before writing
 
 ---
 
-## Notes on Vortex
-The Vortex extension may not be available on Windows builds of DuckDB.
-If you see `vortex_error` in the report:
-- Run on Linux/WSL where `INSTALL vortex; LOAD vortex;` works.
+## Requirements and optional dependencies
+- Core: DuckDB + Matplotlib (see `bench/requirements.txt`)
+- Website: Flask + Werkzeug (see `website/requirements.txt`)
+- Optional:
+  - PyArrow for Parquet encoding inspection
+  - Python `vortex` module for Vortex encoding inspection
+  - DuckDB Vortex extension (Linux/WSL often required)
+
+If Vortex is unavailable, reports will include a `vortex_error` note.
 
 ---
 
-## Files and responsibilities
-- `bench/run.py`: benchmark runner + CLI
+## File map
+- `bench/run.py`: main benchmark runner
 - `bench/utils_run.py`: timing, validation, profiling helpers
 - `bench/ingest/generic_ingest.py`: CSV/Parquet ingestion
 - `bench/backends/parquet_backend.py`: Parquet write + metadata
 - `bench/backends/vortex_backend.py`: Vortex write + scan
-- `bench/report/*`: CSV/JSON/Markdown writers + plots
-- `website/`: dashboard UI + upload API (`server.py`)
+- `bench/report/*`: CSV/JSON/Markdown writers + plots + summary
+- `website/server.py`: upload API + query API + static serving
+- `website/*.js`: dashboard rendering
+
+Legacy/standalone:
+- `bench/run_goutham.py`, `bench/utils_run_goutham.py`, `bench/simple_rw.py`
 
 ---
 
-## Reproducibility tips
-- Use the same dataset and schema across runs.
+## Repro tips
+- Use the same dataset + schema across runs.
 - Compare cold vs warm to assess caching.
-- Use `--sorted-by` to test block pruning effects.
-- Always include baseline to separate storage vs engine effects.
+- Use `--sorted-by` to test pruning effects.
+- Keep old `report_*.json` files if you want them included in overall summaries, otherwise delete them.

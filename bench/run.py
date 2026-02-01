@@ -573,13 +573,24 @@ def main() -> None:
                 sel_results = []
                 for p, thr in thresholds:
                     thr_sql = format_value_sql(thr)
-                q_sel = (
-                    f"SELECT min({min_col_expr_vx}) FROM vortex_dataset "
-                    f"WHERE {sel_col_exprs_vx[sel_col]} <= {thr_sql};"
-                )
-                m_sel = _time(q_sel)
-                sel_results.append({"p": p, "threshold": thr, **m_sel})
-                rows_csv.append(_row(args, "vortex", vortex_meta.get("variant", "vortex_default"), "selectivity", p, vortex_meta, m_sel, select_col=sel_col))
+                    q_sel = (
+                        f"SELECT min({min_col_expr_vx}) FROM vortex_dataset "
+                        f"WHERE {sel_col_exprs_vx[sel_col]} <= {thr_sql};"
+                    )
+                    m_sel = _time(q_sel)
+                    sel_results.append({"p": p, "threshold": thr, **m_sel})
+                    rows_csv.append(
+                        _row(
+                            args,
+                            "vortex",
+                            vortex_meta.get("variant", "vortex_default"),
+                            "selectivity",
+                            p,
+                            vortex_meta,
+                            m_sel,
+                            select_col=sel_col,
+                        )
+                    )
                 sel_results_by_col_vx[sel_col] = sel_results
                 ms_values = [r["median_ms"] for r in sel_results if r.get("median_ms") is not None]
                 if ms_values:
@@ -701,7 +712,7 @@ def main() -> None:
     report_json_path = out_dir / f"report_{dataset_label}.json"
     report_md_path = out_dir / f"report_{dataset_label}.md"
     report["recommendations"] = _recommendations(report)
-    # write_csv(rows_csv, str(results_path))
+    write_csv(rows_csv, str(results_path))
     write_json(report, str(report_json_path))
     write_markdown(_markdown_summary(report), str(report_md_path))
     generate_dataset_plots(report, out_dir / "plots" / dataset_label, max_cols=10)

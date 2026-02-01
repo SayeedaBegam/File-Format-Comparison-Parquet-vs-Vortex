@@ -19,6 +19,8 @@
         <a class="nav-link" href="./index.html">Overall</a>
         <a class="nav-link" href="./dataset.html">Dataset detail</a>
         <a class="nav-link is-active" href="./upload.html">Upload</a>
+        <a class="nav-link" href="./metrics.html">Metrics</a>
+        <a class="nav-link" href="./formats.html">Parquet vs Vortex</a>
       </nav>
     </header>
 
@@ -29,31 +31,30 @@
           <p>Upload a CSV and we'll run Parquet + Vortex benchmarks automatically.</p>
         </div>
         <div class="upload-card">
-          <label class="upload-label" for="dataset-file">
-            Dataset file
-          </label>
-          <input id="dataset-file" type="file" accept=".csv" />
-          <label class="upload-label" for="schema-file">
-            Optional schema (SQL)
-          </label>
-          <input id="schema-file" type="file" accept=".sql" />
-          <label class="upload-label" for="sort-col">
-            Optional sort column (e.g., a filter/select column)
-          </label>
-          <input id="sort-col" type="text" placeholder="column_name" />
-          <label class="upload-label" for="csv-delimiter">
-            CSV delimiter (default |)
-          </label>
-          <input id="csv-delimiter" type="text" value="|" maxlength="2" />
-          <label class="upload-label" for="csv-header">
-            CSV has header row
-          </label>
-          <input id="csv-header" type="checkbox" />
-          <div class="upload-hint">
-            Select files (optional schema and sort column), then run the benchmark.
+          <div class="upload-row">
+            <label class="upload-label" for="dataset-file">Dataset file</label>
+            <input id="dataset-file" type="file" accept=".csv" class="upload-file" />
           </div>
-          <div class="selector-row">
-            <button id="run-benchmark" class="button primary" type="button">Run benchmark</button>
+          <div class="upload-row">
+            <label class="upload-label" for="schema-file">Optional schema (SQL)</label>
+            <input id="schema-file" type="file" accept=".sql" class="upload-file" />
+          </div>
+          <div class="upload-row">
+            <label class="upload-label" for="sort-col">Sort by column (optional, comma-separated)</label>
+            <input id="sort-col" type="text" placeholder="col_a, col_b" class="upload-input small" />
+          </div>
+          <div class="upload-row">
+            <label class="upload-label" for="csv-delimiter">CSV delimiter (default |)</label>
+            <input id="csv-delimiter" type="text" value="|" maxlength="2" class="upload-input tiny" />
+          </div>
+          <div class="upload-row">
+            <label class="upload-label" for="csv-header">CSV has header row</label>
+            <input id="csv-header" type="checkbox" class="upload-checkbox" />
+          </div>
+          <div class="upload-row full">
+            <div class="selector-row">
+              <button id="run-benchmark" class="button primary" type="button">Run benchmark</button>
+            </div>
           </div>
         </div>
         <div class="selector-row">
@@ -194,6 +195,10 @@
             <option value="selective">Selective predicate median</option>
             <option value="random_access">Random access median</option>
           </select>
+          <div class="toggle-group" id="upload-chart-toggle" role="group" aria-label="Chart type">
+            <button type="button" class="toggle-btn is-active" data-mode="line">Line</button>
+            <button type="button" class="toggle-btn" data-mode="bar">Bar</button>
+          </div>
         </div>
         <div class="chart-card">
           <div class="chart-title" id="upload-chart-title">Compression ratio</div>

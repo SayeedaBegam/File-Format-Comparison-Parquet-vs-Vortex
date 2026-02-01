@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from bench.report.plots import generate_overall_plots
 from bench.report.summary import generate_overall_summary
+from bench.ingest.generic_ingest import create_base_table_from_csv
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "out"
@@ -129,15 +130,41 @@ def _scan_expr_vortex(path: Path) -> str:
   return f"read_vortex('{_escape_path(target)}')"
 
 
-def _load_preview(input_path: Path, input_type: str) -> dict[str, list]:
+def _load_preview(input_path: Path, input_type: str, schema_path: Path | None) -> dict[str, list]:
   con = duckdb.connect(database=":memory:")
-  escaped = _escape_path(input_path)
   if input_type == "parquet":
+    escaped = _escape_path(input_path)
     con.execute(f"CREATE VIEW data AS SELECT * FROM read_parquet('{escaped}');")
   else:
-    con.execute(f"CREATE VIEW data AS SELECT * FROM read_csv_auto('{escaped}');")
+    table_name = "preview_table"
+    if schema_path is not None and schema_path.exists():
+      table_name = create_base_table_from_csv(
+        con,
+        table_name,
+        str(input_path),
+        schema_sql_path=str(schema_path),
+        read_csv_options={"sample_size": -1, "ignore_errors": True},
+      )
+      con.execute("DROP VIEW IF EXISTS data;")
+      con.execute("DROP TABLE IF EXISTS data;")
+      con.execute(f"CREATE OR REPLACE VIEW data AS SELECT * FROM {table_name};")
+    else:
+      escaped = _escape_path(input_path)
+      con.execute(f"CREATE VIEW data AS SELECT * FROM read_csv_auto('{escaped}');")
   rows = con.execute("SELECT * FROM data LIMIT 10;").fetchall()
   cols = [row[0] for row in con.execute("DESCRIBE data;").fetchall()]
+  if input_type == "csv" and schema_path is not None and not rows:
+    escaped = _escape_path(input_path)
+    con.execute("DROP VIEW IF EXISTS raw_preview;")
+    con.execute(f"CREATE VIEW raw_preview AS SELECT * FROM read_csv_auto('{escaped}');")
+    preview_rows = con.execute("SELECT * FROM raw_preview LIMIT 10;").fetchall()
+    preview_cols = [row[0] for row in con.execute("DESCRIBE raw_preview;").fetchall()]
+    if preview_rows:
+      if len(preview_cols) == len(cols):
+        rows = preview_rows
+      else:
+        rows = preview_rows
+        cols = preview_cols
   return {
     "columns": cols,
     "rows": rows,
@@ -298,7 +325,7 @@ def run_benchmark():
   manifest = _load_manifest()
   summary = _load_overall_summary()
 
-  preview = _load_preview(input_path, input_type)
+  preview = _load_preview(input_path, input_type, schema_path)
 
   return jsonify(
     {

@@ -19,6 +19,8 @@
         <a class="nav-link" href="./index.html">Overall</a>
         <a class="nav-link is-active" href="./dataset.html">Dataset detail</a>
         <a class="nav-link" href="./upload.html">Upload</a>
+        <a class="nav-link" href="./metrics.html">Metrics</a>
+        <a class="nav-link" href="./formats.html">Parquet vs Vortex</a>
       </nav>
     </header>
 
@@ -61,6 +63,15 @@
 
         <section class="panel">
           <div class="panel-header">
+            <h2>Format performance</h2>
+            <p>Compression, compression time, and query medians by format.</p>
+            <div class="panel-note">* indicates median. P95 shown when available.</div>
+          </div>
+          <div id="format-detail-grid" class="format-grid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
             <h2>Interactive chart</h2>
             <p>Swap metrics and hover a bar for exact values.</p>
           </div>
@@ -81,6 +92,10 @@
               <option value="selective">Selective predicate median</option>
               <option value="random_access">Random access median</option>
             </select>
+            <div class="toggle-group" id="dataset-chart-toggle" role="group" aria-label="Chart type">
+              <button type="button" class="toggle-btn is-active" data-mode="line">Line</button>
+              <button type="button" class="toggle-btn" data-mode="bar">Bar</button>
+            </div>
           </div>
           <div class="chart-card" id="metric-chart-block">
             <div class="chart-title" id="dataset-chart-title">Compression ratio</div>
@@ -130,15 +145,6 @@
             <div class="chart-title">Formats × metric × output size</div>
             <div id="dataset-3d-chart" class="chart"></div>
           </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <h2>Format performance</h2>
-            <p>Compression, compression time, and query medians by format.</p>
-            <div class="panel-note">* indicates median. P95 shown when available.</div>
-          </div>
-          <div id="format-detail-grid" class="format-grid"></div>
         </section>
 
         <section class="panel" id="diagnostics-panel">

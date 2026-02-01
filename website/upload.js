@@ -40,6 +40,7 @@ const formatColors = {
 const getFormatColor = (label) => formatColors[label] || "#6b6358";
 
 let currentReport = null;
+let uploadChartMode = "line";
 let lastUploadInfo = null;
 let lastReportPath = null;
 let selectedDatasetFile = null;
@@ -262,7 +263,7 @@ const renderCustomQueryResults = (output, data) => {
   output.appendChild(resultPanel);
 };
 
-const createLineChart = (container, data, valueFormatter) => {
+const createLineChart = (container, data, valueFormatter, mode = "line") => {
   container.innerHTML = "";
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, data.length * 90);
@@ -312,51 +313,75 @@ const createLineChart = (container, data, valueFormatter) => {
     svg.appendChild(label);
   }
 
+  const barGap = data.length ? chartWidth / data.length : 0;
   const points = data.map((item, index) => {
-    const x = padding.left + pointGap * index;
+    const x =
+      mode === "bar" ? padding.left + barGap * (index + 0.5) : padding.left + pointGap * index;
     const y = padding.top + chartHeight - (item.value / maxValue) * chartHeight;
     return { x, y, item };
   });
 
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  const d = points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
-  path.setAttribute("d", d);
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", "#2f4a36");
-  path.setAttribute("stroke-width", "3");
-  svg.appendChild(path);
+  if (mode === "line") {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const d = points
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+      .join(" ");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "#2f4a36");
+    path.setAttribute("stroke-width", "3");
+    svg.appendChild(path);
+  }
 
   const shouldRotate = false;
+  const barWidth = data.length ? Math.min(52, barGap * 0.6) : 0;
   points.forEach((point) => {
-    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", point.x);
-    circle.setAttribute("cy", point.y);
-    let radius = 5;
-    if (Number.isFinite(point.item.size) && minSize !== null && maxSize !== null) {
-      if (minSize === maxSize) {
-        radius = 7;
-      } else {
-        const t = (point.item.size - minSize) / (maxSize - minSize);
-        radius = 4 + t * 6;
-      }
-    }
-    circle.setAttribute("r", radius.toFixed(2));
-    circle.setAttribute("fill", "#e38b2c");
-    circle.style.cursor = "pointer";
-
-    circle.addEventListener("mousemove", (event) => {
+    const sizeHint = point.item.sizeLabel ? ` · ${point.item.sizeLabel}` : "";
+    const showTooltip = (event) => {
       const containerRect = container.getBoundingClientRect();
-      const sizeHint = point.item.sizeLabel ? ` · ${point.item.sizeLabel}` : "";
       tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}${sizeHint}`;
       tooltip.style.left = `${event.clientX - containerRect.left}px`;
       tooltip.style.top = `${event.clientY - containerRect.top - 12}px`;
       tooltip.style.opacity = "1";
-    });
-    circle.addEventListener("mouseleave", () => {
+    };
+    const hideTooltip = () => {
       tooltip.style.opacity = "0";
-    });
+    };
+
+    if (mode === "line") {
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", point.x);
+      circle.setAttribute("cy", point.y);
+      let radius = 5;
+      if (Number.isFinite(point.item.size) && minSize !== null && maxSize !== null) {
+        if (minSize === maxSize) {
+          radius = 7;
+        } else {
+          const t = (point.item.size - minSize) / (maxSize - minSize);
+          radius = 4 + t * 6;
+        }
+      }
+      circle.setAttribute("r", radius.toFixed(2));
+      circle.setAttribute("fill", "#e38b2c");
+      circle.style.cursor = "pointer";
+      circle.addEventListener("mousemove", showTooltip);
+      circle.addEventListener("mouseleave", hideTooltip);
+      svg.appendChild(circle);
+    } else {
+      const barHeight = (point.item.value / maxValue) * chartHeight;
+      const barY = padding.top + chartHeight - barHeight;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", point.x - barWidth / 2);
+      rect.setAttribute("y", barY);
+      rect.setAttribute("width", barWidth);
+      rect.setAttribute("height", barHeight);
+      rect.setAttribute("rx", "6");
+      rect.setAttribute("fill", "#2f4a36");
+      rect.style.cursor = "pointer";
+      rect.addEventListener("mousemove", showTooltip);
+      rect.addEventListener("mouseleave", hideTooltip);
+      svg.appendChild(rect);
+    }
 
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     const lx = point.x;
@@ -375,8 +400,6 @@ const createLineChart = (container, data, valueFormatter) => {
       tspan.textContent = line;
       label.appendChild(tspan);
     });
-
-    svg.appendChild(circle);
     svg.appendChild(label);
   });
 
@@ -1034,7 +1057,11 @@ async function runBenchmark(file) {
     if (data.report) {
       currentReport = data.report;
       renderReportPreview(data.report);
-      renderUploadChart(data.report, document.getElementById("upload-metric")?.value);
+      renderUploadChart(
+        data.report,
+        document.getElementById("upload-metric")?.value,
+        uploadChartMode
+      );
       renderUploadSelectivity(data.report.formats || {});
       renderUploadEncodings(data.report.formats || {});
       initUploadLikeSelect(data.report.formats || {});
@@ -1080,10 +1107,18 @@ const initDatasetUpload = () => {
   const runButton = document.getElementById("run-benchmark");
   if (!input) return;
 
+  const resetFileSummary = () => {
+    document.getElementById("file-name").textContent = "--";
+    document.getElementById("file-size").textContent = "--";
+    document.getElementById("file-type").textContent = "--";
+  };
+
+  resetFileSummary();
   input.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
     if (!file) {
       selectedDatasetFile = null;
+      resetFileSummary();
       return;
     }
     selectedDatasetFile = file;
@@ -1147,7 +1182,7 @@ const initCustomQuery = () => {
   });
 };
 
-const renderUploadChart = (report, metric) => {
+const renderUploadChart = (report, metric, mode) => {
   const container = document.getElementById("upload-chart");
   const title = document.getElementById("upload-chart-title");
   if (!container || !title) return;
@@ -1211,7 +1246,7 @@ const renderUploadChart = (report, metric) => {
   }));
 
   title.textContent = chosen.label;
-  createLineChart(container, data, chosen.format);
+  createLineChart(container, data, chosen.format, mode);
 };
 
 const renderUploadSelectivity = (formats) => {
@@ -1487,15 +1522,32 @@ loadDeleteOptions();
 initDeleteUpload();
 
 const metricSelect = document.getElementById("upload-metric");
+const chartToggle = document.getElementById("upload-chart-toggle");
+if (chartToggle) {
+  chartToggle.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-mode]");
+    if (!button) return;
+    const mode = button.dataset.mode;
+    if (!mode || mode === uploadChartMode) return;
+    uploadChartMode = mode;
+    chartToggle
+      .querySelectorAll(".toggle-btn")
+      .forEach((item) => item.classList.toggle("is-active", item === button));
+    if (currentReport) {
+      renderUploadChart(currentReport, metricSelect?.value, uploadChartMode);
+    }
+  });
+}
+
 if (metricSelect) {
   metricSelect.addEventListener("change", () => {
     if (currentReport) {
-      renderUploadChart(currentReport, metricSelect.value);
+      renderUploadChart(currentReport, metricSelect.value, uploadChartMode);
     }
   });
   window.addEventListener("resize", () => {
     if (currentReport) {
-      renderUploadChart(currentReport, metricSelect.value);
+      renderUploadChart(currentReport, metricSelect.value, uploadChartMode);
     }
   });
 }

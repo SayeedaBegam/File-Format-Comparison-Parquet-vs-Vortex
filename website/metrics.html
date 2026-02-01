@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parquet vs Vortex - Metrics</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <img src="./logo.png" alt="File format comparison logo" class="brand-logo" />
+        <div>
+          <div class="brand-title">File format comparison</div>
+          <div class="brand-subtitle">Sayeeda Begam Mohamed Ikbal, Goutham Muralikrishnan</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="./index.html">Overall</a>
+        <a class="nav-link" href="./dataset.html">Dataset detail</a>
+        <a class="nav-link" href="./upload.html">Upload</a>
+        <a class="nav-link is-active" href="./metrics.html">Metrics</a>
+        <a class="nav-link" href="./formats.html">Parquet vs Vortex</a>
+      </nav>
+    </header>
+
+    <main class="page">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Metrics overview</h2>
+          <p>What we measure and how each metric is computed.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Storage metrics</h3>
+            <p><strong>output_size_bytes</strong> — size of the generated files for each format. <em>Lower is better.</em></p>
+            <p><strong>compression_ratio</strong> — input_size_bytes / output_size_bytes. <em>Higher is better.</em></p>
+            <p><strong>compression_time_s</strong> — time to write compressed output. <em>Lower is better.</em></p>
+            <p><strong>compression_speed_mb_s</strong> — input_size_mb / compression_time_s. <em>Higher is better.</em></p>
+            <p><strong>decompression_time_s</strong> — time to materialize a full scan into a temp table. <em>Lower is better.</em></p>
+            <p><strong>decompression_speed_mb_s</strong> — output_size_mb / decompression_time_s. <em>Higher is better.</em></p>
+          </div>
+          <div class="detail-card">
+            <h3>Query latency metrics</h3>
+            <p><strong>median_ms</strong> — median latency across runs. <em>Lower is better.</em></p>
+            <p><strong>p95_ms</strong> — 95th percentile latency. <em>Lower is better.</em></p>
+            <p><strong>cold_ms</strong> — single cold run before warmup. <em>Lower is better.</em></p>
+            <p><strong>runs</strong> — number of measured runs. <em>Higher is better for stability.</em></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Approach</h2>
+          <p>We compare formats inside DuckDB so the query engine is the same for both.</p>
+        </div>
+        <div class="detail-card">
+          <h3>Pipeline</h3>
+          <ol>
+            <li>Ingest CSV or Parquet into an in-memory DuckDB table.</li>
+            <li>Write Parquet (DuckDB COPY, compressed).</li>
+            <li>Write Vortex (DuckDB Vortex extension).</li>
+            <li>Run the same queries on Parquet and Vortex scans.</li>
+            <li>Save results to CSV/JSON/Markdown.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Query definitions</h2>
+          <p>All formats are timed with the same SQL patterns.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Core queries</h3>
+            <p><strong>full_scan_min</strong> — <code>min(min_col)</code> over the full table.</p>
+            <p><strong>selective_predicate</strong> — <code>min(min_col)</code> with <code>filter_col = filter_val</code>.</p>
+            <p><strong>random_access</strong> — point lookup on a high‑NDV column.</p>
+          </div>
+          <div class="detail-card">
+            <h3>Selectivity + LIKE</h3>
+            <p><strong>selectivity</strong> — <code>min(min_col)</code> at 1/10/25/50/90% thresholds.</p>
+            <p><strong>LIKE predicates</strong> — prefix/suffix/contains patterns on text columns.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Diagnostics</h2>
+          <p>Extra signals to explain performance differences.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Cold vs warm</h3>
+            <p>Cold run is measured once before warmup. Warm timing is the median of repeated runs.</p>
+          </div>
+          <div class="detail-card">
+            <h3>Row group count</h3>
+            <p>Parquet row groups are used as a proxy for block‑level reads and pruning.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

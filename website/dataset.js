@@ -43,6 +43,7 @@ const formatMsWithP95 = (medianMs, p95Ms) => {
 
 let currentReport = null;
 let currentManifest = null;
+let metricChartMode = "line";
 
 const _shortLineLabel = (label) => {
   const text = String(label).replace("parquet_", "pq_");
@@ -60,7 +61,7 @@ const _splitLabel = (label) => {
   return [text.slice(0, 8), text.slice(8)];
 };
 
-const createLineChart = (container, data, valueFormatter) => {
+const createLineChart = (container, data, valueFormatter, mode = "line") => {
   container.innerHTML = "";
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, data.length * 90);
@@ -110,51 +111,75 @@ const createLineChart = (container, data, valueFormatter) => {
     svg.appendChild(label);
   }
 
+  const barGap = data.length ? chartWidth / data.length : 0;
   const points = data.map((item, index) => {
-    const x = padding.left + pointGap * index;
+    const x =
+      mode === "bar" ? padding.left + barGap * (index + 0.5) : padding.left + pointGap * index;
     const y = padding.top + chartHeight - (item.value / maxValue) * chartHeight;
     return { x, y, item };
   });
 
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  const d = points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
-  path.setAttribute("d", d);
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", "#2f4a36");
-  path.setAttribute("stroke-width", "3");
-  svg.appendChild(path);
+  if (mode === "line") {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const d = points
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+      .join(" ");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", "#2f4a36");
+    path.setAttribute("stroke-width", "3");
+    svg.appendChild(path);
+  }
 
   const shouldRotate = false;
+  const barWidth = data.length ? Math.min(52, barGap * 0.6) : 0;
   points.forEach((point) => {
-    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", point.x);
-    circle.setAttribute("cy", point.y);
-    let radius = 5;
-    if (Number.isFinite(point.item.size) && minSize !== null && maxSize !== null) {
-      if (minSize === maxSize) {
-        radius = 7;
-      } else {
-        const t = (point.item.size - minSize) / (maxSize - minSize);
-        radius = 4 + t * 6;
-      }
-    }
-    circle.setAttribute("r", radius.toFixed(2));
-    circle.setAttribute("fill", "#e38b2c");
-    circle.style.cursor = "pointer";
-
-    circle.addEventListener("mousemove", (event) => {
+    const sizeHint = point.item.sizeLabel ? ` · ${point.item.sizeLabel}` : "";
+    const showTooltip = (event) => {
       const containerRect = container.getBoundingClientRect();
-      const sizeHint = point.item.sizeLabel ? ` · ${point.item.sizeLabel}` : "";
       tooltip.textContent = `${point.item.label}: ${valueFormatter(point.item.value)}${sizeHint}`;
       tooltip.style.left = `${event.clientX - containerRect.left}px`;
       tooltip.style.top = `${event.clientY - containerRect.top - 12}px`;
       tooltip.style.opacity = "1";
-    });
-    circle.addEventListener("mouseleave", () => {
+    };
+    const hideTooltip = () => {
       tooltip.style.opacity = "0";
-    });
+    };
+
+    if (mode === "line") {
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", point.x);
+      circle.setAttribute("cy", point.y);
+      let radius = 5;
+      if (Number.isFinite(point.item.size) && minSize !== null && maxSize !== null) {
+        if (minSize === maxSize) {
+          radius = 7;
+        } else {
+          const t = (point.item.size - minSize) / (maxSize - minSize);
+          radius = 4 + t * 6;
+        }
+      }
+      circle.setAttribute("r", radius.toFixed(2));
+      circle.setAttribute("fill", "#e38b2c");
+      circle.style.cursor = "pointer";
+      circle.addEventListener("mousemove", showTooltip);
+      circle.addEventListener("mouseleave", hideTooltip);
+      svg.appendChild(circle);
+    } else {
+      const barHeight = (point.item.value / maxValue) * chartHeight;
+      const barY = padding.top + chartHeight - barHeight;
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", point.x - barWidth / 2);
+      rect.setAttribute("y", barY);
+      rect.setAttribute("width", barWidth);
+      rect.setAttribute("height", barHeight);
+      rect.setAttribute("rx", "6");
+      rect.setAttribute("fill", "#2f4a36");
+      rect.style.cursor = "pointer";
+      rect.addEventListener("mousemove", showTooltip);
+      rect.addEventListener("mouseleave", hideTooltip);
+      svg.appendChild(rect);
+    }
 
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     const lx = point.x;
@@ -173,8 +198,6 @@ const createLineChart = (container, data, valueFormatter) => {
       tspan.textContent = line;
       label.appendChild(tspan);
     });
-
-    svg.appendChild(circle);
     svg.appendChild(label);
   });
 
@@ -522,7 +545,7 @@ const renderDatasetReport = (report) => {
     });
 
   const metric = document.getElementById("dataset-metric")?.value;
-  renderDatasetChart(report, metric);
+  renderDatasetChart(report, metric, metricChartMode);
   renderDetails(report);
   renderDiagnostics(report);
   renderDataset3D(report, metric);
@@ -1091,7 +1114,7 @@ const renderDiagnostics = (report) => {
   }
 };
 
-const renderDatasetChart = (report, metric) => {
+const renderDatasetChart = (report, metric, mode) => {
   const container = document.getElementById("dataset-chart");
   const title = document.getElementById("dataset-chart-title");
   if (!container || !title) return;
@@ -1155,7 +1178,7 @@ const renderDatasetChart = (report, metric) => {
   }));
 
   title.textContent = chosen.label;
-  createLineChart(container, data, chosen.format);
+  createLineChart(container, data, chosen.format, mode);
 };
 
 const renderSidebar = (manifest, activeName, filterText) => {
@@ -1304,6 +1327,7 @@ const init = async () => {
   const loadButton = document.getElementById("load-dataset");
   const search = document.getElementById("dataset-search");
   const metricSelect = document.getElementById("dataset-metric");
+  const chartToggle = document.getElementById("dataset-chart-toggle");
   if (!select || !loadButton) return;
 
   select.innerHTML = "";
@@ -1328,16 +1352,32 @@ const init = async () => {
 
   initUpload();
 
+  if (chartToggle) {
+    chartToggle.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-mode]");
+      if (!button) return;
+      const mode = button.dataset.mode;
+      if (!mode || mode === metricChartMode) return;
+      metricChartMode = mode;
+      chartToggle
+        .querySelectorAll(".toggle-btn")
+        .forEach((item) => item.classList.toggle("is-active", item === button));
+      if (currentReport) {
+        renderDatasetChart(currentReport, metricSelect?.value, metricChartMode);
+      }
+    });
+  }
+
   if (metricSelect) {
     metricSelect.addEventListener("change", () => {
       if (currentReport) {
-        renderDatasetChart(currentReport, metricSelect.value);
+        renderDatasetChart(currentReport, metricSelect.value, metricChartMode);
         renderDataset3D(currentReport, metricSelect.value);
       }
     });
     window.addEventListener("resize", () => {
       if (currentReport) {
-        renderDatasetChart(currentReport, metricSelect.value);
+        renderDatasetChart(currentReport, metricSelect.value, metricChartMode);
         renderDataset3D(currentReport, metricSelect.value);
       }
     });
@@ -1359,6 +1399,7 @@ const initInteractiveView = () => {
   const metricBlock = document.getElementById("metric-chart-block");
   const selectivityBlock = document.getElementById("selectivity-block");
   const likeBlock = document.getElementById("like-block");
+  const chartToggle = document.getElementById("dataset-chart-toggle");
   if (!viewSelect || !metricBlock || !selectivityBlock || !likeBlock) return;
 
   const updateView = () => {
@@ -1366,6 +1407,9 @@ const initInteractiveView = () => {
     metricBlock.style.display = value === "metric" ? "block" : "none";
     selectivityBlock.style.display = value === "selectivity" ? "grid" : "none";
     likeBlock.style.display = value === "like" ? "grid" : "none";
+    if (chartToggle) {
+      chartToggle.style.display = value === "metric" ? "flex" : "none";
+    }
   };
 
   updateView();

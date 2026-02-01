@@ -70,7 +70,7 @@
     },
     {
       "name": "IGlocations1_1",
-      "report": "../out/report_IGlocations1_1.json"
+      "report": "./out/report_IGlocations1_1.json"
     }
   ]
 }

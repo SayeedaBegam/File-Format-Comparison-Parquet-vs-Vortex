@@ -238,8 +238,12 @@ def main() -> None:
     source_table = args.table
     if args.sorted_by:
         sorted_table = f"{args.table}_sorted"
+        sort_cols = [c.strip() for c in args.sorted_by.split(",") if c.strip()]
+        if not sort_cols:
+            raise SystemExit("Invalid --sorted-by value; provide a column name or comma-separated list.")
+        order_by = ", ".join([_quote_ident(c) for c in sort_cols])
         con.execute(
-            f"CREATE OR REPLACE TABLE {sorted_table} AS SELECT * FROM {args.table} ORDER BY {args.sorted_by};"
+            f"CREATE OR REPLACE TABLE {sorted_table} AS SELECT * FROM {args.table} ORDER BY {order_by};"
         )
         source_table = sorted_table
 

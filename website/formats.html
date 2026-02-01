@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parquet vs Vortex - Format Primer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <img src="./logo.png" alt="File format comparison logo" class="brand-logo" />
+        <div>
+          <div class="brand-title">File format comparison</div>
+          <div class="brand-subtitle">Sayeeda Begam Mohamed Ikbal, Goutham Muralikrishnan</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="nav-link" href="./index.html">Overall</a>
+        <a class="nav-link" href="./dataset.html">Dataset detail</a>
+        <a class="nav-link" href="./upload.html">Upload</a>
+        <a class="nav-link" href="./metrics.html">Metrics</a>
+        <a class="nav-link is-active" href="./formats.html">Parquet vs Vortex</a>
+      </nav>
+    </header>
+
+    <main class="page">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Parquet vs Vortex</h2>
+          <p>High‑level differences in layout, encoding, and typical access patterns.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Parquet</h3>
+            <p>Columnar, file‑based format with row groups and per‑column encodings.</p>
+            <p>Optimized for scan‑heavy analytics and predicate pushdown.</p>
+            <p>Widely supported across query engines.</p>
+          </div>
+          <div class="detail-card">
+            <h3>Vortex (DuckDB)</h3>
+            <p>Columnar format integrated with DuckDB’s Vortex extension.</p>
+            <p>Designed for high‑performance scans and fast decompression.</p>
+            <p>Best used inside DuckDB where the extension is available.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>How the benchmark compares them</h2>
+          <p>Both formats are written from the same in‑memory table and scanned using DuckDB.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Write path</h3>
+            <p>Parquet: <code>COPY (SELECT * FROM t) TO 'file.parquet' (FORMAT PARQUET)</code></p>
+            <p>Vortex: <code>COPY (SELECT * FROM t) TO 'file.vortex' (FORMAT VORTEX)</code></p>
+          </div>
+          <div class="detail-card">
+            <h3>Read path</h3>
+            <p>Parquet: <code>read_parquet('file.parquet')</code></p>
+            <p>Vortex: <code>read_vortex('file.vortex')</code></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>When each shines</h2>
+          <p>Use the recommendations panel in reports to choose based on your goals.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Parquet is strong when…</h3>
+            <p>You need interoperability, established tooling, and stable long‑term storage.</p>
+          </div>
+          <div class="detail-card">
+            <h3>Vortex is strong when…</h3>
+            <p>Your workflow runs in DuckDB and you want the best scan performance within that engine.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

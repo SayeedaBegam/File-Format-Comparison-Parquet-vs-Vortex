@@ -75,6 +75,10 @@ Overall outputs:
 - `out/overall_summary.md`
 - `out/plots/overall/*.png`
 
+Row-scaling outputs (NYC_1):
+- `out/row_scaling/NYC_1/row_scaling_summary.json`
+- `out/row_scaling/NYC_1/rows_<count>/report_NYC_1.json`
+
 Upload artifacts:
 - `out/uploads/<uploaded file>`
 - `out/uploads/<dataset>_schema.sql` (optional)
@@ -144,6 +148,37 @@ Open:
 - `http://localhost:5000/website/upload.html`
 
 The UI dataset selector reads `website/data/datasets.json`.
+
+---
+
+## Row scaling (NYC_1)
+Use this to compare how formats evolve as row count increases, without creating copies.
+
+Run scaling from the same CSV:
+```bash
+python bench/run_row_scaling.py \
+  --input data/NYC_1.csv \
+  --out-root out/row_scaling/NYC_1 \
+  --row-counts 1000000,2000000,4000000,6000000,8000000,10000000 \
+  --csv-delimiter '|' \
+  --csv-header false \
+  --csv-nullstr null \
+  --csv-ignore-errors \
+  --validate-io \
+  --auto-cols \
+  --csv-sample-size -1
+```
+
+Rebuild the summary without re-running benchmarks:
+```bash
+python bench/run_row_scaling.py \
+  --input data/NYC_1.csv \
+  --out-root out/row_scaling/NYC_1 \
+  --rebuild-summary-only
+```
+
+View the page:
+- `http://localhost:5000/website/row-scaling.html`
 
 ---
 

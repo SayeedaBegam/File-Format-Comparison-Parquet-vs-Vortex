@@ -62,6 +62,7 @@ def main() -> None:
     ap.add_argument("--csv-delimiter", default=None)
     ap.add_argument("--csv-header", default=None, choices=["true", "false"])
     ap.add_argument("--csv-nullstr", default=None)
+    ap.add_argument("--row-limit", type=int, default=None, help="Limit rows read into the base table")
     ap.add_argument("--min-col", default=None)
     ap.add_argument("--filter-col", default=None)
     ap.add_argument("--filter-val", default=None)
@@ -143,6 +144,11 @@ def main() -> None:
         )
     else:
         create_base_table_from_parquet(con, args.table, args.input)
+
+    if args.row_limit is not None and args.row_limit > 0:
+        con.execute(
+            f"CREATE OR REPLACE TABLE {args.table} AS SELECT * FROM {args.table} LIMIT {args.row_limit};"
+        )
 
     if args.auto_cols:
         args.min_col, args.filter_col, args.filter_val, args.select_col = _auto_pick_cols(con, args.table)

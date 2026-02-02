@@ -74,6 +74,12 @@
           <div class="panel-header">
             <h2>Interactive chart</h2>
             <p>Swap metrics and hover a bar for exact values.</p>
+            <div class="selector-row">
+              <div class="toggle-group" role="group" aria-label="Chart toggles">
+                <button type="button" class="toggle-btn js-toggle-legend">Legend</button>
+                <button type="button" class="toggle-btn js-toggle-values">Values</button>
+              </div>
+            </div>
           </div>
           <div class="selector-row">
             <select id="interactive-view" class="select">
@@ -81,6 +87,7 @@
               <option value="selectivity">Best selectivity column</option>
               <option value="like">LIKE predicates</option>
             </select>
+            <select id="dataset-format" class="select"></select>
             <select id="dataset-metric" class="select">
               <option value="compression_ratio">Compression ratio</option>
               <option value="output_size">Compressed size</option>
@@ -96,6 +103,9 @@
               <button type="button" class="toggle-btn is-active" data-mode="line">Line</button>
               <button type="button" class="toggle-btn" data-mode="bar">Bar</button>
             </div>
+            <div class="toggle-group" id="dataset-overlay-toggle" role="group" aria-label="Overlay formats">
+              <button type="button" class="toggle-btn" data-overlay="on">Overlay formats</button>
+            </div>
           </div>
           <div class="chart-card" id="metric-chart-block">
             <div class="chart-title" id="dataset-chart-title">Compression ratio</div>
@@ -104,14 +114,26 @@
           </div>
           <div class="detail-row" id="selectivity-block">
             <div class="detail-card">
-              <h3>Best selectivity column</h3>
+              <h3>Selectivity column</h3>
               <div class="selector-row">
                 <select id="selectivity-select" class="select"></select>
               </div>
               <div class="chart-card">
-                <div class="chart-title" id="selectivity-title">Best selectivity median (ms)</div>
+                <div class="chart-title" id="selectivity-title">Selectivity median (ms)</div>
                 <div id="selectivity-note" class="selectivity-note"></div>
                 <div id="selectivity-chart" class="chart"></div>
+              </div>
+              <div class="table-wrap">
+                <table class="preview-table">
+                  <thead>
+                    <tr>
+                      <th>Format</th>
+                      <th>Best selectivity col</th>
+                      <th>Median (ms)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="selectivity-best-body"></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -150,7 +172,13 @@
         <section class="panel" id="diagnostics-panel">
           <div class="panel-header">
             <h2>Diagnostics</h2>
-            <p>Cold vs warm timings, baseline comparison, and parquet row-group count.</p>
+            <p>Cold vs warm timings and baseline comparison.</p>
+            <div class="selector-row">
+              <div class="toggle-group" role="group" aria-label="Chart toggles">
+                <button type="button" class="toggle-btn js-toggle-legend">Legend</button>
+                <button type="button" class="toggle-btn js-toggle-values">Values</button>
+              </div>
+            </div>
           </div>
           <div class="detail-row">
             <div class="detail-card">
@@ -163,6 +191,12 @@
               <h3>Median (full scan) by format</h3>
               <div class="chart-card">
                 <div id="diagnostics-baseline-chart" class="chart"></div>
+              </div>
+            </div>
+            <div class="detail-card">
+              <h3>Cold run by query</h3>
+              <div class="chart-card">
+                <div id="diagnostics-cold-query-chart" class="chart"></div>
               </div>
             </div>
           </div>
@@ -207,11 +241,10 @@
     </main>
 
     <footer class="footer">
-      <div>Reports loaded from <code>out/</code> or manual upload.</div>
+      <div>Made by Sayeeda and Goutham for the CloudDB Project.</div>
       <div class="footer-links">
         <a href="./index.html">Overall</a>
         <a href="./upload.html">Upload</a>
-        <a href="../out/">Out directory</a>
       </div>
     </footer>
 

@@ -44,6 +44,8 @@ const formatMsWithP95 = (medianMs, p95Ms) => {
 let currentReport = null;
 let currentManifest = null;
 let metricChartMode = "line";
+let chartPrefs = { showLegend: false, showValues: false };
+let datasetOverlayMode = false;
 
 const _shortLineLabel = (label) => {
   const text = String(label).replace("parquet_", "pq_");
@@ -61,7 +63,7 @@ const _splitLabel = (label) => {
   return [text.slice(0, 8), text.slice(8)];
 };
 
-const createLineChart = (container, data, valueFormatter, mode = "line") => {
+const createLineChart = (container, data, valueFormatter, mode = "line", options = {}) => {
   container.innerHTML = "";
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, data.length * 90);
@@ -181,6 +183,17 @@ const createLineChart = (container, data, valueFormatter, mode = "line") => {
       svg.appendChild(rect);
     }
 
+    if (options.showValues) {
+      const valueLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      valueLabel.setAttribute("x", point.x);
+      valueLabel.setAttribute("y", Math.max(point.y - 8, padding.top + 10));
+      valueLabel.setAttribute("text-anchor", "middle");
+      valueLabel.setAttribute("font-size", "10");
+      valueLabel.setAttribute("fill", "#4f574f");
+      valueLabel.textContent = valueFormatter(point.item.value);
+      svg.appendChild(valueLabel);
+    }
+
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     const lx = point.x;
     const ly = height - padding.bottom + 28;
@@ -213,7 +226,7 @@ const formatColors = {
 
 const getFormatColor = (label) => formatColors[label] || "#6b6358";
 
-const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
+const createMultiLineChart = (container, series, xLabels, valueFormatter, options = {}) => {
   container.innerHTML = "";
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, xLabels.length * 80);
@@ -305,10 +318,35 @@ const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
         tooltip.style.opacity = "0";
       });
       svg.appendChild(circle);
+
+      if (options.showValues) {
+        const valueLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        valueLabel.setAttribute("x", point.x);
+        valueLabel.setAttribute("y", Math.max(point.y - 8, padding.top + 10));
+        valueLabel.setAttribute("text-anchor", "middle");
+        valueLabel.setAttribute("font-size", "10");
+        valueLabel.setAttribute("fill", "#4f574f");
+        valueLabel.textContent = valueFormatter(point.value);
+        svg.appendChild(valueLabel);
+      }
     });
   });
 
   container.appendChild(svg);
+
+  if (options.showLegend && series.length > 1) {
+    const legend = document.createElement("div");
+    legend.className = "legend";
+    legend.style.justifyContent = "center";
+    legend.style.marginTop = "10px";
+    series.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "legend-item";
+      row.innerHTML = `<span class="legend-dot" style="background:${item.color}"></span>${item.label}`;
+      legend.appendChild(row);
+    });
+    container.appendChild(legend);
+  }
 };
 
 const _shortLabel = (label) => {
@@ -319,12 +357,12 @@ const _shortLabel = (label) => {
     .replace("vortex_error", "vortex_err");
 };
 
-const createGroupedBarChart = (container, categories, series, valueFormatter) => {
+const createGroupedBarChart = (container, categories, series, valueFormatter, options = {}) => {
   container.innerHTML = "";
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, categories.length * 90);
   const height = 420;
-  const padding = { top: 18, right: 40, bottom: 140, left: 64 };
+  const padding = { top: 18, right: 40, bottom: options.fullLabels ? 170 : 140, left: 64 };
   const allValues = series.flatMap((item) => item.values);
   const maxValue = Math.max(...allValues.filter(Number.isFinite), 1);
   const ticks = 4;
@@ -373,7 +411,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
     const xStart = padding.left + index * groupWidth + groupWidth * 0.15;
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     let lx = padding.left + index * groupWidth + groupWidth * 0.5;
-    const ly = height - 40;
+    const ly = height - (options.fullLabels ? 54 : 48);
     const minX = padding.left + 6;
     const maxX = plotWidth - padding.right - 6;
     lx = Math.min(Math.max(lx, minX), maxX);
@@ -382,7 +420,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
     label.setAttribute("text-anchor", "middle");
     label.setAttribute("font-size", "11");
     label.setAttribute("fill", "#4f574f");
-    const lines = _splitLabel(category);
+    const lines = options.fullLabels ? String(category).split(" ") : _splitLabel(category);
     label.textContent = "";
     lines.forEach((line, idx) => {
       const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
@@ -397,8 +435,10 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
       const value = item.values[index] || 0;
       const barHeight = (value / maxValue) * chartHeight;
       const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      rect.setAttribute("x", xStart + seriesIndex * barWidth);
-      rect.setAttribute("y", padding.top + chartHeight - barHeight);
+      const barX = xStart + seriesIndex * barWidth;
+      const barY = padding.top + chartHeight - barHeight;
+      rect.setAttribute("x", barX);
+      rect.setAttribute("y", barY);
       rect.setAttribute("width", barWidth * 0.9);
       rect.setAttribute("height", barHeight);
       rect.setAttribute("rx", 4);
@@ -415,10 +455,35 @@ const createGroupedBarChart = (container, categories, series, valueFormatter) =>
         tooltip.style.opacity = "0";
       });
       svg.appendChild(rect);
+
+      if (options.showValues) {
+        const valueLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        valueLabel.setAttribute("x", barX + (barWidth * 0.45));
+        valueLabel.setAttribute("y", Math.max(barY - 6, padding.top + 10));
+        valueLabel.setAttribute("text-anchor", "middle");
+        valueLabel.setAttribute("font-size", "10");
+        valueLabel.setAttribute("fill", "#4f574f");
+        valueLabel.textContent = valueFormatter(value);
+        svg.appendChild(valueLabel);
+      }
     });
   });
 
   container.appendChild(svg);
+
+  if (options.showLegend && series.length > 1) {
+    const legend = document.createElement("div");
+    legend.className = "legend";
+    legend.style.justifyContent = "center";
+    legend.style.marginTop = "10px";
+    series.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "legend-item";
+      row.innerHTML = `<span class="legend-dot" style="background:${item.color}"></span>${item.label}`;
+      legend.appendChild(row);
+    });
+    container.appendChild(legend);
+  }
 };
 
 const fillDatasetSummary = (dataset) => {
@@ -491,6 +556,21 @@ const buildFormatCard = (name, data, best) => {
         queries.random_access?.p95_ms
       )}</strong>
     </div>
+    <div class="kv ${
+      isBestMin(queries.full_scan_min?.cold_ms, best.cold_full) ? "is-best" : ""
+    }"><span>Cold full scan</span><strong>${formatMs(
+      queries.full_scan_min?.cold_ms
+    )}</strong></div>
+    <div class="kv ${
+      isBestMin(queries.selective_predicate?.cold_ms, best.cold_selective) ? "is-best" : ""
+    }"><span>Cold selective</span><strong>${formatMs(
+      queries.selective_predicate?.cold_ms
+    )}</strong></div>
+    <div class="kv ${
+      isBestMin(queries.random_access?.cold_ms, best.cold_random_access) ? "is-best" : ""
+    }"><span>Cold random access</span><strong>${formatMs(
+      queries.random_access?.cold_ms
+    )}</strong></div>
     <div class="kv"><span>Compression validation</span><strong>${
       validation.count_match === false ||
       validation.min_match === false ||
@@ -522,6 +602,9 @@ const computeBestMetrics = (formats) => {
     full_scan: min(getNums((item) => item.queries?.full_scan_min?.median_ms)),
     selective: min(getNums((item) => item.queries?.selective_predicate?.median_ms)),
     random_access: min(getNums((item) => item.queries?.random_access?.median_ms)),
+    cold_full: min(getNums((item) => item.queries?.full_scan_min?.cold_ms)),
+    cold_selective: min(getNums((item) => item.queries?.selective_predicate?.cold_ms)),
+    cold_random_access: min(getNums((item) => item.queries?.random_access?.cold_ms)),
   };
 };
 
@@ -544,8 +627,10 @@ const renderDatasetReport = (report) => {
       grid.appendChild(buildFormatCard(name, data, best));
     });
 
+  updateDatasetFormatSelect(report);
   const metric = document.getElementById("dataset-metric")?.value;
-  renderDatasetChart(report, metric, metricChartMode);
+  const formatKey = document.getElementById("dataset-format")?.value;
+  renderDatasetChart(report, metric, metricChartMode, datasetOverlayMode, formatKey);
   renderDetails(report);
   renderDiagnostics(report);
   renderDataset3D(report, metric);
@@ -858,7 +943,13 @@ const renderSelectivityChart = (formats, selectCol) => {
     return;
   }
 
-  createMultiLineChart(container, series, xLabels, (value) => formatMs(value));
+  createMultiLineChart(
+    container,
+    series,
+    xLabels,
+    (value) => formatMs(value),
+    { showLegend: chartPrefs.showLegend, showValues: chartPrefs.showValues }
+  );
 
   if (note) {
     const list = Object.entries(formats || {})
@@ -974,7 +1065,13 @@ const renderLikeChart = (formatName, format, column) => {
       values: categories.map((key) => byType[key]?.total / byType[key]?.count || 0),
     },
   ];
-  createGroupedBarChart(container, categories, series, (value) => formatMs(value));
+  createGroupedBarChart(
+    container,
+    categories,
+    series,
+    (value) => formatMs(value),
+    { showLegend: chartPrefs.showLegend, showValues: chartPrefs.showValues }
+  );
 };
 
 const initLikeSelect = (formats) => {
@@ -1052,7 +1149,27 @@ const renderDetails = (report) => {
   renderRecommendations(report.formats || {}, report.recommendations || {});
   renderEncodings(report.formats || {});
   initSelectivitySelect(report.formats || {});
+  renderSelectivityBestTable(report.formats || {});
   initLikeSelect(report.formats || {});
+};
+
+const renderSelectivityBestTable = (formats) => {
+  const body = document.getElementById("selectivity-best-body");
+  if (!body) return;
+  body.innerHTML = "";
+  Object.entries(formats || {})
+    .filter(([name]) => name !== "vortex_error")
+    .forEach(([name, data]) => {
+      const tr = document.createElement("tr");
+      const bestCol = data.best_select_col || "--";
+      const bestMs = data.best_select_col_avg_median_ms;
+      [name, bestCol, formatMs(bestMs)].forEach((val) => {
+        const td = document.createElement("td");
+        td.textContent = String(val ?? "--");
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
 };
 
 const renderDiagnostics = (report) => {
@@ -1060,6 +1177,7 @@ const renderDiagnostics = (report) => {
   const body = document.getElementById("diagnostics-body");
   const coldChart = document.getElementById("diagnostics-cold-chart");
   const baseChart = document.getElementById("diagnostics-baseline-chart");
+  const coldQueryChart = document.getElementById("diagnostics-cold-query-chart");
   if (!head || !body) return;
   const formats = Object.entries(report.formats || {});
   if (!formats.length) return;
@@ -1067,7 +1185,7 @@ const renderDiagnostics = (report) => {
   head.innerHTML = "";
   body.innerHTML = "";
   const headerRow = document.createElement("tr");
-  ["Format", "Warm (ms)", "Cold (ms)", "Note"].forEach((label) => {
+  ["Format", "Warm (ms)", "Cold (ms)"].forEach((label) => {
     const th = document.createElement("th");
     th.textContent = label;
     headerRow.appendChild(th);
@@ -1078,8 +1196,7 @@ const renderDiagnostics = (report) => {
     const tr = document.createElement("tr");
     const full = data.queries?.full_scan_min?.median_ms;
     const cold = data.queries?.full_scan_min?.cold_ms;
-    const note = data.note || "";
-    [name, formatMs(full), formatMs(cold), note].forEach((val) => {
+    [name, formatMs(full), formatMs(cold)].forEach((val) => {
       const td = document.createElement("td");
       td.textContent = String(val ?? "--");
       tr.appendChild(td);
@@ -1098,7 +1215,8 @@ const renderDiagnostics = (report) => {
         { label: "Warm", color: "#2f4a36", values: warm },
         { label: "Cold", color: "#e38b2c", values: cold },
       ],
-      (value) => formatMs(value)
+      (value) => formatMs(value),
+      { showLegend: chartPrefs.showLegend, showValues: chartPrefs.showValues }
     );
   }
 
@@ -1109,12 +1227,37 @@ const renderDiagnostics = (report) => {
       baseChart,
       categories,
       [{ label: "Median", color: "#4c6fa8", values }],
-      (value) => formatMs(value)
+      (value) => formatMs(value),
+      { showLegend: chartPrefs.showLegend, showValues: chartPrefs.showValues }
+    );
+  }
+
+  if (coldQueryChart) {
+    const categories = ["Full scan", "Selective predicate", "Random access"];
+    const series = formats.map(([name, data]) => ({
+      label: name,
+      color: getFormatColor(name),
+      values: [
+        data.queries?.full_scan_min?.cold_ms || 0,
+        data.queries?.selective_predicate?.cold_ms || 0,
+        data.queries?.random_access?.cold_ms || 0,
+      ],
+    }));
+    createGroupedBarChart(
+      coldQueryChart,
+      categories,
+      series,
+      (value) => formatMs(value),
+      {
+        showLegend: chartPrefs.showLegend,
+        showValues: chartPrefs.showValues,
+        fullLabels: true,
+      }
     );
   }
 };
 
-const renderDatasetChart = (report, metric, mode) => {
+const renderDatasetChart = (report, metric, mode, overlay = false, formatKey = "") => {
   const container = document.getElementById("dataset-chart");
   const title = document.getElementById("dataset-chart-title");
   if (!container || !title) return;
@@ -1168,7 +1311,12 @@ const renderDatasetChart = (report, metric, mode) => {
   };
 
   const chosen = metricMap[metric] || metricMap.compression_ratio;
-  const data = Object.entries(report.formats || {}).map(([name, values]) => ({
+  let entries = Object.entries(report.formats || {});
+  if (!overlay && formatKey) {
+    const filtered = entries.filter(([name]) => name === formatKey);
+    if (filtered.length) entries = filtered;
+  }
+  const data = entries.map(([name, values]) => ({
     label: name,
     value: chosen.getValue(values) || 0,
     size: values.write?.output_size_bytes,
@@ -1178,7 +1326,31 @@ const renderDatasetChart = (report, metric, mode) => {
   }));
 
   title.textContent = chosen.label;
-  createLineChart(container, data, chosen.format, mode);
+  createLineChart(container, data, chosen.format, mode, {
+    showValues: chartPrefs.showValues,
+  });
+};
+
+const updateDatasetFormatSelect = (report) => {
+  const select = document.getElementById("dataset-format");
+  if (!select) return;
+  const current = select.value;
+  const keys = Object.keys(report.formats || {});
+  select.innerHTML = "";
+  keys.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    select.appendChild(option);
+  });
+  if (current && keys.includes(current)) {
+    select.value = current;
+  } else if (keys.includes("parquet_snappy")) {
+    select.value = "parquet_snappy";
+  } else if (keys.length) {
+    select.value = keys[0];
+  }
+  select.disabled = datasetOverlayMode;
 };
 
 const renderSidebar = (manifest, activeName, filterText) => {
@@ -1326,8 +1498,10 @@ const init = async () => {
   const select = document.getElementById("dataset-select");
   const loadButton = document.getElementById("load-dataset");
   const search = document.getElementById("dataset-search");
+  const formatSelect = document.getElementById("dataset-format");
   const metricSelect = document.getElementById("dataset-metric");
   const chartToggle = document.getElementById("dataset-chart-toggle");
+  const overlayToggle = document.getElementById("dataset-overlay-toggle");
   if (!select || !loadButton) return;
 
   select.innerHTML = "";
@@ -1363,7 +1537,13 @@ const init = async () => {
         .querySelectorAll(".toggle-btn")
         .forEach((item) => item.classList.toggle("is-active", item === button));
       if (currentReport) {
-        renderDatasetChart(currentReport, metricSelect?.value, metricChartMode);
+        renderDatasetChart(
+          currentReport,
+          metricSelect?.value,
+          metricChartMode,
+          datasetOverlayMode,
+          formatSelect?.value
+        );
       }
     });
   }
@@ -1371,14 +1551,58 @@ const init = async () => {
   if (metricSelect) {
     metricSelect.addEventListener("change", () => {
       if (currentReport) {
-        renderDatasetChart(currentReport, metricSelect.value, metricChartMode);
+        renderDatasetChart(
+          currentReport,
+          metricSelect.value,
+          metricChartMode,
+          datasetOverlayMode,
+          formatSelect?.value
+        );
         renderDataset3D(currentReport, metricSelect.value);
       }
     });
     window.addEventListener("resize", () => {
       if (currentReport) {
-        renderDatasetChart(currentReport, metricSelect.value, metricChartMode);
+        renderDatasetChart(
+          currentReport,
+          metricSelect.value,
+          metricChartMode,
+          datasetOverlayMode,
+          formatSelect?.value
+        );
         renderDataset3D(currentReport, metricSelect.value);
+      }
+    });
+  }
+
+  if (formatSelect) {
+    formatSelect.addEventListener("change", () => {
+      if (currentReport) {
+        renderDatasetChart(
+          currentReport,
+          metricSelect?.value,
+          metricChartMode,
+          datasetOverlayMode,
+          formatSelect.value
+        );
+      }
+    });
+  }
+
+  if (overlayToggle) {
+    const overlayButton = overlayToggle.querySelector(".toggle-btn");
+    overlayButton?.addEventListener("click", () => {
+      datasetOverlayMode = !datasetOverlayMode;
+      overlayButton.classList.toggle("is-active", datasetOverlayMode);
+      if (formatSelect) formatSelect.disabled = datasetOverlayMode;
+      if (currentReport) {
+        renderDatasetChart(
+          currentReport,
+          metricSelect?.value,
+          metricChartMode,
+          datasetOverlayMode,
+          formatSelect?.value
+        );
       }
     });
   }
@@ -1388,6 +1612,28 @@ const init = async () => {
       renderSidebar(manifest, select.value, search.value);
     });
   }
+
+  const legendButtons = document.querySelectorAll(".js-toggle-legend");
+  const valuesButtons = document.querySelectorAll(".js-toggle-values");
+  const refreshCharts = () => {
+    if (currentReport) {
+      renderDatasetReport(currentReport);
+    }
+  };
+  legendButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      chartPrefs.showLegend = !chartPrefs.showLegend;
+      legendButtons.forEach((b) => b.classList.toggle("is-active", chartPrefs.showLegend));
+      refreshCharts();
+    });
+  });
+  valuesButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      chartPrefs.showValues = !chartPrefs.showValues;
+      valuesButtons.forEach((b) => b.classList.toggle("is-active", chartPrefs.showValues));
+      refreshCharts();
+    });
+  });
 };
 
 init().catch((error) => {
@@ -1399,16 +1645,25 @@ const initInteractiveView = () => {
   const metricBlock = document.getElementById("metric-chart-block");
   const selectivityBlock = document.getElementById("selectivity-block");
   const likeBlock = document.getElementById("like-block");
+  const formatSelect = document.getElementById("dataset-format");
+  const metricSelect = document.getElementById("dataset-metric");
   const chartToggle = document.getElementById("dataset-chart-toggle");
+  const overlayToggle = document.getElementById("dataset-overlay-toggle");
   if (!viewSelect || !metricBlock || !selectivityBlock || !likeBlock) return;
 
   const updateView = () => {
     const value = viewSelect.value;
+    const isMetric = value === "metric";
     metricBlock.style.display = value === "metric" ? "block" : "none";
     selectivityBlock.style.display = value === "selectivity" ? "grid" : "none";
     likeBlock.style.display = value === "like" ? "grid" : "none";
+    if (formatSelect) formatSelect.style.display = isMetric ? "block" : "none";
+    if (metricSelect) metricSelect.style.display = isMetric ? "block" : "none";
     if (chartToggle) {
-      chartToggle.style.display = value === "metric" ? "flex" : "none";
+      chartToggle.style.display = isMetric ? "flex" : "none";
+    }
+    if (overlayToggle) {
+      overlayToggle.style.display = isMetric ? "flex" : "none";
     }
   };
 

@@ -75,8 +75,32 @@
 
       <section class="panel">
         <div class="panel-header">
+          <h2>Cold run geomean (across datasets)</h2>
+          <p>Geomean of cold-run latencies across all datasets for each format.</p>
+          <div class="selector-row">
+            <div class="toggle-group" role="group" aria-label="Chart toggles">
+              <button type="button" class="toggle-btn js-toggle-legend">Legend</button>
+              <button type="button" class="toggle-btn js-toggle-values">Values</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Cold run geomean by query</div>
+          <div id="overall-cold-chart" class="chart"></div>
+          <div class="chart-note">Full scan, selective predicate, and random access (cold_ms).</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
           <h2>Interactive charts</h2>
           <p>Compare datasets with hoverable lines. Pick a format and metric.</p>
+          <div class="selector-row">
+            <div class="toggle-group" role="group" aria-label="Chart toggles">
+              <button type="button" class="toggle-btn js-toggle-legend">Legend</button>
+              <button type="button" class="toggle-btn js-toggle-values">Values</button>
+            </div>
+          </div>
         </div>
         <div class="selector-row">
           <select id="overall-format" class="select"></select>
@@ -95,6 +119,9 @@
             <button type="button" class="toggle-btn is-active" data-mode="line">Line</button>
             <button type="button" class="toggle-btn" data-mode="bar">Bar</button>
           </div>
+          <div class="toggle-group" id="overall-overlay-toggle" role="group" aria-label="Overlay formats">
+            <button type="button" class="toggle-btn" data-overlay="on">Overlay formats</button>
+          </div>
         </div>
         <div class="chart-card">
           <div class="chart-title" id="overall-chart-title">Compression ratio (geomean)</div>
@@ -105,7 +132,7 @@
           <div class="chart-title">3D view (metric × dataset × rows/columns)</div>
           <div id="overall-3d-chart" class="chart"></div>
           <div class="chart-note">
-            X = dataset, Y = rows/columns, Z = selected metric. Rotate to inspect clusters.
+            X = dataset, Y = rows/columns, Z = selected metric. Uses the selected format only.
           </div>
         </div>
       </section>

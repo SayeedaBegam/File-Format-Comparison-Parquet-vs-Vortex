@@ -1,0 +1,1596 @@
+# Benchmark Report
+
+- Input: `clouddb_project/NYC_1.csv` (csv)
+- Rows: **9,624,351**
+- Input rows: **9,624,351**
+- Dropped rows: **0**
+- Input size: **6471.16 MB**
+- column_type_counts: numeric=7, text=43, date=4, bool=0, other=0
+- min_col: `column50`
+- filter_col: `column18`
+- select_cols: `column50, column08, column11, column15, column21, column25, column28, column32, column52, column53`
+- ndv_ratio_by_type: numeric=0.174, text=0.005, date=0.352
+- ndv_ratio_top_cols:
+  - column50: 1.000
+  - column11: 0.507
+  - column08: 0.333
+  - column32: 0.299
+  - column15: 0.270
+  - column20: 0.104
+  - column27: 0.096
+  - column28: 0.096
+  - column25: 0.096
+  - column53: 0.014
+- recommendations:
+  - storage-first: `parquet_zstd`
+    - reason: highest compression_ratio 18.909
+  - compression-speed-first: `parquet_snappy`
+    - reason: highest compression_speed_mb_s 848.16
+  - decompression-speed-first: `parquet_uncompressed`
+    - reason: highest decompression_speed_mb_s 837.30
+  - read-latency-first: `vortex_default`
+    - reason: lowest random_access median_ms 52.56
+  - scan-first: `vortex_default`
+    - reason: lowest full_scan_min median_ms 7.23
+
+## duckdb_table
+- size_mb: **6471.16**
+- compression_time_s: **0.000**
+- compression_ratio: **1.000**
+- full_scan_min median_ms: **1.40** (p95 **1.73**, cold **2.13**)
+- selective_predicate median_ms: **0.73** (p95 **0.74**, cold **0.73**)
+- random_access median_ms: **14.00** (p95 **14.21**, cold **15.13**)
+- best_select_col: `column15` (avg median_ms **1.28**)
+- selectivity:
+  - column50: 1%: 15.56ms, 10%: 15.45ms, 25%: 16.04ms, 50%: 15.88ms, 90%: 15.82ms
+  - column08: 1%: 1.54ms, 10%: 1.92ms, 25%: 2.70ms, 50%: 3.01ms, 90%: 2.96ms
+  - column11: 1%: 1.60ms, 10%: 1.89ms, 25%: 2.43ms, 50%: 2.61ms, 90%: 2.85ms
+  - column15: 1%: 1.13ms, 10%: 1.22ms, 25%: 1.30ms, 50%: 1.35ms, 90%: 1.40ms
+  - column21: 1%: 14.26ms, 10%: 14.43ms, 25%: 14.29ms, 50%: 14.71ms, 90%: 14.97ms
+  - column25: 1%: 1.65ms, 10%: 3.35ms, 25%: 3.36ms, 50%: 3.81ms, 90%: 3.87ms
+  - column28: 1%: 1.72ms, 10%: 3.26ms, 25%: 3.74ms, 50%: 4.49ms, 90%: 4.42ms
+  - column32: 1%: 1.51ms, 10%: 1.87ms, 25%: 2.38ms, 50%: 2.56ms, 90%: 2.70ms
+  - column52: 1%: 14.31ms, 10%: 14.44ms, 25%: 14.79ms, 50%: 15.02ms, 90%: 15.33ms
+  - column53: 1%: 14.28ms, 10%: 14.34ms, 25%: 14.42ms, 50%: 14.63ms, 90%: 14.83ms
+- like_predicates:
+  - column00 prefix target 1% (actual 0.53%) `LAT%`: 7.98ms
+  - column00 prefix target 10% (actual 2.93%) `BLO%`: 7.99ms
+  - column00 prefix target 25% (actual 18.06%) `INT%`: 8.51ms
+  - column00 prefix target 50%,90% (actual 73.27%) `ADD%`: 8.68ms
+  - column00 suffix target 1% (actual 0.53%) `%ONG`: 25.55ms
+  - column00 suffix target 10% (actual 2.93%) `%ACE`: 25.40ms
+  - column00 suffix target 25% (actual 18.06%) `%ION`: 24.79ms
+  - column00 suffix target 50%,90% (actual 73.27%) `%ESS`: 23.86ms
+  - column00 contains target 1% (actual 0.53%) `%TLO%`: 26.55ms
+  - column00 contains target 10% (actual 2.93%) `%CKF%`: 25.90ms
+  - column00 contains target 25% (actual 18.06%) `%RSE%`: 22.59ms
+  - column00 contains target 50%,90% (actual 73.27%) `%DRE%`: 19.69ms
+  - column01 prefix target 1%,10%,25%,50%,90% (actual 0.50%) `Que%`: 8.55ms
+  - column01 suffix target 1%,10%,25%,50%,90% (actual 0.31%) `%ons`: 80.74ms
+  - column01 contains target 1% (actual 0.99%) `%Sta%`: 79.00ms
+  - column01 contains target 10% (actual 6.12%) `% - %`: 78.92ms
+  - column01 contains target 25%,50%,90% (actual 37.18%) `%usi%`: 60.35ms
+  - column02 prefix target 1% (actual 1.24%) `DCA%`: 8.65ms
+  - column02 prefix target 10% (actual 9.29%) `DEP%`: 8.75ms
+  - column02 prefix target 25%,50%,90% (actual 17.29%) `DOT%`: 8.92ms
+  - column02 suffix target 1% (actual 1.24%) `%DCA`: 16.00ms
+  - column02 suffix target 10% (actual 9.29%) `%DEP`: 15.49ms
+  - column02 suffix target 25%,50%,90% (actual 17.29%) `%DOT`: 15.03ms
+  - column02 contains target 1% (actual 1.24%) `%DCA%`: 15.72ms
+  - column02 contains target 10% (actual 9.29%) `%DEP%`: 15.33ms
+  - column02 contains target 25%,50%,90% (actual 17.29%) `%DOT%`: 15.04ms
+  - column03 prefix target 1% (actual 4.83%) `STA%`: 8.42ms
+  - column03 prefix target 10% (actual 11.23%) `Uns%`: 8.40ms
+  - column03 prefix target 25% (actual 21.43%) `QUE%`: 8.65ms
+  - column03 prefix target 50%,90% (actual 44.03%) `BRO%`: 8.93ms
+  - column03 suffix target 1% (actual 4.83%) `%AND`: 24.42ms
+  - column03 suffix target 10% (actual 11.23%) `%ied`: 24.02ms
+  - column03 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 23.38ms
+  - column03 contains target 1% (actual 4.83%) `%N I%`: 24.17ms
+  - column03 contains target 10% (actual 11.23%) `%eci%`: 24.35ms
+  - column03 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 23.01ms
+  - column04 prefix target 1%,10%,25%,50%,90% (actual 0.08%) `Eas%`: 4.45ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%und`: 5.39ms
+  - column04 contains target 1%,10%,25%,50%,90% (actual 0.29%) `%und%`: 5.32ms
+  - column05 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Bel%`: 4.33ms
+  - column05 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%pwy`: 5.25ms
+  - column05 contains target 1%,10%,25%,50%,90% (actual 0.09%) `%nd %`: 5.09ms
+  - column07 prefix target 1% (actual 0.68%) `SOU%`: 8.13ms
+  - column07 prefix target 10%,25% (actual 18.57%) `NEW%`: 8.37ms
+  - column07 prefix target 50%,90% (actual 47.06%) `BRO%`: 8.53ms
+  - column07 suffix target 1% (actual 0.97%) `%IDE`: 23.63ms
+  - column07 suffix target 10% (actual 1.20%) `%ARK`: 23.63ms
+  - column07 suffix target 25%,50%,90% (actual 29.33%) `%LYN`: 22.36ms
+  - column07 contains target 1% (actual 1.05%) `% HI%`: 23.66ms
+  - column07 contains target 10% (actual 5.31%) `%AND%`: 23.22ms
+  - column07 contains target 25%,50%,90% (actual 29.33%) `%KLY%`: 22.56ms
+  - column09 prefix target 1% (actual 0.83%) `16 %`: 8.06ms
+  - column09 prefix target 10%,25%,50%,90% (actual 9.98%) `Uns%`: 8.04ms
+  - column09 suffix target 1%,10% (actual 4.83%) `%AND`: 32.61ms
+  - column09 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 30.94ms
+  - column09 contains target 1% (actual 4.83%) `%TEN%`: 32.51ms
+  - column09 contains target 10% (actual 9.98%) `%ed %`: 31.37ms
+  - column09 contains target 25% (actual 27.69%) `%ROO%`: 30.39ms
+  - column09 contains target 50%,90% (actual 44.03%) `% BR%`: 26.12ms
+  - column10 prefix target 1% (actual 1.05%) `Mis%`: 7.61ms
+  - column10 prefix target 10% (actual 12.11%) `HEA%`: 7.68ms
+  - column10 prefix target 25%,50%,90% (actual 12.19%) `Str%`: 7.82ms
+  - column10 suffix target 1% (actual 1.04%) `%ls)`: 38.71ms
+  - column10 suffix target 10% (actual 7.71%) `%TER`: 38.95ms
+  - column10 suffix target 25%,50%,90% (actual 17.59%) `%ion`: 38.97ms
+  - column10 contains target 1% (actual 1.08%) `%/PL%`: 38.69ms
+  - column10 contains target 10% (actual 9.23%) `%ATI%`: 38.31ms
+  - column10 contains target 25%,50%,90% (actual 25.94%) `% Co%`: 34.26ms
+  - column12 prefix target 1% (actual 0.78%) `3 A%`: 8.25ms
+  - column12 prefix target 10%,25%,50%,90% (actual 7.43%) `EAS%`: 8.46ms
+  - column12 suffix target 1% (actual 0.29%) `%LVD`: 29.70ms
+  - column12 suffix target 10% (actual 3.13%) `%OAD`: 28.79ms
+  - column12 suffix target 25% (actual 24.20%) `%EET`: 29.68ms
+  - column12 suffix target 50%,90% (actual 31.10%) `%NUE`: 28.38ms
+  - column12 contains target 1% (actual 0.91%) `%ORD%`: 28.54ms
+  - column12 contains target 10% (actual 4.93%) `%ON %`: 28.49ms
+  - column12 contains target 25% (actual 24.69%) `%STR%`: 26.95ms
+  - column12 contains target 50%,90% (actual 36.28%) `%AVE%`: 26.71ms
+  - column13 prefix target 1% (actual 0.57%) `NEW%`: 8.14ms
+  - column13 prefix target 10%,25%,50%,90% (actual 1.61%) `BRO%`: 8.10ms
+  - column13 suffix target 1% (actual 0.87%) `%IVE`: 29.33ms
+  - column13 suffix target 10% (actual 3.10%) `%OAD`: 29.79ms
+  - column13 suffix target 25% (actual 24.25%) `%EET`: 31.23ms
+  - column13 suffix target 50%,90% (actual 30.54%) `%NUE`: 29.31ms
+  - column13 contains target 1% (actual 0.98%) `% DR%`: 29.00ms
+  - column13 contains target 10% (actual 4.93%) `%N A%`: 28.85ms
+  - column13 contains target 25% (actual 24.88%) `%STR%`: 27.37ms
+  - column13 contains target 50%,90% (actual 35.73%) `%AVE%`: 26.66ms
+  - column14 prefix target 1% (actual 0.99%) `Sew%`: 8.01ms
+  - column14 prefix target 10%,25%,50%,90% (actual 2.26%) `WAL%`: 7.91ms
+  - column14 suffix target 1% (actual 1.09%) `%ish`: 43.63ms
+  - column14 suffix target 10%,25%,50%,90% (actual 5.15%) `%ing`: 43.37ms
+  - column14 contains target 1% (actual 0.96%) `% In%`: 46.05ms
+  - column14 contains target 10% (actual 10.23%) `% Co%`: 41.51ms
+  - column14 contains target 25%,50%,90% (actual 14.82%) `%ing%`: 40.99ms
+  - column16 prefix target 1% (actual 0.11%) `Sch%`: 8.34ms
+  - column16 prefix target 10%,25% (actual 11.84%) `Pre%`: 8.52ms
+  - column16 prefix target 50%,90% (actual 84.50%) `N/A%`: 9.52ms
+  - column16 suffix target 1% (actual 0.09%) `%ool`: 16.66ms
+  - column16 suffix target 10%,25% (actual 11.84%) `%nct`: 16.17ms
+  - column16 suffix target 50%,90% (actual 84.50%) `%N/A`: 14.07ms
+  - column16 contains target 1% (actual 0.11%) `%cho%`: 16.91ms
+  - column16 contains target 10%,25% (actual 11.84%) `%eci%`: 15.33ms
+  - column16 contains target 50%,90% (actual 84.50%) `%N/A%`: 14.74ms
+  - column17 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `N/A%`: 4.23ms
+  - column17 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%und`: 4.21ms
+  - column17 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%N/A%`: 4.23ms
+  - column18 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `CAT%`: 4.21ms
+  - column18 suffix target 1%,10%,25%,50%,90% (actual 0.01%) `%TER`: 4.23ms
+  - column18 contains target 1%,10%,25%,50%,90% (actual 0.01%) `%ENT%`: 4.22ms
+  - column19 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Flu%`: 4.24ms
+  - column19 suffix target 1%,10%,25%,50%,90% (actual 0.04%) `%eld`: 4.21ms
+  - column19 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%g #%`: 4.19ms
+  - column20 prefix target 1%,10%,25%,50%,90% (actual 0.43%) `150%`: 7.19ms
+  - column20 suffix target 1% (actual 1.12%) `% ST`: 38.37ms
+  - column20 suffix target 10% (actual 2.24%) `%WAY`: 36.62ms
+  - column20 suffix target 25% (actual 28.46%) `%NUE`: 36.67ms
+  - column20 suffix target 50%,90% (actual 31.95%) `%EET`: 36.64ms
+  - column20 contains target 1% (actual 0.97%) `%13 %`: 37.24ms
+  - column20 contains target 10% (actual 14.90%) `%ST %`: 33.81ms
+  - column20 contains target 25% (actual 29.51%) `%VEN%`: 34.27ms
+  - column20 contains target 50%,90% (actual 32.13%) `%TRE%`: 34.44ms
+  - column22 prefix target 1% (actual 1.20%) `WES%`: 5.55ms
+  - column22 prefix target 10%,25%,50%,90% (actual 1.40%) `EAS%`: 5.49ms
+  - column22 suffix target 1% (actual 1.26%) `%AVE`: 12.87ms
+  - column22 suffix target 10%,25%,50%,90% (actual 6.13%) `%EET`: 12.54ms
+  - column22 contains target 1% (actual 0.60%) `%ER %`: 12.87ms
+  - column22 contains target 10%,25%,50%,90% (actual 7.33%) `%AVE%`: 12.18ms
+  - column23 prefix target 1%,10%,25%,50%,90% (actual 0.78%) `EAS%`: 5.98ms
+  - column23 suffix target 1% (actual 0.68%) `%AVE`: 13.21ms
+  - column23 suffix target 10%,25%,50%,90% (actual 6.43%) `%NUE`: 12.68ms
+  - column23 contains target 1% (actual 0.62%) `%TON%`: 12.82ms
+  - column23 contains target 10%,25%,50%,90% (actual 7.61%) `%AVE%`: 12.19ms
+  - column24 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `GRA%`: 4.34ms
+  - column24 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%ORT`: 4.27ms
+  - column24 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%IA %`: 4.26ms
+  - column26 prefix target 1% (actual 1.01%) `3+ %`: 6.89ms
+  - column26 prefix target 10% (actual 4.56%) `Sid%`: 6.97ms
+  - column26 prefix target 25%,50%,90% (actual 21.11%) `Str%`: 7.28ms
+  - column26 suffix target 1% (actual 1.05%) `%ial`: 29.62ms
+  - column26 suffix target 10%,25%,50%,90% (actual 14.33%) `%alk`: 28.92ms
+  - column26 contains target 1% (actual 1.01%) `%Com%`: 29.70ms
+  - column26 contains target 10%,25%,50%,90% (actual 14.32%) `%dew%`: 27.91ms
+  - column27 prefix target 1%,10%,25%,50%,90% (actual 90.65%) `(40%`: 8.97ms
+  - column27 suffix target 1% (actual 1.00%) `%16)`: 89.12ms
+  - column27 suffix target 10%,25%,50%,90% (actual 1.14%) `%67)`: 91.63ms
+  - column27 contains target 1% (actual 7.07%) `%3, %`: 87.21ms
+  - column27 contains target 10% (actual 7.42%) `%1, %`: 83.14ms
+  - column27 contains target 25%,50% (actual 16.05%) `%5, %`: 82.47ms
+  - column27 contains target 90% (actual 90.65%) `%, -%`: 47.11ms
+  - column30 prefix target 1% (actual 4.83%) `STA%`: 8.55ms
+  - column30 prefix target 10% (actual 11.23%) `Uns%`: 8.58ms
+  - column30 prefix target 25% (actual 21.43%) `QUE%`: 8.83ms
+  - column30 prefix target 50%,90% (actual 44.03%) `BRO%`: 9.00ms
+  - column30 suffix target 1% (actual 4.83%) `%AND`: 24.54ms
+  - column30 suffix target 10% (actual 11.23%) `%ied`: 24.16ms
+  - column30 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 23.16ms
+  - column30 contains target 1% (actual 4.83%) `%N I%`: 24.40ms
+  - column30 contains target 10% (actual 11.23%) `%eci%`: 23.55ms
+  - column30 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 21.92ms
+  - column31 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 8.65ms
+  - column31 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 31.61ms
+  - column31 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 31.72ms
+  - column33 prefix target 1% (actual 0.48%) `You%`: 12.23ms
+  - column33 prefix target 10%,25% (actual 4.36%) `Mor%`: 12.68ms
+  - column33 prefix target 50%,90% (actual 56.01%) `The%`: 13.74ms
+  - column33 suffix target 1% (actual 0.96%) `%ys.`: 240.99ms
+  - column33 suffix target 10% (actual 10.25%) `%ed.`: 249.52ms
+  - column33 suffix target 25%,50%,90% (actual 12.92%) `%nt.`: 249.57ms
+  - column33 contains target 1% (actual 1.05%) `%hin%`: 236.53ms
+  - column33 contains target 10% (actual 10.69%) `% wi%`: 218.59ms
+  - column33 contains target 25% (actual 23.67%) `%t w%`: 182.02ms
+  - column33 contains target 50% (actual 49.41%) `% in%`: 127.41ms
+  - column33 contains target 90% (actual 62.14%) `%he %`: 31.58ms
+  - column34 prefix target 1%,10%,25%,50%,90% (actual 0.25%) `Roa%`: 4.31ms
+  - column34 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%way`: 4.66ms
+  - column34 contains target 1%,10%,25%,50%,90% (actual 0.25%) `%adw%`: 4.61ms
+  - column35 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Wes%`: 8.59ms
+  - column35 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%nue`: 32.28ms
+  - column35 contains target 1%,10%,25%,50%,90% (actual 0.41%) `% St%`: 31.93ms
+  - column36 prefix target 1%,10%,25% (actual 0.28%) `BRO%`: 8.85ms
+  - column36 prefix target 50%,90% (actual 99.35%) `Uns%`: 10.03ms
+  - column36 suffix target 1%,10%,25% (actual 0.20%) `%ORK`: 32.10ms
+  - column36 suffix target 50%,90% (actual 99.35%) `%ied`: 29.02ms
+  - column36 contains target 1%,10%,25% (actual 0.20%) `%W Y%`: 31.49ms
+  - column36 contains target 50%,90% (actual 99.35%) `%eci%`: 20.44ms
+  - column37 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `11X%`: 8.58ms
+  - column37 suffix target 1%,10%,25%,50%,90% (actual 0.00%) `%057`: 31.42ms
+  - column37 contains target 1%,10%,25%,50%,90% (actual 0.00%) `%2K2%`: 31.43ms
+  - column38 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 8.57ms
+  - column38 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 31.63ms
+  - column38 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 31.71ms
+  - column39 prefix target 1%,10% (actual 0.01%) `Y%`: 5.27ms
+  - column39 prefix target 25%,50%,90% (actual 29.21%) `N%`: 5.38ms
+  - column39 suffix target 1%,10% (actual 0.01%) `%Y`: 5.96ms
+  - column39 suffix target 25%,50%,90% (actual 29.21%) `%N`: 5.88ms
+  - column39 contains target 1%,10% (actual 0.01%) `%Y%`: 5.93ms
+  - column39 contains target 25%,50%,90% (actual 29.21%) `%N%`: 6.09ms
+  - column40 prefix target 1%,10%,25%,50%,90% (actual 0.01%) `B16%`: 8.84ms
+  - column40 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%010`: 32.34ms
+  - column40 contains target 1%,10%,25%,50%,90% (actual 0.04%) `%010%`: 32.27ms
+  - column41 prefix target 1%,10%,25%,50%,90% (actual 0.32%) `718%`: 8.81ms
+  - column41 suffix target 1%,10%,25%,50%,90% (actual 0.18%) `%900`: 31.53ms
+  - column41 contains target 1%,10%,25%,50%,90% (actual 0.17%) `%408%`: 31.77ms
+  - column42 prefix target 1%,10%,25% (actual 0.11%) `Reg%`: 8.61ms
+  - column42 prefix target 50%,90% (actual 99.35%) `Uns%`: 9.93ms
+  - column42 suffix target 1%,10%,25% (actual 0.02%) `%n 7`: 32.24ms
+  - column42 suffix target 50%,90% (actual 99.35%) `%ied`: 28.42ms
+  - column42 contains target 1%,10%,25% (actual 0.11%) `%gio%`: 31.60ms
+  - column42 contains target 50%,90% (actual 99.35%) `%eci%`: 20.46ms
+  - column43 prefix target 1%,10%,25%,50% (actual 0.65%) `NY%`: 8.65ms
+  - column43 prefix target 90% (actual 99.35%) `Uns%`: 9.92ms
+  - column43 suffix target 1%,10%,25%,50% (actual 0.65%) `%NY`: 31.60ms
+  - column43 suffix target 90% (actual 99.35%) `%ied`: 29.04ms
+  - column43 contains target 1%,10%,25% (actual 0.65%) `%NY%`: 32.15ms
+  - column43 contains target 50%,90% (actual 99.35%) `%eci%`: 20.99ms
+  - column44 prefix target 1%,10%,25%,50%,90% (actual 0.19%) `100%`: 8.68ms
+  - column44 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%021`: 31.61ms
+  - column44 contains target 1%,10%,25%,50%,90% (actual 0.10%) `%002%`: 31.55ms
+  - column45 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Sch%`: 4.27ms
+  - column45 suffix target 1%,10%,25%,50%,90% (actual 0.02%) `%ool`: 4.23ms
+  - column45 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%cho%`: 4.21ms
+  - column46 prefix target 1% (actual 1.28%) `Ass%`: 8.42ms
+  - column46 prefix target 10%,25% (actual 4.64%) `Ope%`: 8.46ms
+  - column46 prefix target 50%,90% (actual 90.89%) `Clo%`: 9.50ms
+  - column46 suffix target 1% (actual 1.28%) `%ned`: 20.96ms
+  - column46 suffix target 10%,25% (actual 4.64%) `%pen`: 20.89ms
+  - column46 suffix target 50%,90% (actual 90.89%) `%sed`: 18.06ms
+  - column46 contains target 1% (actual 1.28%) `%ssi%`: 21.14ms
+  - column46 contains target 10%,25% (actual 4.64%) `%Ope%`: 20.87ms
+  - column46 contains target 50%,90% (actual 90.89%) `%los%`: 14.80ms
+  - column47 prefix target 1% (actual 0.61%) `BEA%`: 8.03ms
+  - column47 prefix target 10%,25%,50%,90% (actual 8.24%) `EAS%`: 8.41ms
+  - column47 suffix target 1% (actual 1.12%) `% ST`: 31.16ms
+  - column47 suffix target 10% (actual 2.89%) `%ACE`: 31.37ms
+  - column47 suffix target 25% (actual 28.46%) `%NUE`: 30.26ms
+  - column47 suffix target 50%,90% (actual 31.95%) `%EET`: 30.37ms
+  - column47 contains target 1% (actual 1.07%) `%Y S%`: 28.84ms
+  - column47 contains target 10% (actual 5.58%) `%N A%`: 29.08ms
+  - column47 contains target 25% (actual 29.40%) `% AV%`: 27.23ms
+  - column47 contains target 50%,90% (actual 33.21%) `% ST%`: 27.01ms
+  - column48 prefix target 1%,10%,25%,50%,90% (actual 0.05%) `BRO%`: 4.26ms
+  - column48 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%LYN`: 4.25ms
+  - column48 contains target 1%,10%,25%,50%,90% (actual 0.03%) `%OOK%`: 4.28ms
+  - column49 prefix target 1%,10%,25%,50%,90% (actual 0.66%) `Oth%`: 4.39ms
+  - column49 suffix target 1%,10%,25%,50%,90% (actual 0.66%) `%her`: 4.85ms
+  - column49 contains target 1%,10%,25%,50%,90% (actual 0.66%) `%the%`: 4.83ms
+  - column51 prefix target 1%,10%,25%,50%,90% (actual 0.07%) `Car%`: 4.22ms
+  - column51 suffix target 1%,10%,25%,50%,90% (actual 0.07%) `%ice`: 4.36ms
+  - column51 contains target 1%,10%,25%,50%,90% (actual 0.07%) `%Ser%`: 4.31ms
+- like_summary:
+  - contains: avg median_ms **34.27** (n=92)
+  - prefix: avg median_ms **7.83** (n=75)
+  - suffix: avg median_ms **33.96** (n=83)
+
+## parquet_zstd
+- size_mb: **342.23**
+- compression_time_s: **8.363**
+- compression_speed_mb_s: **773.784**
+- decompression_time_s: **0.999**
+- decompression_speed_mb_s: **342.678**
+- compression_ratio: **18.909**
+- encodings:
+  - column00: PLAIN_DICTIONARY
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN_DICTIONARY
+  - column03: PLAIN_DICTIONARY
+  - column04: PLAIN, PLAIN_DICTIONARY
+  - column05: PLAIN, PLAIN_DICTIONARY
+  - column06: PLAIN
+  - column07: PLAIN_DICTIONARY
+  - column08: PLAIN, PLAIN_DICTIONARY
+  - column09: PLAIN_DICTIONARY
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN, PLAIN_DICTIONARY
+  - column12: PLAIN_DICTIONARY
+  - column13: PLAIN_DICTIONARY
+  - column14: PLAIN_DICTIONARY
+  - column15: PLAIN, PLAIN_DICTIONARY
+  - column16: PLAIN_DICTIONARY
+  - column17: PLAIN, PLAIN_DICTIONARY
+  - column18: PLAIN, PLAIN_DICTIONARY
+  - column19: PLAIN, PLAIN_DICTIONARY
+  - column20: PLAIN, PLAIN_DICTIONARY
+  - column21: PLAIN_DICTIONARY
+  - column22: PLAIN, PLAIN_DICTIONARY
+  - column23: PLAIN, PLAIN_DICTIONARY
+  - column24: PLAIN, PLAIN_DICTIONARY
+  - column25: PLAIN, PLAIN_DICTIONARY
+  - column26: PLAIN, PLAIN_DICTIONARY
+  - column27: PLAIN, PLAIN_DICTIONARY
+  - column28: PLAIN, PLAIN_DICTIONARY
+  - column29: PLAIN_DICTIONARY
+  - column30: PLAIN_DICTIONARY
+  - column31: PLAIN_DICTIONARY
+  - column32: PLAIN, PLAIN_DICTIONARY
+  - column33: PLAIN, PLAIN_DICTIONARY
+  - column34: PLAIN, PLAIN_DICTIONARY
+  - column35: PLAIN_DICTIONARY
+  - column36: PLAIN_DICTIONARY
+  - column37: PLAIN_DICTIONARY
+  - column38: PLAIN_DICTIONARY
+  - column39: PLAIN, PLAIN_DICTIONARY
+  - column40: PLAIN_DICTIONARY
+  - column41: PLAIN_DICTIONARY
+  - column42: PLAIN_DICTIONARY
+  - column43: PLAIN_DICTIONARY
+  - column44: PLAIN_DICTIONARY
+  - column45: PLAIN, PLAIN_DICTIONARY
+  - column46: PLAIN_DICTIONARY
+  - column47: PLAIN, PLAIN_DICTIONARY
+  - column48: PLAIN, PLAIN_DICTIONARY
+  - column49: PLAIN, PLAIN_DICTIONARY
+  - column50: PLAIN
+  - column51: PLAIN, PLAIN_DICTIONARY
+  - column52: PLAIN, PLAIN_DICTIONARY
+  - column53: PLAIN, PLAIN_DICTIONARY
+- full_scan_min median_ms: **41.05** (p95 **41.25**, cold **695.23**)
+- selective_predicate median_ms: **32.56** (p95 **33.16**, cold **41.57**)
+- random_access median_ms: **124.59** (p95 **133.66**, cold **151.97**)
+- best_select_col: `column21` (avg median_ms **39.18**)
+- validation_pass: **True**
+- selectivity:
+  - column50: 1%: 52.29ms, 10%: 51.15ms, 25%: 48.83ms, 50%: 50.22ms, 90%: 53.00ms
+  - column08: 1%: 43.07ms, 10%: 40.92ms, 25%: 42.90ms, 50%: 43.50ms, 90%: 43.80ms
+  - column11: 1%: 46.01ms, 10%: 46.09ms, 25%: 50.09ms, 50%: 49.63ms, 90%: 49.11ms
+  - column15: 1%: 53.80ms, 10%: 46.67ms, 25%: 44.07ms, 50%: 43.21ms, 90%: 39.06ms
+  - column21: 1%: 38.94ms, 10%: 39.36ms, 25%: 38.84ms, 50%: 38.42ms, 90%: 40.33ms
+  - column25: 1%: 36.47ms, 10%: 45.68ms, 25%: 43.88ms, 50%: 49.23ms, 90%: 48.73ms
+  - column28: 1%: 43.04ms, 10%: 43.68ms, 25%: 40.07ms, 50%: 42.01ms, 90%: 43.21ms
+  - column32: 1%: 45.04ms, 10%: 43.52ms, 25%: 48.06ms, 50%: 43.96ms, 90%: 44.35ms
+  - column52: 1%: 46.41ms, 10%: 49.27ms, 25%: 48.19ms, 50%: 48.32ms, 90%: 49.21ms
+  - column53: 1%: 47.66ms, 10%: 46.70ms, 25%: 54.68ms, 50%: 54.88ms, 90%: 51.82ms
+- like_predicates:
+  - column00 prefix target 1% (actual 0.53%) `LAT%`: 47.20ms
+  - column00 prefix target 10% (actual 2.93%) `BLO%`: 46.66ms
+  - column00 prefix target 25% (actual 18.06%) `INT%`: 38.00ms
+  - column00 prefix target 50%,90% (actual 73.27%) `ADD%`: 39.64ms
+  - column00 suffix target 1% (actual 0.53%) `%ONG`: 42.30ms
+  - column00 suffix target 10% (actual 2.93%) `%ACE`: 40.62ms
+  - column00 suffix target 25% (actual 18.06%) `%ION`: 38.74ms
+  - column00 suffix target 50%,90% (actual 73.27%) `%ESS`: 35.05ms
+  - column00 contains target 1% (actual 0.53%) `%TLO%`: 37.07ms
+  - column00 contains target 10% (actual 2.93%) `%CKF%`: 34.76ms
+  - column00 contains target 25% (actual 18.06%) `%RSE%`: 37.42ms
+  - column00 contains target 50%,90% (actual 73.27%) `%DRE%`: 38.38ms
+  - column01 prefix target 1%,10%,25%,50%,90% (actual 0.50%) `Que%`: 41.33ms
+  - column01 suffix target 1%,10%,25%,50%,90% (actual 0.31%) `%ons`: 43.47ms
+  - column01 contains target 1% (actual 0.99%) `%Sta%`: 40.50ms
+  - column01 contains target 10% (actual 6.12%) `% - %`: 35.73ms
+  - column01 contains target 25%,50%,90% (actual 37.18%) `%usi%`: 36.10ms
+  - column02 prefix target 1% (actual 1.24%) `DCA%`: 36.11ms
+  - column02 prefix target 10% (actual 9.29%) `DEP%`: 38.02ms
+  - column02 prefix target 25%,50%,90% (actual 17.29%) `DOT%`: 39.67ms
+  - column02 suffix target 1% (actual 1.24%) `%DCA`: 36.57ms
+  - column02 suffix target 10% (actual 9.29%) `%DEP`: 40.84ms
+  - column02 suffix target 25%,50%,90% (actual 17.29%) `%DOT`: 38.64ms
+  - column02 contains target 1% (actual 1.24%) `%DCA%`: 36.25ms
+  - column02 contains target 10% (actual 9.29%) `%DEP%`: 40.12ms
+  - column02 contains target 25%,50%,90% (actual 17.29%) `%DOT%`: 38.94ms
+  - column03 prefix target 1% (actual 4.83%) `STA%`: 40.31ms
+  - column03 prefix target 10% (actual 11.23%) `Uns%`: 35.30ms
+  - column03 prefix target 25% (actual 21.43%) `QUE%`: 35.17ms
+  - column03 prefix target 50%,90% (actual 44.03%) `BRO%`: 37.69ms
+  - column03 suffix target 1% (actual 4.83%) `%AND`: 36.61ms
+  - column03 suffix target 10% (actual 11.23%) `%ied`: 37.65ms
+  - column03 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 37.13ms
+  - column03 contains target 1% (actual 4.83%) `%N I%`: 38.93ms
+  - column03 contains target 10% (actual 11.23%) `%eci%`: 36.97ms
+  - column03 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 34.45ms
+  - column04 prefix target 1%,10%,25%,50%,90% (actual 0.08%) `Eas%`: 40.10ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%und`: 45.98ms
+  - column04 contains target 1%,10%,25%,50%,90% (actual 0.29%) `%und%`: 43.84ms
+  - column05 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Bel%`: 47.18ms
+  - column05 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%pwy`: 44.23ms
+  - column05 contains target 1%,10%,25%,50%,90% (actual 0.09%) `%nd %`: 40.25ms
+  - column07 prefix target 1% (actual 0.68%) `SOU%`: 44.75ms
+  - column07 prefix target 10%,25% (actual 18.57%) `NEW%`: 40.44ms
+  - column07 prefix target 50%,90% (actual 47.06%) `BRO%`: 39.77ms
+  - column07 suffix target 1% (actual 0.97%) `%IDE`: 38.34ms
+  - column07 suffix target 10% (actual 1.20%) `%ARK`: 41.00ms
+  - column07 suffix target 25%,50%,90% (actual 29.33%) `%LYN`: 49.39ms
+  - column07 contains target 1% (actual 1.05%) `% HI%`: 50.34ms
+  - column07 contains target 10% (actual 5.31%) `%AND%`: 40.28ms
+  - column07 contains target 25%,50%,90% (actual 29.33%) `%KLY%`: 41.87ms
+  - column09 prefix target 1% (actual 0.83%) `16 %`: 39.22ms
+  - column09 prefix target 10%,25%,50%,90% (actual 9.98%) `Uns%`: 38.40ms
+  - column09 suffix target 1%,10% (actual 4.83%) `%AND`: 39.18ms
+  - column09 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 36.61ms
+  - column09 contains target 1% (actual 4.83%) `%TEN%`: 36.20ms
+  - column09 contains target 10% (actual 9.98%) `%ed %`: 35.31ms
+  - column09 contains target 25% (actual 27.69%) `%ROO%`: 37.28ms
+  - column09 contains target 50%,90% (actual 44.03%) `% BR%`: 37.05ms
+  - column10 prefix target 1% (actual 1.05%) `Mis%`: 39.48ms
+  - column10 prefix target 10% (actual 12.11%) `HEA%`: 36.48ms
+  - column10 prefix target 25%,50%,90% (actual 12.19%) `Str%`: 38.91ms
+  - column10 suffix target 1% (actual 1.04%) `%ls)`: 41.11ms
+  - column10 suffix target 10% (actual 7.71%) `%TER`: 38.33ms
+  - column10 suffix target 25%,50%,90% (actual 17.59%) `%ion`: 36.97ms
+  - column10 contains target 1% (actual 1.08%) `%/PL%`: 36.37ms
+  - column10 contains target 10% (actual 9.23%) `%ATI%`: 35.80ms
+  - column10 contains target 25%,50%,90% (actual 25.94%) `% Co%`: 35.60ms
+  - column12 prefix target 1% (actual 0.78%) `3 A%`: 36.64ms
+  - column12 prefix target 10%,25%,50%,90% (actual 7.43%) `EAS%`: 37.81ms
+  - column12 suffix target 1% (actual 0.29%) `%LVD`: 37.03ms
+  - column12 suffix target 10% (actual 3.13%) `%OAD`: 39.49ms
+  - column12 suffix target 25% (actual 24.20%) `%EET`: 39.34ms
+  - column12 suffix target 50%,90% (actual 31.10%) `%NUE`: 39.03ms
+  - column12 contains target 1% (actual 0.91%) `%ORD%`: 43.81ms
+  - column12 contains target 10% (actual 4.93%) `%ON %`: 42.01ms
+  - column12 contains target 25% (actual 24.69%) `%STR%`: 40.65ms
+  - column12 contains target 50%,90% (actual 36.28%) `%AVE%`: 43.04ms
+  - column13 prefix target 1% (actual 0.57%) `NEW%`: 42.44ms
+  - column13 prefix target 10%,25%,50%,90% (actual 1.61%) `BRO%`: 48.59ms
+  - column13 suffix target 1% (actual 0.87%) `%IVE`: 47.03ms
+  - column13 suffix target 10% (actual 3.10%) `%OAD`: 49.00ms
+  - column13 suffix target 25% (actual 24.25%) `%EET`: 44.05ms
+  - column13 suffix target 50%,90% (actual 30.54%) `%NUE`: 60.43ms
+  - column13 contains target 1% (actual 0.98%) `% DR%`: 56.45ms
+  - column13 contains target 10% (actual 4.93%) `%N A%`: 48.17ms
+  - column13 contains target 25% (actual 24.88%) `%STR%`: 45.23ms
+  - column13 contains target 50%,90% (actual 35.73%) `%AVE%`: 47.60ms
+  - column14 prefix target 1% (actual 0.99%) `Sew%`: 45.05ms
+  - column14 prefix target 10%,25%,50%,90% (actual 2.26%) `WAL%`: 43.12ms
+  - column14 suffix target 1% (actual 1.09%) `%ish`: 46.54ms
+  - column14 suffix target 10%,25%,50%,90% (actual 5.15%) `%ing`: 45.78ms
+  - column14 contains target 1% (actual 0.96%) `% In%`: 40.00ms
+  - column14 contains target 10% (actual 10.23%) `% Co%`: 41.31ms
+  - column14 contains target 25%,50%,90% (actual 14.82%) `%ing%`: 45.48ms
+  - column16 prefix target 1% (actual 0.11%) `Sch%`: 36.46ms
+  - column16 prefix target 10%,25% (actual 11.84%) `Pre%`: 38.85ms
+  - column16 prefix target 50%,90% (actual 84.50%) `N/A%`: 41.12ms
+  - column16 suffix target 1% (actual 0.09%) `%ool`: 34.58ms
+  - column16 suffix target 10%,25% (actual 11.84%) `%nct`: 38.59ms
+  - column16 suffix target 50%,90% (actual 84.50%) `%N/A`: 46.89ms
+  - column16 contains target 1% (actual 0.11%) `%cho%`: 49.27ms
+  - column16 contains target 10%,25% (actual 11.84%) `%eci%`: 78.64ms
+  - column16 contains target 50%,90% (actual 84.50%) `%N/A%`: 46.18ms
+  - column17 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `N/A%`: 56.20ms
+  - column17 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%und`: 44.33ms
+  - column17 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%N/A%`: 41.39ms
+  - column18 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `CAT%`: 42.75ms
+  - column18 suffix target 1%,10%,25%,50%,90% (actual 0.01%) `%TER`: 43.02ms
+  - column18 contains target 1%,10%,25%,50%,90% (actual 0.01%) `%ENT%`: 39.02ms
+  - column19 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Flu%`: 39.70ms
+  - column19 suffix target 1%,10%,25%,50%,90% (actual 0.04%) `%eld`: 42.80ms
+  - column19 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%g #%`: 41.43ms
+  - column20 prefix target 1%,10%,25%,50%,90% (actual 0.43%) `150%`: 46.43ms
+  - column20 suffix target 1% (actual 1.12%) `% ST`: 64.88ms
+  - column20 suffix target 10% (actual 2.24%) `%WAY`: 66.55ms
+  - column20 suffix target 25% (actual 28.46%) `%NUE`: 64.98ms
+  - column20 suffix target 50%,90% (actual 31.95%) `%EET`: 63.96ms
+  - column20 contains target 1% (actual 0.97%) `%13 %`: 64.41ms
+  - column20 contains target 10% (actual 14.90%) `%ST %`: 64.65ms
+  - column20 contains target 25% (actual 29.51%) `%VEN%`: 63.54ms
+  - column20 contains target 50%,90% (actual 32.13%) `%TRE%`: 61.58ms
+  - column22 prefix target 1% (actual 1.20%) `WES%`: 38.25ms
+  - column22 prefix target 10%,25%,50%,90% (actual 1.40%) `EAS%`: 36.46ms
+  - column22 suffix target 1% (actual 1.26%) `%AVE`: 36.03ms
+  - column22 suffix target 10%,25%,50%,90% (actual 6.13%) `%EET`: 35.48ms
+  - column22 contains target 1% (actual 0.60%) `%ER %`: 35.48ms
+  - column22 contains target 10%,25%,50%,90% (actual 7.33%) `%AVE%`: 36.52ms
+  - column23 prefix target 1%,10%,25%,50%,90% (actual 0.78%) `EAS%`: 36.16ms
+  - column23 suffix target 1% (actual 0.68%) `%AVE`: 36.97ms
+  - column23 suffix target 10%,25%,50%,90% (actual 6.43%) `%NUE`: 37.57ms
+  - column23 contains target 1% (actual 0.62%) `%TON%`: 37.36ms
+  - column23 contains target 10%,25%,50%,90% (actual 7.61%) `%AVE%`: 39.04ms
+  - column24 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `GRA%`: 38.85ms
+  - column24 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%ORT`: 39.76ms
+  - column24 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%IA %`: 41.60ms
+  - column26 prefix target 1% (actual 1.01%) `3+ %`: 38.69ms
+  - column26 prefix target 10% (actual 4.56%) `Sid%`: 40.96ms
+  - column26 prefix target 25%,50%,90% (actual 21.11%) `Str%`: 38.90ms
+  - column26 suffix target 1% (actual 1.05%) `%ial`: 37.91ms
+  - column26 suffix target 10%,25%,50%,90% (actual 14.33%) `%alk`: 44.95ms
+  - column26 contains target 1% (actual 1.01%) `%Com%`: 39.39ms
+  - column26 contains target 10%,25%,50%,90% (actual 14.32%) `%dew%`: 37.28ms
+  - column27 prefix target 1%,10%,25%,50%,90% (actual 90.65%) `(40%`: 54.86ms
+  - column27 suffix target 1% (actual 1.00%) `%16)`: 101.49ms
+  - column27 suffix target 10%,25%,50%,90% (actual 1.14%) `%67)`: 101.06ms
+  - column27 contains target 1% (actual 7.07%) `%3, %`: 103.68ms
+  - column27 contains target 10% (actual 7.42%) `%1, %`: 98.29ms
+  - column27 contains target 25%,50% (actual 16.05%) `%5, %`: 95.63ms
+  - column27 contains target 90% (actual 90.65%) `%, -%`: 73.71ms
+  - column30 prefix target 1% (actual 4.83%) `STA%`: 36.43ms
+  - column30 prefix target 10% (actual 11.23%) `Uns%`: 35.38ms
+  - column30 prefix target 25% (actual 21.43%) `QUE%`: 37.26ms
+  - column30 prefix target 50%,90% (actual 44.03%) `BRO%`: 37.48ms
+  - column30 suffix target 1% (actual 4.83%) `%AND`: 38.81ms
+  - column30 suffix target 10% (actual 11.23%) `%ied`: 36.44ms
+  - column30 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 35.09ms
+  - column30 contains target 1% (actual 4.83%) `%N I%`: 36.43ms
+  - column30 contains target 10% (actual 11.23%) `%eci%`: 36.08ms
+  - column30 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 35.72ms
+  - column31 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 37.14ms
+  - column31 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 36.39ms
+  - column31 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 37.67ms
+  - column33 prefix target 1% (actual 0.48%) `You%`: 36.24ms
+  - column33 prefix target 10%,25% (actual 4.36%) `Mor%`: 34.34ms
+  - column33 prefix target 50%,90% (actual 56.01%) `The%`: 36.31ms
+  - column33 suffix target 1% (actual 0.96%) `%ys.`: 35.71ms
+  - column33 suffix target 10% (actual 10.25%) `%ed.`: 39.95ms
+  - column33 suffix target 25%,50%,90% (actual 12.92%) `%nt.`: 50.41ms
+  - column33 contains target 1% (actual 1.05%) `%hin%`: 42.07ms
+  - column33 contains target 10% (actual 10.69%) `% wi%`: 38.32ms
+  - column33 contains target 25% (actual 23.67%) `%t w%`: 37.13ms
+  - column33 contains target 50% (actual 49.41%) `% in%`: 36.15ms
+  - column33 contains target 90% (actual 62.14%) `%he %`: 36.51ms
+  - column34 prefix target 1%,10%,25%,50%,90% (actual 0.25%) `Roa%`: 36.14ms
+  - column34 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%way`: 38.56ms
+  - column34 contains target 1%,10%,25%,50%,90% (actual 0.25%) `%adw%`: 37.58ms
+  - column35 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Wes%`: 35.24ms
+  - column35 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%nue`: 33.64ms
+  - column35 contains target 1%,10%,25%,50%,90% (actual 0.41%) `% St%`: 32.11ms
+  - column36 prefix target 1%,10%,25% (actual 0.28%) `BRO%`: 32.54ms
+  - column36 prefix target 50%,90% (actual 99.35%) `Uns%`: 35.37ms
+  - column36 suffix target 1%,10%,25% (actual 0.20%) `%ORK`: 35.49ms
+  - column36 suffix target 50%,90% (actual 99.35%) `%ied`: 36.76ms
+  - column36 contains target 1%,10%,25% (actual 0.20%) `%W Y%`: 36.52ms
+  - column36 contains target 50%,90% (actual 99.35%) `%eci%`: 35.74ms
+  - column37 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `11X%`: 34.52ms
+  - column37 suffix target 1%,10%,25%,50%,90% (actual 0.00%) `%057`: 41.44ms
+  - column37 contains target 1%,10%,25%,50%,90% (actual 0.00%) `%2K2%`: 37.63ms
+  - column38 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 35.73ms
+  - column38 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 37.13ms
+  - column38 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 35.90ms
+  - column39 prefix target 1%,10% (actual 0.01%) `Y%`: 40.69ms
+  - column39 prefix target 25%,50%,90% (actual 29.21%) `N%`: 39.78ms
+  - column39 suffix target 1%,10% (actual 0.01%) `%Y`: 38.69ms
+  - column39 suffix target 25%,50%,90% (actual 29.21%) `%N`: 37.17ms
+  - column39 contains target 1%,10% (actual 0.01%) `%Y%`: 37.26ms
+  - column39 contains target 25%,50%,90% (actual 29.21%) `%N%`: 36.30ms
+  - column40 prefix target 1%,10%,25%,50%,90% (actual 0.01%) `B16%`: 35.86ms
+  - column40 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%010`: 34.61ms
+  - column40 contains target 1%,10%,25%,50%,90% (actual 0.04%) `%010%`: 35.41ms
+  - column41 prefix target 1%,10%,25%,50%,90% (actual 0.32%) `718%`: 34.12ms
+  - column41 suffix target 1%,10%,25%,50%,90% (actual 0.18%) `%900`: 35.81ms
+  - column41 contains target 1%,10%,25%,50%,90% (actual 0.17%) `%408%`: 36.20ms
+  - column42 prefix target 1%,10%,25% (actual 0.11%) `Reg%`: 37.35ms
+  - column42 prefix target 50%,90% (actual 99.35%) `Uns%`: 36.56ms
+  - column42 suffix target 1%,10%,25% (actual 0.02%) `%n 7`: 35.50ms
+  - column42 suffix target 50%,90% (actual 99.35%) `%ied`: 36.11ms
+  - column42 contains target 1%,10%,25% (actual 0.11%) `%gio%`: 36.30ms
+  - column42 contains target 50%,90% (actual 99.35%) `%eci%`: 35.75ms
+  - column43 prefix target 1%,10%,25%,50% (actual 0.65%) `NY%`: 36.42ms
+  - column43 prefix target 90% (actual 99.35%) `Uns%`: 35.95ms
+  - column43 suffix target 1%,10%,25%,50% (actual 0.65%) `%NY`: 34.01ms
+  - column43 suffix target 90% (actual 99.35%) `%ied`: 33.81ms
+  - column43 contains target 1%,10%,25% (actual 0.65%) `%NY%`: 32.79ms
+  - column43 contains target 50%,90% (actual 99.35%) `%eci%`: 33.48ms
+  - column44 prefix target 1%,10%,25%,50%,90% (actual 0.19%) `100%`: 36.33ms
+  - column44 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%021`: 33.79ms
+  - column44 contains target 1%,10%,25%,50%,90% (actual 0.10%) `%002%`: 34.63ms
+  - column45 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Sch%`: 37.50ms
+  - column45 suffix target 1%,10%,25%,50%,90% (actual 0.02%) `%ool`: 38.43ms
+  - column45 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%cho%`: 39.79ms
+  - column46 prefix target 1% (actual 1.28%) `Ass%`: 36.20ms
+  - column46 prefix target 10%,25% (actual 4.64%) `Ope%`: 37.46ms
+  - column46 prefix target 50%,90% (actual 90.89%) `Clo%`: 37.41ms
+  - column46 suffix target 1% (actual 1.28%) `%ned`: 36.68ms
+  - column46 suffix target 10%,25% (actual 4.64%) `%pen`: 35.58ms
+  - column46 suffix target 50%,90% (actual 90.89%) `%sed`: 38.24ms
+  - column46 contains target 1% (actual 1.28%) `%ssi%`: 38.29ms
+  - column46 contains target 10%,25% (actual 4.64%) `%Ope%`: 37.57ms
+  - column46 contains target 50%,90% (actual 90.89%) `%los%`: 33.99ms
+  - column47 prefix target 1% (actual 0.61%) `BEA%`: 36.54ms
+  - column47 prefix target 10%,25%,50%,90% (actual 8.24%) `EAS%`: 39.61ms
+  - column47 suffix target 1% (actual 1.12%) `% ST`: 39.10ms
+  - column47 suffix target 10% (actual 2.89%) `%ACE`: 39.39ms
+  - column47 suffix target 25% (actual 28.46%) `%NUE`: 38.63ms
+  - column47 suffix target 50%,90% (actual 31.95%) `%EET`: 37.02ms
+  - column47 contains target 1% (actual 1.07%) `%Y S%`: 39.36ms
+  - column47 contains target 10% (actual 5.58%) `%N A%`: 36.12ms
+  - column47 contains target 25% (actual 29.40%) `% AV%`: 35.96ms
+  - column47 contains target 50%,90% (actual 33.21%) `% ST%`: 37.13ms
+  - column48 prefix target 1%,10%,25%,50%,90% (actual 0.05%) `BRO%`: 36.62ms
+  - column48 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%LYN`: 37.34ms
+  - column48 contains target 1%,10%,25%,50%,90% (actual 0.03%) `%OOK%`: 37.54ms
+  - column49 prefix target 1%,10%,25%,50%,90% (actual 0.66%) `Oth%`: 35.59ms
+  - column49 suffix target 1%,10%,25%,50%,90% (actual 0.66%) `%her`: 34.15ms
+  - column49 contains target 1%,10%,25%,50%,90% (actual 0.66%) `%the%`: 35.18ms
+  - column51 prefix target 1%,10%,25%,50%,90% (actual 0.07%) `Car%`: 38.97ms
+  - column51 suffix target 1%,10%,25%,50%,90% (actual 0.07%) `%ice`: 35.74ms
+  - column51 contains target 1%,10%,25%,50%,90% (actual 0.07%) `%Ser%`: 36.72ms
+- like_summary:
+  - contains: avg median_ms **42.55** (n=92)
+  - prefix: avg median_ms **39.03** (n=75)
+  - suffix: avg median_ms **42.10** (n=83)
+
+## parquet_snappy
+- size_mb: **470.94**
+- compression_time_s: **7.630**
+- compression_speed_mb_s: **848.164**
+- decompression_time_s: **0.969**
+- decompression_speed_mb_s: **485.939**
+- compression_ratio: **13.741**
+- encodings:
+  - column00: PLAIN_DICTIONARY
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN_DICTIONARY
+  - column03: PLAIN_DICTIONARY
+  - column04: PLAIN, PLAIN_DICTIONARY
+  - column05: PLAIN, PLAIN_DICTIONARY
+  - column06: PLAIN
+  - column07: PLAIN_DICTIONARY
+  - column08: PLAIN, PLAIN_DICTIONARY
+  - column09: PLAIN_DICTIONARY
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN, PLAIN_DICTIONARY
+  - column12: PLAIN_DICTIONARY
+  - column13: PLAIN_DICTIONARY
+  - column14: PLAIN_DICTIONARY
+  - column15: PLAIN, PLAIN_DICTIONARY
+  - column16: PLAIN_DICTIONARY
+  - column17: PLAIN, PLAIN_DICTIONARY
+  - column18: PLAIN, PLAIN_DICTIONARY
+  - column19: PLAIN, PLAIN_DICTIONARY
+  - column20: PLAIN, PLAIN_DICTIONARY
+  - column21: PLAIN_DICTIONARY
+  - column22: PLAIN, PLAIN_DICTIONARY
+  - column23: PLAIN, PLAIN_DICTIONARY
+  - column24: PLAIN, PLAIN_DICTIONARY
+  - column25: PLAIN, PLAIN_DICTIONARY
+  - column26: PLAIN, PLAIN_DICTIONARY
+  - column27: PLAIN, PLAIN_DICTIONARY
+  - column28: PLAIN, PLAIN_DICTIONARY
+  - column29: PLAIN_DICTIONARY
+  - column30: PLAIN_DICTIONARY
+  - column31: PLAIN_DICTIONARY
+  - column32: PLAIN, PLAIN_DICTIONARY
+  - column33: PLAIN, PLAIN_DICTIONARY
+  - column34: PLAIN, PLAIN_DICTIONARY
+  - column35: PLAIN_DICTIONARY
+  - column36: PLAIN_DICTIONARY
+  - column37: PLAIN_DICTIONARY
+  - column38: PLAIN_DICTIONARY
+  - column39: PLAIN, PLAIN_DICTIONARY
+  - column40: PLAIN_DICTIONARY
+  - column41: PLAIN_DICTIONARY
+  - column42: PLAIN_DICTIONARY
+  - column43: PLAIN_DICTIONARY
+  - column44: PLAIN_DICTIONARY
+  - column45: PLAIN, PLAIN_DICTIONARY
+  - column46: PLAIN_DICTIONARY
+  - column47: PLAIN, PLAIN_DICTIONARY
+  - column48: PLAIN, PLAIN_DICTIONARY
+  - column49: PLAIN, PLAIN_DICTIONARY
+  - column50: PLAIN
+  - column51: PLAIN, PLAIN_DICTIONARY
+  - column52: PLAIN, PLAIN_DICTIONARY
+  - column53: PLAIN, PLAIN_DICTIONARY
+- full_scan_min median_ms: **38.92** (p95 **40.24**, cold **619.59**)
+- selective_predicate median_ms: **31.93** (p95 **32.98**, cold **30.83**)
+- random_access median_ms: **94.26** (p95 **96.00**, cold **146.17**)
+- best_select_col: `column21` (avg median_ms **40.32**)
+- validation_pass: **True**
+- selectivity:
+  - column50: 1%: 51.94ms, 10%: 49.92ms, 25%: 48.78ms, 50%: 48.82ms, 90%: 49.86ms
+  - column08: 1%: 42.52ms, 10%: 42.69ms, 25%: 43.98ms, 50%: 43.35ms, 90%: 44.79ms
+  - column11: 1%: 44.42ms, 10%: 42.02ms, 25%: 41.98ms, 50%: 40.71ms, 90%: 39.00ms
+  - column15: 1%: 39.34ms, 10%: 42.32ms, 25%: 39.72ms, 50%: 39.88ms, 90%: 40.66ms
+  - column21: 1%: 40.14ms, 10%: 39.30ms, 25%: 43.39ms, 50%: 38.71ms, 90%: 40.04ms
+  - column25: 1%: 35.11ms, 10%: 42.11ms, 25%: 41.89ms, 50%: 41.76ms, 90%: 43.61ms
+  - column28: 1%: 36.65ms, 10%: 40.23ms, 25%: 40.92ms, 50%: 44.15ms, 90%: 41.04ms
+  - column32: 1%: 39.30ms, 10%: 41.27ms, 25%: 41.48ms, 50%: 42.79ms, 90%: 40.91ms
+  - column52: 1%: 44.20ms, 10%: 44.03ms, 25%: 44.23ms, 50%: 45.27ms, 90%: 46.15ms
+  - column53: 1%: 45.97ms, 10%: 46.10ms, 25%: 45.53ms, 50%: 43.80ms, 90%: 44.79ms
+- like_predicates:
+  - column00 prefix target 1% (actual 0.53%) `LAT%`: 36.86ms
+  - column00 prefix target 10% (actual 2.93%) `BLO%`: 34.23ms
+  - column00 prefix target 25% (actual 18.06%) `INT%`: 32.26ms
+  - column00 prefix target 50%,90% (actual 73.27%) `ADD%`: 36.22ms
+  - column00 suffix target 1% (actual 0.53%) `%ONG`: 33.43ms
+  - column00 suffix target 10% (actual 2.93%) `%ACE`: 34.38ms
+  - column00 suffix target 25% (actual 18.06%) `%ION`: 35.98ms
+  - column00 suffix target 50%,90% (actual 73.27%) `%ESS`: 34.60ms
+  - column00 contains target 1% (actual 0.53%) `%TLO%`: 33.81ms
+  - column00 contains target 10% (actual 2.93%) `%CKF%`: 41.02ms
+  - column00 contains target 25% (actual 18.06%) `%RSE%`: 37.75ms
+  - column00 contains target 50%,90% (actual 73.27%) `%DRE%`: 35.01ms
+  - column01 prefix target 1%,10%,25%,50%,90% (actual 0.50%) `Que%`: 34.05ms
+  - column01 suffix target 1%,10%,25%,50%,90% (actual 0.31%) `%ons`: 34.32ms
+  - column01 contains target 1% (actual 0.99%) `%Sta%`: 35.07ms
+  - column01 contains target 10% (actual 6.12%) `% - %`: 34.23ms
+  - column01 contains target 25%,50%,90% (actual 37.18%) `%usi%`: 35.00ms
+  - column02 prefix target 1% (actual 1.24%) `DCA%`: 37.30ms
+  - column02 prefix target 10% (actual 9.29%) `DEP%`: 34.91ms
+  - column02 prefix target 25%,50%,90% (actual 17.29%) `DOT%`: 36.66ms
+  - column02 suffix target 1% (actual 1.24%) `%DCA`: 35.99ms
+  - column02 suffix target 10% (actual 9.29%) `%DEP`: 34.06ms
+  - column02 suffix target 25%,50%,90% (actual 17.29%) `%DOT`: 36.47ms
+  - column02 contains target 1% (actual 1.24%) `%DCA%`: 35.19ms
+  - column02 contains target 10% (actual 9.29%) `%DEP%`: 34.20ms
+  - column02 contains target 25%,50%,90% (actual 17.29%) `%DOT%`: 34.14ms
+  - column03 prefix target 1% (actual 4.83%) `STA%`: 36.40ms
+  - column03 prefix target 10% (actual 11.23%) `Uns%`: 35.63ms
+  - column03 prefix target 25% (actual 21.43%) `QUE%`: 34.49ms
+  - column03 prefix target 50%,90% (actual 44.03%) `BRO%`: 35.97ms
+  - column03 suffix target 1% (actual 4.83%) `%AND`: 34.46ms
+  - column03 suffix target 10% (actual 11.23%) `%ied`: 34.08ms
+  - column03 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 34.98ms
+  - column03 contains target 1% (actual 4.83%) `%N I%`: 36.37ms
+  - column03 contains target 10% (actual 11.23%) `%eci%`: 36.07ms
+  - column03 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 33.82ms
+  - column04 prefix target 1%,10%,25%,50%,90% (actual 0.08%) `Eas%`: 36.99ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%und`: 35.18ms
+  - column04 contains target 1%,10%,25%,50%,90% (actual 0.29%) `%und%`: 38.46ms
+  - column05 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Bel%`: 36.47ms
+  - column05 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%pwy`: 39.32ms
+  - column05 contains target 1%,10%,25%,50%,90% (actual 0.09%) `%nd %`: 38.51ms
+  - column07 prefix target 1% (actual 0.68%) `SOU%`: 37.01ms
+  - column07 prefix target 10%,25% (actual 18.57%) `NEW%`: 33.92ms
+  - column07 prefix target 50%,90% (actual 47.06%) `BRO%`: 34.82ms
+  - column07 suffix target 1% (actual 0.97%) `%IDE`: 37.65ms
+  - column07 suffix target 10% (actual 1.20%) `%ARK`: 36.14ms
+  - column07 suffix target 25%,50%,90% (actual 29.33%) `%LYN`: 36.63ms
+  - column07 contains target 1% (actual 1.05%) `% HI%`: 36.48ms
+  - column07 contains target 10% (actual 5.31%) `%AND%`: 34.83ms
+  - column07 contains target 25%,50%,90% (actual 29.33%) `%KLY%`: 36.64ms
+  - column09 prefix target 1% (actual 0.83%) `16 %`: 35.01ms
+  - column09 prefix target 10%,25%,50%,90% (actual 9.98%) `Uns%`: 34.51ms
+  - column09 suffix target 1%,10% (actual 4.83%) `%AND`: 35.37ms
+  - column09 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 37.12ms
+  - column09 contains target 1% (actual 4.83%) `%TEN%`: 35.87ms
+  - column09 contains target 10% (actual 9.98%) `%ed %`: 35.06ms
+  - column09 contains target 25% (actual 27.69%) `%ROO%`: 35.00ms
+  - column09 contains target 50%,90% (actual 44.03%) `% BR%`: 35.19ms
+  - column10 prefix target 1% (actual 1.05%) `Mis%`: 33.84ms
+  - column10 prefix target 10% (actual 12.11%) `HEA%`: 34.39ms
+  - column10 prefix target 25%,50%,90% (actual 12.19%) `Str%`: 36.55ms
+  - column10 suffix target 1% (actual 1.04%) `%ls)`: 36.37ms
+  - column10 suffix target 10% (actual 7.71%) `%TER`: 34.42ms
+  - column10 suffix target 25%,50%,90% (actual 17.59%) `%ion`: 35.54ms
+  - column10 contains target 1% (actual 1.08%) `%/PL%`: 35.23ms
+  - column10 contains target 10% (actual 9.23%) `%ATI%`: 34.34ms
+  - column10 contains target 25%,50%,90% (actual 25.94%) `% Co%`: 33.96ms
+  - column12 prefix target 1% (actual 0.78%) `3 A%`: 35.37ms
+  - column12 prefix target 10%,25%,50%,90% (actual 7.43%) `EAS%`: 35.95ms
+  - column12 suffix target 1% (actual 0.29%) `%LVD`: 34.35ms
+  - column12 suffix target 10% (actual 3.13%) `%OAD`: 35.72ms
+  - column12 suffix target 25% (actual 24.20%) `%EET`: 36.51ms
+  - column12 suffix target 50%,90% (actual 31.10%) `%NUE`: 35.87ms
+  - column12 contains target 1% (actual 0.91%) `%ORD%`: 37.85ms
+  - column12 contains target 10% (actual 4.93%) `%ON %`: 37.37ms
+  - column12 contains target 25% (actual 24.69%) `%STR%`: 38.82ms
+  - column12 contains target 50%,90% (actual 36.28%) `%AVE%`: 38.48ms
+  - column13 prefix target 1% (actual 0.57%) `NEW%`: 34.41ms
+  - column13 prefix target 10%,25%,50%,90% (actual 1.61%) `BRO%`: 34.17ms
+  - column13 suffix target 1% (actual 0.87%) `%IVE`: 36.47ms
+  - column13 suffix target 10% (actual 3.10%) `%OAD`: 36.49ms
+  - column13 suffix target 25% (actual 24.25%) `%EET`: 35.36ms
+  - column13 suffix target 50%,90% (actual 30.54%) `%NUE`: 34.54ms
+  - column13 contains target 1% (actual 0.98%) `% DR%`: 35.65ms
+  - column13 contains target 10% (actual 4.93%) `%N A%`: 36.89ms
+  - column13 contains target 25% (actual 24.88%) `%STR%`: 35.78ms
+  - column13 contains target 50%,90% (actual 35.73%) `%AVE%`: 36.06ms
+  - column14 prefix target 1% (actual 0.99%) `Sew%`: 34.37ms
+  - column14 prefix target 10%,25%,50%,90% (actual 2.26%) `WAL%`: 36.57ms
+  - column14 suffix target 1% (actual 1.09%) `%ish`: 37.18ms
+  - column14 suffix target 10%,25%,50%,90% (actual 5.15%) `%ing`: 36.09ms
+  - column14 contains target 1% (actual 0.96%) `% In%`: 38.76ms
+  - column14 contains target 10% (actual 10.23%) `% Co%`: 38.08ms
+  - column14 contains target 25%,50%,90% (actual 14.82%) `%ing%`: 37.92ms
+  - column16 prefix target 1% (actual 0.11%) `Sch%`: 34.51ms
+  - column16 prefix target 10%,25% (actual 11.84%) `Pre%`: 35.15ms
+  - column16 prefix target 50%,90% (actual 84.50%) `N/A%`: 36.25ms
+  - column16 suffix target 1% (actual 0.09%) `%ool`: 35.58ms
+  - column16 suffix target 10%,25% (actual 11.84%) `%nct`: 36.18ms
+  - column16 suffix target 50%,90% (actual 84.50%) `%N/A`: 36.38ms
+  - column16 contains target 1% (actual 0.11%) `%cho%`: 38.19ms
+  - column16 contains target 10%,25% (actual 11.84%) `%eci%`: 33.52ms
+  - column16 contains target 50%,90% (actual 84.50%) `%N/A%`: 34.43ms
+  - column17 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `N/A%`: 40.93ms
+  - column17 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%und`: 35.59ms
+  - column17 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%N/A%`: 34.99ms
+  - column18 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `CAT%`: 37.69ms
+  - column18 suffix target 1%,10%,25%,50%,90% (actual 0.01%) `%TER`: 43.16ms
+  - column18 contains target 1%,10%,25%,50%,90% (actual 0.01%) `%ENT%`: 39.71ms
+  - column19 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Flu%`: 35.59ms
+  - column19 suffix target 1%,10%,25%,50%,90% (actual 0.04%) `%eld`: 37.68ms
+  - column19 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%g #%`: 36.01ms
+  - column20 prefix target 1%,10%,25%,50%,90% (actual 0.43%) `150%`: 49.44ms
+  - column20 suffix target 1% (actual 1.12%) `% ST`: 63.40ms
+  - column20 suffix target 10% (actual 2.24%) `%WAY`: 62.62ms
+  - column20 suffix target 25% (actual 28.46%) `%NUE`: 61.80ms
+  - column20 suffix target 50%,90% (actual 31.95%) `%EET`: 61.79ms
+  - column20 contains target 1% (actual 0.97%) `%13 %`: 61.89ms
+  - column20 contains target 10% (actual 14.90%) `%ST %`: 60.92ms
+  - column20 contains target 25% (actual 29.51%) `%VEN%`: 61.58ms
+  - column20 contains target 50%,90% (actual 32.13%) `%TRE%`: 60.80ms
+  - column22 prefix target 1% (actual 1.20%) `WES%`: 34.94ms
+  - column22 prefix target 10%,25%,50%,90% (actual 1.40%) `EAS%`: 36.06ms
+  - column22 suffix target 1% (actual 1.26%) `%AVE`: 36.68ms
+  - column22 suffix target 10%,25%,50%,90% (actual 6.13%) `%EET`: 35.62ms
+  - column22 contains target 1% (actual 0.60%) `%ER %`: 37.20ms
+  - column22 contains target 10%,25%,50%,90% (actual 7.33%) `%AVE%`: 37.23ms
+  - column23 prefix target 1%,10%,25%,50%,90% (actual 0.78%) `EAS%`: 37.31ms
+  - column23 suffix target 1% (actual 0.68%) `%AVE`: 40.60ms
+  - column23 suffix target 10%,25%,50%,90% (actual 6.43%) `%NUE`: 38.83ms
+  - column23 contains target 1% (actual 0.62%) `%TON%`: 37.03ms
+  - column23 contains target 10%,25%,50%,90% (actual 7.61%) `%AVE%`: 37.38ms
+  - column24 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `GRA%`: 35.33ms
+  - column24 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%ORT`: 35.87ms
+  - column24 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%IA %`: 34.93ms
+  - column26 prefix target 1% (actual 1.01%) `3+ %`: 35.21ms
+  - column26 prefix target 10% (actual 4.56%) `Sid%`: 35.49ms
+  - column26 prefix target 25%,50%,90% (actual 21.11%) `Str%`: 39.21ms
+  - column26 suffix target 1% (actual 1.05%) `%ial`: 37.85ms
+  - column26 suffix target 10%,25%,50%,90% (actual 14.33%) `%alk`: 36.27ms
+  - column26 contains target 1% (actual 1.01%) `%Com%`: 36.03ms
+  - column26 contains target 10%,25%,50%,90% (actual 14.32%) `%dew%`: 41.69ms
+  - column27 prefix target 1%,10%,25%,50%,90% (actual 90.65%) `(40%`: 66.65ms
+  - column27 suffix target 1% (actual 1.00%) `%16)`: 99.77ms
+  - column27 suffix target 10%,25%,50%,90% (actual 1.14%) `%67)`: 101.25ms
+  - column27 contains target 1% (actual 7.07%) `%3, %`: 93.95ms
+  - column27 contains target 10% (actual 7.42%) `%1, %`: 93.83ms
+  - column27 contains target 25%,50% (actual 16.05%) `%5, %`: 93.77ms
+  - column27 contains target 90% (actual 90.65%) `%, -%`: 73.69ms
+  - column30 prefix target 1% (actual 4.83%) `STA%`: 34.36ms
+  - column30 prefix target 10% (actual 11.23%) `Uns%`: 34.80ms
+  - column30 prefix target 25% (actual 21.43%) `QUE%`: 37.54ms
+  - column30 prefix target 50%,90% (actual 44.03%) `BRO%`: 35.36ms
+  - column30 suffix target 1% (actual 4.83%) `%AND`: 32.52ms
+  - column30 suffix target 10% (actual 11.23%) `%ied`: 34.07ms
+  - column30 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 36.11ms
+  - column30 contains target 1% (actual 4.83%) `%N I%`: 35.89ms
+  - column30 contains target 10% (actual 11.23%) `%eci%`: 37.73ms
+  - column30 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 34.35ms
+  - column31 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 35.65ms
+  - column31 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 36.29ms
+  - column31 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 34.22ms
+  - column33 prefix target 1% (actual 0.48%) `You%`: 34.79ms
+  - column33 prefix target 10%,25% (actual 4.36%) `Mor%`: 36.54ms
+  - column33 prefix target 50%,90% (actual 56.01%) `The%`: 35.66ms
+  - column33 suffix target 1% (actual 0.96%) `%ys.`: 36.17ms
+  - column33 suffix target 10% (actual 10.25%) `%ed.`: 39.15ms
+  - column33 suffix target 25%,50%,90% (actual 12.92%) `%nt.`: 35.29ms
+  - column33 contains target 1% (actual 1.05%) `%hin%`: 39.66ms
+  - column33 contains target 10% (actual 10.69%) `% wi%`: 38.16ms
+  - column33 contains target 25% (actual 23.67%) `%t w%`: 36.94ms
+  - column33 contains target 50% (actual 49.41%) `% in%`: 35.91ms
+  - column33 contains target 90% (actual 62.14%) `%he %`: 38.02ms
+  - column34 prefix target 1%,10%,25%,50%,90% (actual 0.25%) `Roa%`: 39.54ms
+  - column34 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%way`: 40.19ms
+  - column34 contains target 1%,10%,25%,50%,90% (actual 0.25%) `%adw%`: 36.76ms
+  - column35 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Wes%`: 33.18ms
+  - column35 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%nue`: 33.84ms
+  - column35 contains target 1%,10%,25%,50%,90% (actual 0.41%) `% St%`: 33.85ms
+  - column36 prefix target 1%,10%,25% (actual 0.28%) `BRO%`: 34.74ms
+  - column36 prefix target 50%,90% (actual 99.35%) `Uns%`: 34.88ms
+  - column36 suffix target 1%,10%,25% (actual 0.20%) `%ORK`: 35.79ms
+  - column36 suffix target 50%,90% (actual 99.35%) `%ied`: 35.94ms
+  - column36 contains target 1%,10%,25% (actual 0.20%) `%W Y%`: 34.59ms
+  - column36 contains target 50%,90% (actual 99.35%) `%eci%`: 36.18ms
+  - column37 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `11X%`: 37.92ms
+  - column37 suffix target 1%,10%,25%,50%,90% (actual 0.00%) `%057`: 35.57ms
+  - column37 contains target 1%,10%,25%,50%,90% (actual 0.00%) `%2K2%`: 34.47ms
+  - column38 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 34.62ms
+  - column38 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 35.77ms
+  - column38 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 32.64ms
+  - column39 prefix target 1%,10% (actual 0.01%) `Y%`: 33.66ms
+  - column39 prefix target 25%,50%,90% (actual 29.21%) `N%`: 35.25ms
+  - column39 suffix target 1%,10% (actual 0.01%) `%Y`: 34.71ms
+  - column39 suffix target 25%,50%,90% (actual 29.21%) `%N`: 34.10ms
+  - column39 contains target 1%,10% (actual 0.01%) `%Y%`: 35.94ms
+  - column39 contains target 25%,50%,90% (actual 29.21%) `%N%`: 35.63ms
+  - column40 prefix target 1%,10%,25%,50%,90% (actual 0.01%) `B16%`: 35.48ms
+  - column40 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%010`: 34.77ms
+  - column40 contains target 1%,10%,25%,50%,90% (actual 0.04%) `%010%`: 34.12ms
+  - column41 prefix target 1%,10%,25%,50%,90% (actual 0.32%) `718%`: 34.44ms
+  - column41 suffix target 1%,10%,25%,50%,90% (actual 0.18%) `%900`: 33.77ms
+  - column41 contains target 1%,10%,25%,50%,90% (actual 0.17%) `%408%`: 36.12ms
+  - column42 prefix target 1%,10%,25% (actual 0.11%) `Reg%`: 36.35ms
+  - column42 prefix target 50%,90% (actual 99.35%) `Uns%`: 36.88ms
+  - column42 suffix target 1%,10%,25% (actual 0.02%) `%n 7`: 33.43ms
+  - column42 suffix target 50%,90% (actual 99.35%) `%ied`: 35.77ms
+  - column42 contains target 1%,10%,25% (actual 0.11%) `%gio%`: 33.83ms
+  - column42 contains target 50%,90% (actual 99.35%) `%eci%`: 34.55ms
+  - column43 prefix target 1%,10%,25%,50% (actual 0.65%) `NY%`: 33.53ms
+  - column43 prefix target 90% (actual 99.35%) `Uns%`: 35.27ms
+  - column43 suffix target 1%,10%,25%,50% (actual 0.65%) `%NY`: 35.14ms
+  - column43 suffix target 90% (actual 99.35%) `%ied`: 36.22ms
+  - column43 contains target 1%,10%,25% (actual 0.65%) `%NY%`: 35.08ms
+  - column43 contains target 50%,90% (actual 99.35%) `%eci%`: 35.84ms
+  - column44 prefix target 1%,10%,25%,50%,90% (actual 0.19%) `100%`: 36.89ms
+  - column44 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%021`: 35.64ms
+  - column44 contains target 1%,10%,25%,50%,90% (actual 0.10%) `%002%`: 36.71ms
+  - column45 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Sch%`: 39.55ms
+  - column45 suffix target 1%,10%,25%,50%,90% (actual 0.02%) `%ool`: 36.88ms
+  - column45 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%cho%`: 38.63ms
+  - column46 prefix target 1% (actual 1.28%) `Ass%`: 34.26ms
+  - column46 prefix target 10%,25% (actual 4.64%) `Ope%`: 33.72ms
+  - column46 prefix target 50%,90% (actual 90.89%) `Clo%`: 35.59ms
+  - column46 suffix target 1% (actual 1.28%) `%ned`: 34.05ms
+  - column46 suffix target 10%,25% (actual 4.64%) `%pen`: 33.73ms
+  - column46 suffix target 50%,90% (actual 90.89%) `%sed`: 34.12ms
+  - column46 contains target 1% (actual 1.28%) `%ssi%`: 33.31ms
+  - column46 contains target 10%,25% (actual 4.64%) `%Ope%`: 34.40ms
+  - column46 contains target 50%,90% (actual 90.89%) `%los%`: 36.10ms
+  - column47 prefix target 1% (actual 0.61%) `BEA%`: 38.09ms
+  - column47 prefix target 10%,25%,50%,90% (actual 8.24%) `EAS%`: 38.01ms
+  - column47 suffix target 1% (actual 1.12%) `% ST`: 37.37ms
+  - column47 suffix target 10% (actual 2.89%) `%ACE`: 41.21ms
+  - column47 suffix target 25% (actual 28.46%) `%NUE`: 37.93ms
+  - column47 suffix target 50%,90% (actual 31.95%) `%EET`: 38.55ms
+  - column47 contains target 1% (actual 1.07%) `%Y S%`: 39.17ms
+  - column47 contains target 10% (actual 5.58%) `%N A%`: 35.14ms
+  - column47 contains target 25% (actual 29.40%) `% AV%`: 34.78ms
+  - column47 contains target 50%,90% (actual 33.21%) `% ST%`: 35.09ms
+  - column48 prefix target 1%,10%,25%,50%,90% (actual 0.05%) `BRO%`: 34.90ms
+  - column48 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%LYN`: 34.77ms
+  - column48 contains target 1%,10%,25%,50%,90% (actual 0.03%) `%OOK%`: 36.61ms
+  - column49 prefix target 1%,10%,25%,50%,90% (actual 0.66%) `Oth%`: 35.60ms
+  - column49 suffix target 1%,10%,25%,50%,90% (actual 0.66%) `%her`: 36.21ms
+  - column49 contains target 1%,10%,25%,50%,90% (actual 0.66%) `%the%`: 35.53ms
+  - column51 prefix target 1%,10%,25%,50%,90% (actual 0.07%) `Car%`: 35.42ms
+  - column51 suffix target 1%,10%,25%,50%,90% (actual 0.07%) `%ice`: 36.14ms
+  - column51 contains target 1%,10%,25%,50%,90% (actual 0.07%) `%Ser%`: 37.89ms
+- like_summary:
+  - contains: avg median_ms **39.52** (n=92)
+  - prefix: avg median_ms **36.29** (n=75)
+  - suffix: avg median_ms **38.83** (n=83)
+
+## parquet_uncompressed
+- size_mb: **799.86**
+- compression_time_s: **9.445**
+- compression_speed_mb_s: **685.133**
+- decompression_time_s: **0.955**
+- decompression_speed_mb_s: **837.295**
+- compression_ratio: **8.090**
+- encodings:
+  - column00: PLAIN_DICTIONARY
+  - column01: PLAIN_DICTIONARY
+  - column02: PLAIN_DICTIONARY
+  - column03: PLAIN_DICTIONARY
+  - column04: PLAIN, PLAIN_DICTIONARY
+  - column05: PLAIN, PLAIN_DICTIONARY
+  - column06: PLAIN
+  - column07: PLAIN_DICTIONARY
+  - column08: PLAIN, PLAIN_DICTIONARY
+  - column09: PLAIN_DICTIONARY
+  - column10: PLAIN_DICTIONARY
+  - column11: PLAIN, PLAIN_DICTIONARY
+  - column12: PLAIN_DICTIONARY
+  - column13: PLAIN_DICTIONARY
+  - column14: PLAIN_DICTIONARY
+  - column15: PLAIN, PLAIN_DICTIONARY
+  - column16: PLAIN_DICTIONARY
+  - column17: PLAIN, PLAIN_DICTIONARY
+  - column18: PLAIN, PLAIN_DICTIONARY
+  - column19: PLAIN, PLAIN_DICTIONARY
+  - column20: PLAIN, PLAIN_DICTIONARY
+  - column21: PLAIN_DICTIONARY
+  - column22: PLAIN, PLAIN_DICTIONARY
+  - column23: PLAIN, PLAIN_DICTIONARY
+  - column24: PLAIN, PLAIN_DICTIONARY
+  - column25: PLAIN, PLAIN_DICTIONARY
+  - column26: PLAIN, PLAIN_DICTIONARY
+  - column27: PLAIN, PLAIN_DICTIONARY
+  - column28: PLAIN, PLAIN_DICTIONARY
+  - column29: PLAIN_DICTIONARY
+  - column30: PLAIN_DICTIONARY
+  - column31: PLAIN_DICTIONARY
+  - column32: PLAIN, PLAIN_DICTIONARY
+  - column33: PLAIN, PLAIN_DICTIONARY
+  - column34: PLAIN, PLAIN_DICTIONARY
+  - column35: PLAIN_DICTIONARY
+  - column36: PLAIN_DICTIONARY
+  - column37: PLAIN_DICTIONARY
+  - column38: PLAIN_DICTIONARY
+  - column39: PLAIN, PLAIN_DICTIONARY
+  - column40: PLAIN_DICTIONARY
+  - column41: PLAIN_DICTIONARY
+  - column42: PLAIN_DICTIONARY
+  - column43: PLAIN_DICTIONARY
+  - column44: PLAIN_DICTIONARY
+  - column45: PLAIN, PLAIN_DICTIONARY
+  - column46: PLAIN_DICTIONARY
+  - column47: PLAIN, PLAIN_DICTIONARY
+  - column48: PLAIN, PLAIN_DICTIONARY
+  - column49: PLAIN, PLAIN_DICTIONARY
+  - column50: PLAIN
+  - column51: PLAIN, PLAIN_DICTIONARY
+  - column52: PLAIN, PLAIN_DICTIONARY
+  - column53: PLAIN, PLAIN_DICTIONARY
+- full_scan_min median_ms: **37.09** (p95 **38.20**, cold **844.73**)
+- selective_predicate median_ms: **27.32** (p95 **29.28**, cold **40.56**)
+- random_access median_ms: **67.13** (p95 **68.65**, cold **154.73**)
+- best_select_col: `column21` (avg median_ms **34.52**)
+- validation_pass: **True**
+- selectivity:
+  - column50: 1%: 51.58ms, 10%: 49.43ms, 25%: 47.43ms, 50%: 49.11ms, 90%: 49.05ms
+  - column08: 1%: 40.26ms, 10%: 38.25ms, 25%: 40.03ms, 50%: 40.02ms, 90%: 41.89ms
+  - column11: 1%: 37.26ms, 10%: 36.98ms, 25%: 39.35ms, 50%: 38.94ms, 90%: 38.93ms
+  - column15: 1%: 39.06ms, 10%: 37.60ms, 25%: 38.74ms, 50%: 38.03ms, 90%: 39.78ms
+  - column21: 1%: 34.02ms, 10%: 33.32ms, 25%: 33.64ms, 50%: 35.76ms, 90%: 35.83ms
+  - column25: 1%: 35.60ms, 10%: 38.26ms, 25%: 38.82ms, 50%: 39.30ms, 90%: 39.07ms
+  - column28: 1%: 33.61ms, 10%: 38.93ms, 25%: 39.82ms, 50%: 42.60ms, 90%: 42.02ms
+  - column32: 1%: 41.43ms, 10%: 40.10ms, 25%: 39.75ms, 50%: 39.54ms, 90%: 40.47ms
+  - column52: 1%: 45.81ms, 10%: 44.31ms, 25%: 40.83ms, 50%: 44.45ms, 90%: 45.54ms
+  - column53: 1%: 47.26ms, 10%: 46.33ms, 25%: 47.68ms, 50%: 50.07ms, 90%: 49.57ms
+- like_predicates:
+  - column00 prefix target 1% (actual 0.53%) `LAT%`: 38.91ms
+  - column00 prefix target 10% (actual 2.93%) `BLO%`: 43.16ms
+  - column00 prefix target 25% (actual 18.06%) `INT%`: 36.87ms
+  - column00 prefix target 50%,90% (actual 73.27%) `ADD%`: 37.27ms
+  - column00 suffix target 1% (actual 0.53%) `%ONG`: 38.35ms
+  - column00 suffix target 10% (actual 2.93%) `%ACE`: 40.86ms
+  - column00 suffix target 25% (actual 18.06%) `%ION`: 35.90ms
+  - column00 suffix target 50%,90% (actual 73.27%) `%ESS`: 37.57ms
+  - column00 contains target 1% (actual 0.53%) `%TLO%`: 34.80ms
+  - column00 contains target 10% (actual 2.93%) `%CKF%`: 35.22ms
+  - column00 contains target 25% (actual 18.06%) `%RSE%`: 42.84ms
+  - column00 contains target 50%,90% (actual 73.27%) `%DRE%`: 37.87ms
+  - column01 prefix target 1%,10%,25%,50%,90% (actual 0.50%) `Que%`: 37.88ms
+  - column01 suffix target 1%,10%,25%,50%,90% (actual 0.31%) `%ons`: 35.19ms
+  - column01 contains target 1% (actual 0.99%) `%Sta%`: 35.90ms
+  - column01 contains target 10% (actual 6.12%) `% - %`: 34.29ms
+  - column01 contains target 25%,50%,90% (actual 37.18%) `%usi%`: 34.85ms
+  - column02 prefix target 1% (actual 1.24%) `DCA%`: 34.71ms
+  - column02 prefix target 10% (actual 9.29%) `DEP%`: 32.58ms
+  - column02 prefix target 25%,50%,90% (actual 17.29%) `DOT%`: 34.99ms
+  - column02 suffix target 1% (actual 1.24%) `%DCA`: 34.71ms
+  - column02 suffix target 10% (actual 9.29%) `%DEP`: 35.03ms
+  - column02 suffix target 25%,50%,90% (actual 17.29%) `%DOT`: 36.76ms
+  - column02 contains target 1% (actual 1.24%) `%DCA%`: 36.29ms
+  - column02 contains target 10% (actual 9.29%) `%DEP%`: 36.96ms
+  - column02 contains target 25%,50%,90% (actual 17.29%) `%DOT%`: 39.83ms
+  - column03 prefix target 1% (actual 4.83%) `STA%`: 37.40ms
+  - column03 prefix target 10% (actual 11.23%) `Uns%`: 36.89ms
+  - column03 prefix target 25% (actual 21.43%) `QUE%`: 34.82ms
+  - column03 prefix target 50%,90% (actual 44.03%) `BRO%`: 35.70ms
+  - column03 suffix target 1% (actual 4.83%) `%AND`: 38.69ms
+  - column03 suffix target 10% (actual 11.23%) `%ied`: 37.23ms
+  - column03 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 35.49ms
+  - column03 contains target 1% (actual 4.83%) `%N I%`: 34.71ms
+  - column03 contains target 10% (actual 11.23%) `%eci%`: 36.74ms
+  - column03 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 36.26ms
+  - column04 prefix target 1%,10%,25%,50%,90% (actual 0.08%) `Eas%`: 40.50ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%und`: 39.35ms
+  - column04 contains target 1%,10%,25%,50%,90% (actual 0.29%) `%und%`: 38.54ms
+  - column05 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Bel%`: 40.43ms
+  - column05 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%pwy`: 43.56ms
+  - column05 contains target 1%,10%,25%,50%,90% (actual 0.09%) `%nd %`: 39.33ms
+  - column07 prefix target 1% (actual 0.68%) `SOU%`: 41.32ms
+  - column07 prefix target 10%,25% (actual 18.57%) `NEW%`: 40.79ms
+  - column07 prefix target 50%,90% (actual 47.06%) `BRO%`: 42.38ms
+  - column07 suffix target 1% (actual 0.97%) `%IDE`: 41.04ms
+  - column07 suffix target 10% (actual 1.20%) `%ARK`: 40.16ms
+  - column07 suffix target 25%,50%,90% (actual 29.33%) `%LYN`: 40.71ms
+  - column07 contains target 1% (actual 1.05%) `% HI%`: 40.84ms
+  - column07 contains target 10% (actual 5.31%) `%AND%`: 36.29ms
+  - column07 contains target 25%,50%,90% (actual 29.33%) `%KLY%`: 33.52ms
+  - column09 prefix target 1% (actual 0.83%) `16 %`: 35.02ms
+  - column09 prefix target 10%,25%,50%,90% (actual 9.98%) `Uns%`: 36.85ms
+  - column09 suffix target 1%,10% (actual 4.83%) `%AND`: 35.12ms
+  - column09 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 36.52ms
+  - column09 contains target 1% (actual 4.83%) `%TEN%`: 33.96ms
+  - column09 contains target 10% (actual 9.98%) `%ed %`: 34.61ms
+  - column09 contains target 25% (actual 27.69%) `%ROO%`: 36.07ms
+  - column09 contains target 50%,90% (actual 44.03%) `% BR%`: 35.67ms
+  - column10 prefix target 1% (actual 1.05%) `Mis%`: 43.21ms
+  - column10 prefix target 10% (actual 12.11%) `HEA%`: 39.52ms
+  - column10 prefix target 25%,50%,90% (actual 12.19%) `Str%`: 38.03ms
+  - column10 suffix target 1% (actual 1.04%) `%ls)`: 36.23ms
+  - column10 suffix target 10% (actual 7.71%) `%TER`: 38.20ms
+  - column10 suffix target 25%,50%,90% (actual 17.59%) `%ion`: 41.37ms
+  - column10 contains target 1% (actual 1.08%) `%/PL%`: 35.67ms
+  - column10 contains target 10% (actual 9.23%) `%ATI%`: 38.67ms
+  - column10 contains target 25%,50%,90% (actual 25.94%) `% Co%`: 35.69ms
+  - column12 prefix target 1% (actual 0.78%) `3 A%`: 38.65ms
+  - column12 prefix target 10%,25%,50%,90% (actual 7.43%) `EAS%`: 34.38ms
+  - column12 suffix target 1% (actual 0.29%) `%LVD`: 38.58ms
+  - column12 suffix target 10% (actual 3.13%) `%OAD`: 37.20ms
+  - column12 suffix target 25% (actual 24.20%) `%EET`: 39.01ms
+  - column12 suffix target 50%,90% (actual 31.10%) `%NUE`: 37.59ms
+  - column12 contains target 1% (actual 0.91%) `%ORD%`: 37.02ms
+  - column12 contains target 10% (actual 4.93%) `%ON %`: 39.90ms
+  - column12 contains target 25% (actual 24.69%) `%STR%`: 41.58ms
+  - column12 contains target 50%,90% (actual 36.28%) `%AVE%`: 40.95ms
+  - column13 prefix target 1% (actual 0.57%) `NEW%`: 40.29ms
+  - column13 prefix target 10%,25%,50%,90% (actual 1.61%) `BRO%`: 33.52ms
+  - column13 suffix target 1% (actual 0.87%) `%IVE`: 35.54ms
+  - column13 suffix target 10% (actual 3.10%) `%OAD`: 37.49ms
+  - column13 suffix target 25% (actual 24.25%) `%EET`: 38.93ms
+  - column13 suffix target 50%,90% (actual 30.54%) `%NUE`: 36.79ms
+  - column13 contains target 1% (actual 0.98%) `% DR%`: 36.69ms
+  - column13 contains target 10% (actual 4.93%) `%N A%`: 36.82ms
+  - column13 contains target 25% (actual 24.88%) `%STR%`: 35.63ms
+  - column13 contains target 50%,90% (actual 35.73%) `%AVE%`: 37.70ms
+  - column14 prefix target 1% (actual 0.99%) `Sew%`: 37.74ms
+  - column14 prefix target 10%,25%,50%,90% (actual 2.26%) `WAL%`: 36.36ms
+  - column14 suffix target 1% (actual 1.09%) `%ish`: 40.12ms
+  - column14 suffix target 10%,25%,50%,90% (actual 5.15%) `%ing`: 37.74ms
+  - column14 contains target 1% (actual 0.96%) `% In%`: 36.77ms
+  - column14 contains target 10% (actual 10.23%) `% Co%`: 35.69ms
+  - column14 contains target 25%,50%,90% (actual 14.82%) `%ing%`: 35.10ms
+  - column16 prefix target 1% (actual 0.11%) `Sch%`: 34.31ms
+  - column16 prefix target 10%,25% (actual 11.84%) `Pre%`: 34.57ms
+  - column16 prefix target 50%,90% (actual 84.50%) `N/A%`: 34.49ms
+  - column16 suffix target 1% (actual 0.09%) `%ool`: 34.73ms
+  - column16 suffix target 10%,25% (actual 11.84%) `%nct`: 36.53ms
+  - column16 suffix target 50%,90% (actual 84.50%) `%N/A`: 40.79ms
+  - column16 contains target 1% (actual 0.11%) `%cho%`: 36.66ms
+  - column16 contains target 10%,25% (actual 11.84%) `%eci%`: 38.34ms
+  - column16 contains target 50%,90% (actual 84.50%) `%N/A%`: 36.38ms
+  - column17 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `N/A%`: 41.13ms
+  - column17 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%und`: 47.70ms
+  - column17 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%N/A%`: 41.83ms
+  - column18 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `CAT%`: 46.75ms
+  - column18 suffix target 1%,10%,25%,50%,90% (actual 0.01%) `%TER`: 51.24ms
+  - column18 contains target 1%,10%,25%,50%,90% (actual 0.01%) `%ENT%`: 37.81ms
+  - column19 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Flu%`: 40.59ms
+  - column19 suffix target 1%,10%,25%,50%,90% (actual 0.04%) `%eld`: 41.05ms
+  - column19 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%g #%`: 44.73ms
+  - column20 prefix target 1%,10%,25%,50%,90% (actual 0.43%) `150%`: 45.01ms
+  - column20 suffix target 1% (actual 1.12%) `% ST`: 68.30ms
+  - column20 suffix target 10% (actual 2.24%) `%WAY`: 60.87ms
+  - column20 suffix target 25% (actual 28.46%) `%NUE`: 64.45ms
+  - column20 suffix target 50%,90% (actual 31.95%) `%EET`: 68.64ms
+  - column20 contains target 1% (actual 0.97%) `%13 %`: 63.36ms
+  - column20 contains target 10% (actual 14.90%) `%ST %`: 62.17ms
+  - column20 contains target 25% (actual 29.51%) `%VEN%`: 62.53ms
+  - column20 contains target 50%,90% (actual 32.13%) `%TRE%`: 62.77ms
+  - column22 prefix target 1% (actual 1.20%) `WES%`: 42.81ms
+  - column22 prefix target 10%,25%,50%,90% (actual 1.40%) `EAS%`: 46.01ms
+  - column22 suffix target 1% (actual 1.26%) `%AVE`: 40.08ms
+  - column22 suffix target 10%,25%,50%,90% (actual 6.13%) `%EET`: 39.88ms
+  - column22 contains target 1% (actual 0.60%) `%ER %`: 39.86ms
+  - column22 contains target 10%,25%,50%,90% (actual 7.33%) `%AVE%`: 37.18ms
+  - column23 prefix target 1%,10%,25%,50%,90% (actual 0.78%) `EAS%`: 36.34ms
+  - column23 suffix target 1% (actual 0.68%) `%AVE`: 37.66ms
+  - column23 suffix target 10%,25%,50%,90% (actual 6.43%) `%NUE`: 38.78ms
+  - column23 contains target 1% (actual 0.62%) `%TON%`: 39.58ms
+  - column23 contains target 10%,25%,50%,90% (actual 7.61%) `%AVE%`: 38.82ms
+  - column24 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `GRA%`: 39.24ms
+  - column24 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%ORT`: 39.59ms
+  - column24 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%IA %`: 40.99ms
+  - column26 prefix target 1% (actual 1.01%) `3+ %`: 39.10ms
+  - column26 prefix target 10% (actual 4.56%) `Sid%`: 37.86ms
+  - column26 prefix target 25%,50%,90% (actual 21.11%) `Str%`: 37.36ms
+  - column26 suffix target 1% (actual 1.05%) `%ial`: 37.59ms
+  - column26 suffix target 10%,25%,50%,90% (actual 14.33%) `%alk`: 37.78ms
+  - column26 contains target 1% (actual 1.01%) `%Com%`: 38.82ms
+  - column26 contains target 10%,25%,50%,90% (actual 14.32%) `%dew%`: 39.43ms
+  - column27 prefix target 1%,10%,25%,50%,90% (actual 90.65%) `(40%`: 56.38ms
+  - column27 suffix target 1% (actual 1.00%) `%16)`: 93.34ms
+  - column27 suffix target 10%,25%,50%,90% (actual 1.14%) `%67)`: 93.81ms
+  - column27 contains target 1% (actual 7.07%) `%3, %`: 92.71ms
+  - column27 contains target 10% (actual 7.42%) `%1, %`: 91.53ms
+  - column27 contains target 25%,50% (actual 16.05%) `%5, %`: 90.44ms
+  - column27 contains target 90% (actual 90.65%) `%, -%`: 67.14ms
+  - column30 prefix target 1% (actual 4.83%) `STA%`: 38.73ms
+  - column30 prefix target 10% (actual 11.23%) `Uns%`: 37.72ms
+  - column30 prefix target 25% (actual 21.43%) `QUE%`: 36.58ms
+  - column30 prefix target 50%,90% (actual 44.03%) `BRO%`: 36.66ms
+  - column30 suffix target 1% (actual 4.83%) `%AND`: 37.38ms
+  - column30 suffix target 10% (actual 11.23%) `%ied`: 36.78ms
+  - column30 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 37.27ms
+  - column30 contains target 1% (actual 4.83%) `%N I%`: 37.96ms
+  - column30 contains target 10% (actual 11.23%) `%eci%`: 37.53ms
+  - column30 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 36.11ms
+  - column31 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 39.61ms
+  - column31 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 37.01ms
+  - column31 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 36.48ms
+  - column33 prefix target 1% (actual 0.48%) `You%`: 36.88ms
+  - column33 prefix target 10%,25% (actual 4.36%) `Mor%`: 38.82ms
+  - column33 prefix target 50%,90% (actual 56.01%) `The%`: 40.95ms
+  - column33 suffix target 1% (actual 0.96%) `%ys.`: 37.23ms
+  - column33 suffix target 10% (actual 10.25%) `%ed.`: 36.44ms
+  - column33 suffix target 25%,50%,90% (actual 12.92%) `%nt.`: 35.93ms
+  - column33 contains target 1% (actual 1.05%) `%hin%`: 36.75ms
+  - column33 contains target 10% (actual 10.69%) `% wi%`: 36.34ms
+  - column33 contains target 25% (actual 23.67%) `%t w%`: 36.97ms
+  - column33 contains target 50% (actual 49.41%) `% in%`: 37.92ms
+  - column33 contains target 90% (actual 62.14%) `%he %`: 39.54ms
+  - column34 prefix target 1%,10%,25%,50%,90% (actual 0.25%) `Roa%`: 38.65ms
+  - column34 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%way`: 39.91ms
+  - column34 contains target 1%,10%,25%,50%,90% (actual 0.25%) `%adw%`: 39.10ms
+  - column35 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Wes%`: 37.63ms
+  - column35 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%nue`: 36.60ms
+  - column35 contains target 1%,10%,25%,50%,90% (actual 0.41%) `% St%`: 37.12ms
+  - column36 prefix target 1%,10%,25% (actual 0.28%) `BRO%`: 35.74ms
+  - column36 prefix target 50%,90% (actual 99.35%) `Uns%`: 37.01ms
+  - column36 suffix target 1%,10%,25% (actual 0.20%) `%ORK`: 36.92ms
+  - column36 suffix target 50%,90% (actual 99.35%) `%ied`: 39.50ms
+  - column36 contains target 1%,10%,25% (actual 0.20%) `%W Y%`: 39.06ms
+  - column36 contains target 50%,90% (actual 99.35%) `%eci%`: 36.73ms
+  - column37 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `11X%`: 36.52ms
+  - column37 suffix target 1%,10%,25%,50%,90% (actual 0.00%) `%057`: 37.32ms
+  - column37 contains target 1%,10%,25%,50%,90% (actual 0.00%) `%2K2%`: 36.03ms
+  - column38 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 35.78ms
+  - column38 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 38.90ms
+  - column38 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 38.17ms
+  - column39 prefix target 1%,10% (actual 0.01%) `Y%`: 37.99ms
+  - column39 prefix target 25%,50%,90% (actual 29.21%) `N%`: 37.14ms
+  - column39 suffix target 1%,10% (actual 0.01%) `%Y`: 38.04ms
+  - column39 suffix target 25%,50%,90% (actual 29.21%) `%N`: 36.70ms
+  - column39 contains target 1%,10% (actual 0.01%) `%Y%`: 38.36ms
+  - column39 contains target 25%,50%,90% (actual 29.21%) `%N%`: 37.83ms
+  - column40 prefix target 1%,10%,25%,50%,90% (actual 0.01%) `B16%`: 34.43ms
+  - column40 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%010`: 34.46ms
+  - column40 contains target 1%,10%,25%,50%,90% (actual 0.04%) `%010%`: 35.92ms
+  - column41 prefix target 1%,10%,25%,50%,90% (actual 0.32%) `718%`: 36.92ms
+  - column41 suffix target 1%,10%,25%,50%,90% (actual 0.18%) `%900`: 35.47ms
+  - column41 contains target 1%,10%,25%,50%,90% (actual 0.17%) `%408%`: 34.75ms
+  - column42 prefix target 1%,10%,25% (actual 0.11%) `Reg%`: 34.03ms
+  - column42 prefix target 50%,90% (actual 99.35%) `Uns%`: 34.83ms
+  - column42 suffix target 1%,10%,25% (actual 0.02%) `%n 7`: 34.48ms
+  - column42 suffix target 50%,90% (actual 99.35%) `%ied`: 37.07ms
+  - column42 contains target 1%,10%,25% (actual 0.11%) `%gio%`: 34.73ms
+  - column42 contains target 50%,90% (actual 99.35%) `%eci%`: 36.18ms
+  - column43 prefix target 1%,10%,25%,50% (actual 0.65%) `NY%`: 37.70ms
+  - column43 prefix target 90% (actual 99.35%) `Uns%`: 36.13ms
+  - column43 suffix target 1%,10%,25%,50% (actual 0.65%) `%NY`: 35.59ms
+  - column43 suffix target 90% (actual 99.35%) `%ied`: 36.14ms
+  - column43 contains target 1%,10%,25% (actual 0.65%) `%NY%`: 34.77ms
+  - column43 contains target 50%,90% (actual 99.35%) `%eci%`: 38.17ms
+  - column44 prefix target 1%,10%,25%,50%,90% (actual 0.19%) `100%`: 35.64ms
+  - column44 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%021`: 35.38ms
+  - column44 contains target 1%,10%,25%,50%,90% (actual 0.10%) `%002%`: 34.35ms
+  - column45 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Sch%`: 38.58ms
+  - column45 suffix target 1%,10%,25%,50%,90% (actual 0.02%) `%ool`: 39.48ms
+  - column45 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%cho%`: 39.08ms
+  - column46 prefix target 1% (actual 1.28%) `Ass%`: 36.64ms
+  - column46 prefix target 10%,25% (actual 4.64%) `Ope%`: 36.29ms
+  - column46 prefix target 50%,90% (actual 90.89%) `Clo%`: 36.39ms
+  - column46 suffix target 1% (actual 1.28%) `%ned`: 34.86ms
+  - column46 suffix target 10%,25% (actual 4.64%) `%pen`: 36.00ms
+  - column46 suffix target 50%,90% (actual 90.89%) `%sed`: 37.85ms
+  - column46 contains target 1% (actual 1.28%) `%ssi%`: 38.01ms
+  - column46 contains target 10%,25% (actual 4.64%) `%Ope%`: 37.31ms
+  - column46 contains target 50%,90% (actual 90.89%) `%los%`: 38.51ms
+  - column47 prefix target 1% (actual 0.61%) `BEA%`: 36.57ms
+  - column47 prefix target 10%,25%,50%,90% (actual 8.24%) `EAS%`: 38.73ms
+  - column47 suffix target 1% (actual 1.12%) `% ST`: 39.38ms
+  - column47 suffix target 10% (actual 2.89%) `%ACE`: 39.05ms
+  - column47 suffix target 25% (actual 28.46%) `%NUE`: 36.57ms
+  - column47 suffix target 50%,90% (actual 31.95%) `%EET`: 36.65ms
+  - column47 contains target 1% (actual 1.07%) `%Y S%`: 38.65ms
+  - column47 contains target 10% (actual 5.58%) `%N A%`: 40.28ms
+  - column47 contains target 25% (actual 29.40%) `% AV%`: 38.45ms
+  - column47 contains target 50%,90% (actual 33.21%) `% ST%`: 39.84ms
+  - column48 prefix target 1%,10%,25%,50%,90% (actual 0.05%) `BRO%`: 37.36ms
+  - column48 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%LYN`: 38.68ms
+  - column48 contains target 1%,10%,25%,50%,90% (actual 0.03%) `%OOK%`: 39.62ms
+  - column49 prefix target 1%,10%,25%,50%,90% (actual 0.66%) `Oth%`: 39.47ms
+  - column49 suffix target 1%,10%,25%,50%,90% (actual 0.66%) `%her`: 41.45ms
+  - column49 contains target 1%,10%,25%,50%,90% (actual 0.66%) `%the%`: 38.41ms
+  - column51 prefix target 1%,10%,25%,50%,90% (actual 0.07%) `Car%`: 42.12ms
+  - column51 suffix target 1%,10%,25%,50%,90% (actual 0.07%) `%ice`: 41.07ms
+  - column51 contains target 1%,10%,25%,50%,90% (actual 0.07%) `%Ser%`: 40.55ms
+- like_summary:
+  - contains: avg median_ms **40.74** (n=92)
+  - prefix: avg median_ms **38.22** (n=75)
+  - suffix: avg median_ms **40.74** (n=83)
+
+## vortex_default
+- size_mb: **412.37**
+- compression_time_s: **9.179**
+- compression_speed_mb_s: **705.031**
+- decompression_time_s: **3.765**
+- decompression_speed_mb_s: **109.534**
+- compression_ratio: **15.693**
+- encodings: unable to read vortex encodings: Type `u32` at position 4142 is unaligned.
+	while verifying table field `max` at position 4142
+	while verifying vector element 0 at position 28
+	while verifying table field `field_stats` at position 20
+
+
+- full_scan_min median_ms: **7.23** (p95 **7.97**, cold **275.42**)
+- selective_predicate median_ms: **5.08** (p95 **5.32**, cold **8.88**)
+- random_access median_ms: **52.56** (p95 **64.16**, cold **185.39**)
+- best_select_col: `column15` (avg median_ms **10.45**)
+- validation_pass: **True**
+- selectivity:
+  - column50: 1%: 18.15ms, 10%: 18.23ms, 25%: 17.83ms, 50%: 18.17ms, 90%: 19.14ms
+  - column08: 1%: 12.14ms, 10%: 13.60ms, 25%: 15.10ms, 50%: 16.90ms, 90%: 20.55ms
+  - column11: 1%: 11.00ms, 10%: 12.36ms, 25%: 13.32ms, 50%: 15.93ms, 90%: 19.15ms
+  - column15: 1%: 9.38ms, 10%: 10.02ms, 25%: 9.95ms, 50%: 11.21ms, 90%: 11.70ms
+  - column21: 1%: 19.11ms, 10%: 19.16ms, 25%: 19.32ms, 50%: 19.20ms, 90%: 19.27ms
+  - column25: 1%: 6.84ms, 10%: 11.19ms, 25%: 12.75ms, 50%: 14.10ms, 90%: 15.26ms
+  - column28: 1%: 7.73ms, 10%: 11.80ms, 25%: 12.20ms, 50%: 15.57ms, 90%: 15.86ms
+  - column32: 1%: 11.42ms, 10%: 13.12ms, 25%: 15.07ms, 50%: 18.27ms, 90%: 20.38ms
+  - column52: 1%: 20.65ms, 10%: 20.20ms, 25%: 20.94ms, 50%: 21.11ms, 90%: 21.30ms
+  - column53: 1%: 20.72ms, 10%: 20.68ms, 25%: 20.48ms, 50%: 20.37ms, 90%: 21.63ms
+- like_predicates:
+  - column00 prefix target 1% (actual 0.53%) `LAT%`: 3.95ms
+  - column00 prefix target 10% (actual 2.93%) `BLO%`: 4.25ms
+  - column00 prefix target 25% (actual 18.06%) `INT%`: 3.75ms
+  - column00 prefix target 50%,90% (actual 73.27%) `ADD%`: 4.43ms
+  - column00 suffix target 1% (actual 0.53%) `%ONG`: 4.20ms
+  - column00 suffix target 10% (actual 2.93%) `%ACE`: 4.26ms
+  - column00 suffix target 25% (actual 18.06%) `%ION`: 4.27ms
+  - column00 suffix target 50%,90% (actual 73.27%) `%ESS`: 3.56ms
+  - column00 contains target 1% (actual 0.53%) `%TLO%`: 4.41ms
+  - column00 contains target 10% (actual 2.93%) `%CKF%`: 3.94ms
+  - column00 contains target 25% (actual 18.06%) `%RSE%`: 3.65ms
+  - column00 contains target 50%,90% (actual 73.27%) `%DRE%`: 3.60ms
+  - column01 prefix target 1%,10%,25%,50%,90% (actual 0.50%) `Que%`: 4.67ms
+  - column01 suffix target 1%,10%,25%,50%,90% (actual 0.31%) `%ons`: 5.25ms
+  - column01 contains target 1% (actual 0.99%) `%Sta%`: 4.66ms
+  - column01 contains target 10% (actual 6.12%) `% - %`: 5.28ms
+  - column01 contains target 25%,50%,90% (actual 37.18%) `%usi%`: 5.97ms
+  - column02 prefix target 1% (actual 1.24%) `DCA%`: 6.03ms
+  - column02 prefix target 10% (actual 9.29%) `DEP%`: 6.29ms
+  - column02 prefix target 25%,50%,90% (actual 17.29%) `DOT%`: 6.15ms
+  - column02 suffix target 1% (actual 1.24%) `%DCA`: 6.19ms
+  - column02 suffix target 10% (actual 9.29%) `%DEP`: 5.86ms
+  - column02 suffix target 25%,50%,90% (actual 17.29%) `%DOT`: 6.15ms
+  - column02 contains target 1% (actual 1.24%) `%DCA%`: 6.32ms
+  - column02 contains target 10% (actual 9.29%) `%DEP%`: 6.14ms
+  - column02 contains target 25%,50%,90% (actual 17.29%) `%DOT%`: 6.30ms
+  - column03 prefix target 1% (actual 4.83%) `STA%`: 6.14ms
+  - column03 prefix target 10% (actual 11.23%) `Uns%`: 5.68ms
+  - column03 prefix target 25% (actual 21.43%) `QUE%`: 6.03ms
+  - column03 prefix target 50%,90% (actual 44.03%) `BRO%`: 5.99ms
+  - column03 suffix target 1% (actual 4.83%) `%AND`: 6.30ms
+  - column03 suffix target 10% (actual 11.23%) `%ied`: 5.79ms
+  - column03 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 6.17ms
+  - column03 contains target 1% (actual 4.83%) `%N I%`: 6.11ms
+  - column03 contains target 10% (actual 11.23%) `%eci%`: 6.86ms
+  - column03 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 6.01ms
+  - column04 prefix target 1%,10%,25%,50%,90% (actual 0.08%) `Eas%`: 4.08ms
+  - column04 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%und`: 4.11ms
+  - column04 contains target 1%,10%,25%,50%,90% (actual 0.29%) `%und%`: 4.15ms
+  - column05 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Bel%`: 3.87ms
+  - column05 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%pwy`: 4.09ms
+  - column05 contains target 1%,10%,25%,50%,90% (actual 0.09%) `%nd %`: 3.98ms
+  - column07 prefix target 1% (actual 0.68%) `SOU%`: 5.54ms
+  - column07 prefix target 10%,25% (actual 18.57%) `NEW%`: 5.58ms
+  - column07 prefix target 50%,90% (actual 47.06%) `BRO%`: 6.09ms
+  - column07 suffix target 1% (actual 0.97%) `%IDE`: 5.91ms
+  - column07 suffix target 10% (actual 1.20%) `%ARK`: 6.15ms
+  - column07 suffix target 25%,50%,90% (actual 29.33%) `%LYN`: 6.39ms
+  - column07 contains target 1% (actual 1.05%) `% HI%`: 5.61ms
+  - column07 contains target 10% (actual 5.31%) `%AND%`: 5.69ms
+  - column07 contains target 25%,50%,90% (actual 29.33%) `%KLY%`: 6.02ms
+  - column09 prefix target 1% (actual 0.83%) `16 %`: 5.91ms
+  - column09 prefix target 10%,25%,50%,90% (actual 9.98%) `Uns%`: 6.14ms
+  - column09 suffix target 1%,10% (actual 4.83%) `%AND`: 6.05ms
+  - column09 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 6.48ms
+  - column09 contains target 1% (actual 4.83%) `%TEN%`: 6.30ms
+  - column09 contains target 10% (actual 9.98%) `%ed %`: 6.22ms
+  - column09 contains target 25% (actual 27.69%) `%ROO%`: 6.22ms
+  - column09 contains target 50%,90% (actual 44.03%) `% BR%`: 6.05ms
+  - column10 prefix target 1% (actual 1.05%) `Mis%`: 6.17ms
+  - column10 prefix target 10% (actual 12.11%) `HEA%`: 6.97ms
+  - column10 prefix target 25%,50%,90% (actual 12.19%) `Str%`: 6.20ms
+  - column10 suffix target 1% (actual 1.04%) `%ls)`: 6.00ms
+  - column10 suffix target 10% (actual 7.71%) `%TER`: 6.08ms
+  - column10 suffix target 25%,50%,90% (actual 17.59%) `%ion`: 5.90ms
+  - column10 contains target 1% (actual 1.08%) `%/PL%`: 6.13ms
+  - column10 contains target 10% (actual 9.23%) `%ATI%`: 6.15ms
+  - column10 contains target 25%,50%,90% (actual 25.94%) `% Co%`: 6.05ms
+  - column12 prefix target 1% (actual 0.78%) `3 A%`: 15.59ms
+  - column12 prefix target 10%,25%,50%,90% (actual 7.43%) `EAS%`: 11.31ms
+  - column12 suffix target 1% (actual 0.29%) `%LVD`: 40.47ms
+  - column12 suffix target 10% (actual 3.13%) `%OAD`: 41.60ms
+  - column12 suffix target 25% (actual 24.20%) `%EET`: 41.34ms
+  - column12 suffix target 50%,90% (actual 31.10%) `%NUE`: 40.89ms
+  - column12 contains target 1% (actual 0.91%) `%ORD%`: 40.08ms
+  - column12 contains target 10% (actual 4.93%) `%ON %`: 40.13ms
+  - column12 contains target 25% (actual 24.69%) `%STR%`: 37.44ms
+  - column12 contains target 50%,90% (actual 36.28%) `%AVE%`: 38.21ms
+  - column13 prefix target 1% (actual 0.57%) `NEW%`: 10.99ms
+  - column13 prefix target 10%,25%,50%,90% (actual 1.61%) `BRO%`: 11.28ms
+  - column13 suffix target 1% (actual 0.87%) `%IVE`: 40.55ms
+  - column13 suffix target 10% (actual 3.10%) `%OAD`: 41.34ms
+  - column13 suffix target 25% (actual 24.25%) `%EET`: 41.70ms
+  - column13 suffix target 50%,90% (actual 30.54%) `%NUE`: 40.31ms
+  - column13 contains target 1% (actual 0.98%) `% DR%`: 40.80ms
+  - column13 contains target 10% (actual 4.93%) `%N A%`: 42.51ms
+  - column13 contains target 25% (actual 24.88%) `%STR%`: 39.45ms
+  - column13 contains target 50%,90% (actual 35.73%) `%AVE%`: 38.43ms
+  - column14 prefix target 1% (actual 0.99%) `Sew%`: 6.84ms
+  - column14 prefix target 10%,25%,50%,90% (actual 2.26%) `WAL%`: 6.89ms
+  - column14 suffix target 1% (actual 1.09%) `%ish`: 6.81ms
+  - column14 suffix target 10%,25%,50%,90% (actual 5.15%) `%ing`: 6.72ms
+  - column14 contains target 1% (actual 0.96%) `% In%`: 7.08ms
+  - column14 contains target 10% (actual 10.23%) `% Co%`: 6.88ms
+  - column14 contains target 25%,50%,90% (actual 14.82%) `%ing%`: 7.04ms
+  - column16 prefix target 1% (actual 0.11%) `Sch%`: 6.22ms
+  - column16 prefix target 10%,25% (actual 11.84%) `Pre%`: 6.35ms
+  - column16 prefix target 50%,90% (actual 84.50%) `N/A%`: 6.32ms
+  - column16 suffix target 1% (actual 0.09%) `%ool`: 5.61ms
+  - column16 suffix target 10%,25% (actual 11.84%) `%nct`: 6.47ms
+  - column16 suffix target 50%,90% (actual 84.50%) `%N/A`: 6.48ms
+  - column16 contains target 1% (actual 0.11%) `%cho%`: 6.18ms
+  - column16 contains target 10%,25% (actual 11.84%) `%eci%`: 6.51ms
+  - column16 contains target 50%,90% (actual 84.50%) `%N/A%`: 6.49ms
+  - column17 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `N/A%`: 3.57ms
+  - column17 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%und`: 3.68ms
+  - column17 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%N/A%`: 4.00ms
+  - column18 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `CAT%`: 4.17ms
+  - column18 suffix target 1%,10%,25%,50%,90% (actual 0.01%) `%TER`: 4.40ms
+  - column18 contains target 1%,10%,25%,50%,90% (actual 0.01%) `%ENT%`: 4.15ms
+  - column19 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Flu%`: 4.04ms
+  - column19 suffix target 1%,10%,25%,50%,90% (actual 0.04%) `%eld`: 3.83ms
+  - column19 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%g #%`: 4.02ms
+  - column20 prefix target 1%,10%,25%,50%,90% (actual 0.43%) `150%`: 20.13ms
+  - column20 suffix target 1% (actual 1.12%) `% ST`: 64.22ms
+  - column20 suffix target 10% (actual 2.24%) `%WAY`: 54.45ms
+  - column20 suffix target 25% (actual 28.46%) `%NUE`: 55.55ms
+  - column20 suffix target 50%,90% (actual 31.95%) `%EET`: 56.40ms
+  - column20 contains target 1% (actual 0.97%) `%13 %`: 60.81ms
+  - column20 contains target 10% (actual 14.90%) `%ST %`: 53.79ms
+  - column20 contains target 25% (actual 29.51%) `%VEN%`: 50.55ms
+  - column20 contains target 50%,90% (actual 32.13%) `%TRE%`: 56.56ms
+  - column22 prefix target 1% (actual 1.20%) `WES%`: 4.85ms
+  - column22 prefix target 10%,25%,50%,90% (actual 1.40%) `EAS%`: 5.51ms
+  - column22 suffix target 1% (actual 1.26%) `%AVE`: 4.99ms
+  - column22 suffix target 10%,25%,50%,90% (actual 6.13%) `%EET`: 5.54ms
+  - column22 contains target 1% (actual 0.60%) `%ER %`: 5.02ms
+  - column22 contains target 10%,25%,50%,90% (actual 7.33%) `%AVE%`: 5.07ms
+  - column23 prefix target 1%,10%,25%,50%,90% (actual 0.78%) `EAS%`: 4.88ms
+  - column23 suffix target 1% (actual 0.68%) `%AVE`: 5.00ms
+  - column23 suffix target 10%,25%,50%,90% (actual 6.43%) `%NUE`: 5.88ms
+  - column23 contains target 1% (actual 0.62%) `%TON%`: 5.21ms
+  - column23 contains target 10%,25%,50%,90% (actual 7.61%) `%AVE%`: 5.11ms
+  - column24 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `GRA%`: 4.49ms
+  - column24 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%ORT`: 3.79ms
+  - column24 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%IA %`: 3.93ms
+  - column26 prefix target 1% (actual 1.01%) `3+ %`: 6.18ms
+  - column26 prefix target 10% (actual 4.56%) `Sid%`: 6.15ms
+  - column26 prefix target 25%,50%,90% (actual 21.11%) `Str%`: 6.26ms
+  - column26 suffix target 1% (actual 1.05%) `%ial`: 6.19ms
+  - column26 suffix target 10%,25%,50%,90% (actual 14.33%) `%alk`: 6.22ms
+  - column26 contains target 1% (actual 1.01%) `%Com%`: 6.27ms
+  - column26 contains target 10%,25%,50%,90% (actual 14.32%) `%dew%`: 6.34ms
+  - column27 prefix target 1%,10%,25%,50%,90% (actual 90.65%) `(40%`: 19.96ms
+  - column27 suffix target 1% (actual 1.00%) `%16)`: 37.23ms
+  - column27 suffix target 10%,25%,50%,90% (actual 1.14%) `%67)`: 37.59ms
+  - column27 contains target 1% (actual 7.07%) `%3, %`: 37.95ms
+  - column27 contains target 10% (actual 7.42%) `%1, %`: 38.09ms
+  - column27 contains target 25%,50% (actual 16.05%) `%5, %`: 36.16ms
+  - column27 contains target 90% (actual 90.65%) `%, -%`: 25.88ms
+  - column30 prefix target 1% (actual 4.83%) `STA%`: 5.91ms
+  - column30 prefix target 10% (actual 11.23%) `Uns%`: 6.08ms
+  - column30 prefix target 25% (actual 21.43%) `QUE%`: 6.01ms
+  - column30 prefix target 50%,90% (actual 44.03%) `BRO%`: 5.98ms
+  - column30 suffix target 1% (actual 4.83%) `%AND`: 5.61ms
+  - column30 suffix target 10% (actual 11.23%) `%ied`: 5.76ms
+  - column30 suffix target 25%,50%,90% (actual 27.69%) `%LYN`: 6.22ms
+  - column30 contains target 1% (actual 4.83%) `%N I%`: 6.22ms
+  - column30 contains target 10% (actual 11.23%) `%eci%`: 5.73ms
+  - column30 contains target 25%,50%,90% (actual 27.69%) `%OOK%`: 6.15ms
+  - column31 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 4.46ms
+  - column31 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 4.87ms
+  - column31 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 4.36ms
+  - column33 prefix target 1% (actual 0.48%) `You%`: 6.84ms
+  - column33 prefix target 10%,25% (actual 4.36%) `Mor%`: 6.18ms
+  - column33 prefix target 50%,90% (actual 56.01%) `The%`: 6.29ms
+  - column33 suffix target 1% (actual 0.96%) `%ys.`: 7.03ms
+  - column33 suffix target 10% (actual 10.25%) `%ed.`: 6.76ms
+  - column33 suffix target 25%,50%,90% (actual 12.92%) `%nt.`: 6.97ms
+  - column33 contains target 1% (actual 1.05%) `%hin%`: 6.68ms
+  - column33 contains target 10% (actual 10.69%) `% wi%`: 6.36ms
+  - column33 contains target 25% (actual 23.67%) `%t w%`: 6.78ms
+  - column33 contains target 50% (actual 49.41%) `% in%`: 6.70ms
+  - column33 contains target 90% (actual 62.14%) `%he %`: 6.63ms
+  - column34 prefix target 1%,10%,25%,50%,90% (actual 0.25%) `Roa%`: 4.11ms
+  - column34 suffix target 1%,10%,25%,50%,90% (actual 0.25%) `%way`: 3.59ms
+  - column34 contains target 1%,10%,25%,50%,90% (actual 0.25%) `%adw%`: 4.32ms
+  - column35 prefix target 1%,10%,25%,50%,90% (actual 0.04%) `Wes%`: 4.42ms
+  - column35 suffix target 1%,10%,25%,50%,90% (actual 0.14%) `%nue`: 4.28ms
+  - column35 contains target 1%,10%,25%,50%,90% (actual 0.41%) `% St%`: 4.46ms
+  - column36 prefix target 1%,10%,25% (actual 0.28%) `BRO%`: 5.89ms
+  - column36 prefix target 50%,90% (actual 99.35%) `Uns%`: 6.13ms
+  - column36 suffix target 1%,10%,25% (actual 0.20%) `%ORK`: 5.98ms
+  - column36 suffix target 50%,90% (actual 99.35%) `%ied`: 6.52ms
+  - column36 contains target 1%,10%,25% (actual 0.20%) `%W Y%`: 6.12ms
+  - column36 contains target 50%,90% (actual 99.35%) `%eci%`: 6.07ms
+  - column37 prefix target 1%,10%,25%,50%,90% (actual 0.00%) `11X%`: 5.28ms
+  - column37 suffix target 1%,10%,25%,50%,90% (actual 0.00%) `%057`: 4.11ms
+  - column37 contains target 1%,10%,25%,50%,90% (actual 0.00%) `%2K2%`: 5.92ms
+  - column38 prefix target 1%,10%,25%,50%,90% (actual 0.11%) `Sch%`: 4.16ms
+  - column38 suffix target 1%,10%,25%,50%,90% (actual 0.27%) `%ark`: 5.73ms
+  - column38 contains target 1%,10%,25%,50%,90% (actual 0.24%) `% - %`: 5.16ms
+  - column39 prefix target 1%,10% (actual 0.01%) `Y%`: 6.03ms
+  - column39 prefix target 25%,50%,90% (actual 29.21%) `N%`: 6.00ms
+  - column39 suffix target 1%,10% (actual 0.01%) `%Y`: 5.67ms
+  - column39 suffix target 25%,50%,90% (actual 29.21%) `%N`: 6.41ms
+  - column39 contains target 1%,10% (actual 0.01%) `%Y%`: 6.12ms
+  - column39 contains target 25%,50%,90% (actual 29.21%) `%N%`: 5.74ms
+  - column40 prefix target 1%,10%,25%,50%,90% (actual 0.01%) `B16%`: 4.10ms
+  - column40 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%010`: 5.66ms
+  - column40 contains target 1%,10%,25%,50%,90% (actual 0.04%) `%010%`: 5.39ms
+  - column41 prefix target 1%,10%,25%,50%,90% (actual 0.32%) `718%`: 5.52ms
+  - column41 suffix target 1%,10%,25%,50%,90% (actual 0.18%) `%900`: 5.47ms
+  - column41 contains target 1%,10%,25%,50%,90% (actual 0.17%) `%408%`: 5.89ms
+  - column42 prefix target 1%,10%,25% (actual 0.11%) `Reg%`: 5.45ms
+  - column42 prefix target 50%,90% (actual 99.35%) `Uns%`: 6.00ms
+  - column42 suffix target 1%,10%,25% (actual 0.02%) `%n 7`: 5.80ms
+  - column42 suffix target 50%,90% (actual 99.35%) `%ied`: 6.38ms
+  - column42 contains target 1%,10%,25% (actual 0.11%) `%gio%`: 6.24ms
+  - column42 contains target 50%,90% (actual 99.35%) `%eci%`: 5.91ms
+  - column43 prefix target 1%,10%,25%,50% (actual 0.65%) `NY%`: 4.68ms
+  - column43 prefix target 90% (actual 99.35%) `Uns%`: 3.88ms
+  - column43 suffix target 1%,10%,25%,50% (actual 0.65%) `%NY`: 4.14ms
+  - column43 suffix target 90% (actual 99.35%) `%ied`: 4.39ms
+  - column43 contains target 1%,10%,25% (actual 0.65%) `%NY%`: 4.16ms
+  - column43 contains target 50%,90% (actual 99.35%) `%eci%`: 3.83ms
+  - column44 prefix target 1%,10%,25%,50%,90% (actual 0.19%) `100%`: 5.76ms
+  - column44 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%021`: 5.94ms
+  - column44 contains target 1%,10%,25%,50%,90% (actual 0.10%) `%002%`: 6.12ms
+  - column45 prefix target 1%,10%,25%,50%,90% (actual 0.02%) `Sch%`: 4.20ms
+  - column45 suffix target 1%,10%,25%,50%,90% (actual 0.02%) `%ool`: 4.49ms
+  - column45 contains target 1%,10%,25%,50%,90% (actual 0.02%) `%cho%`: 3.69ms
+  - column46 prefix target 1% (actual 1.28%) `Ass%`: 5.10ms
+  - column46 prefix target 10%,25% (actual 4.64%) `Ope%`: 5.63ms
+  - column46 prefix target 50%,90% (actual 90.89%) `Clo%`: 5.98ms
+  - column46 suffix target 1% (actual 1.28%) `%ned`: 5.90ms
+  - column46 suffix target 10%,25% (actual 4.64%) `%pen`: 5.78ms
+  - column46 suffix target 50%,90% (actual 90.89%) `%sed`: 6.14ms
+  - column46 contains target 1% (actual 1.28%) `%ssi%`: 5.99ms
+  - column46 contains target 10%,25% (actual 4.64%) `%Ope%`: 5.75ms
+  - column46 contains target 50%,90% (actual 90.89%) `%los%`: 6.19ms
+  - column47 prefix target 1% (actual 0.61%) `BEA%`: 15.19ms
+  - column47 prefix target 10%,25%,50%,90% (actual 8.24%) `EAS%`: 10.81ms
+  - column47 suffix target 1% (actual 1.12%) `% ST`: 44.08ms
+  - column47 suffix target 10% (actual 2.89%) `%ACE`: 43.45ms
+  - column47 suffix target 25% (actual 28.46%) `%NUE`: 41.31ms
+  - column47 suffix target 50%,90% (actual 31.95%) `%EET`: 43.81ms
+  - column47 contains target 1% (actual 1.07%) `%Y S%`: 42.81ms
+  - column47 contains target 10% (actual 5.58%) `%N A%`: 41.18ms
+  - column47 contains target 25% (actual 29.40%) `% AV%`: 38.66ms
+  - column47 contains target 50%,90% (actual 33.21%) `% ST%`: 40.09ms
+  - column48 prefix target 1%,10%,25%,50%,90% (actual 0.05%) `BRO%`: 3.91ms
+  - column48 suffix target 1%,10%,25%,50%,90% (actual 0.03%) `%LYN`: 3.82ms
+  - column48 contains target 1%,10%,25%,50%,90% (actual 0.03%) `%OOK%`: 3.86ms
+  - column49 prefix target 1%,10%,25%,50%,90% (actual 0.66%) `Oth%`: 3.77ms
+  - column49 suffix target 1%,10%,25%,50%,90% (actual 0.66%) `%her`: 3.75ms
+  - column49 contains target 1%,10%,25%,50%,90% (actual 0.66%) `%the%`: 3.88ms
+  - column51 prefix target 1%,10%,25%,50%,90% (actual 0.07%) `Car%`: 3.74ms
+  - column51 suffix target 1%,10%,25%,50%,90% (actual 0.07%) `%ice`: 3.29ms
+  - column51 contains target 1%,10%,25%,50%,90% (actual 0.07%) `%Ser%`: 3.68ms
+- like_summary:
+  - contains: avg median_ms **13.44** (n=92)
+  - prefix: avg median_ms **6.34** (n=75)
+  - suffix: avg median_ms **13.97** (n=83)

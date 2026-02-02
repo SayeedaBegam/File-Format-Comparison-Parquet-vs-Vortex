@@ -71,6 +71,10 @@
     {
       "name": "IGlocations1_1",
       "report": "./out/report_IGlocations1_1.json"
+    },
+    {
+      "name": "NYC_1",
+      "report": "./out/report_NYC_1.json"
     }
   ]
 }

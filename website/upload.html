@@ -120,7 +120,13 @@
       <section class="panel" id="diagnostics-panel">
         <div class="panel-header">
           <h2>Diagnostics</h2>
-          <p>Cold vs warm timings, baseline comparison, and parquet row-group count.</p>
+          <p>Cold vs warm timings and baseline comparison.</p>
+          <div class="selector-row">
+            <div class="toggle-group" role="group" aria-label="Chart toggles">
+              <button type="button" class="toggle-btn js-toggle-legend">Legend</button>
+              <button type="button" class="toggle-btn js-toggle-values">Values</button>
+            </div>
+          </div>
         </div>
         <div class="detail-row">
           <div class="detail-card">
@@ -133,6 +139,12 @@
             <h3>Median (full scan) by format</h3>
             <div class="chart-card">
               <div id="diagnostics-baseline-chart" class="chart"></div>
+            </div>
+          </div>
+          <div class="detail-card">
+            <h3>Cold run by query</h3>
+            <div class="chart-card">
+              <div id="diagnostics-cold-query-chart" class="chart"></div>
             </div>
           </div>
         </div>
@@ -182,8 +194,15 @@
         <div class="panel-header">
           <h2>Interactive chart</h2>
           <p>Pick a metric and compare formats.</p>
+          <div class="selector-row">
+            <div class="toggle-group" role="group" aria-label="Chart toggles">
+              <button type="button" class="toggle-btn js-toggle-legend">Legend</button>
+              <button type="button" class="toggle-btn js-toggle-values">Values</button>
+            </div>
+          </div>
         </div>
         <div class="selector-row">
+          <select id="upload-format" class="select"></select>
           <select id="upload-metric" class="select">
             <option value="compression_ratio">Compression ratio</option>
             <option value="output_size">Compressed size</option>
@@ -198,6 +217,9 @@
           <div class="toggle-group" id="upload-chart-toggle" role="group" aria-label="Chart type">
             <button type="button" class="toggle-btn is-active" data-mode="line">Line</button>
             <button type="button" class="toggle-btn" data-mode="bar">Bar</button>
+          </div>
+          <div class="toggle-group" id="upload-overlay-toggle" role="group" aria-label="Overlay formats">
+            <button type="button" class="toggle-btn" data-overlay="on">Overlay formats</button>
           </div>
         </div>
         <div class="chart-card">
@@ -214,13 +236,25 @@
         </div>
         <div class="detail-row">
           <div class="detail-card">
-            <h3>Best selectivity column</h3>
+            <h3>Selectivity column</h3>
             <div class="selector-row">
               <select id="upload-selectivity-select" class="select"></select>
             </div>
             <div class="chart-card">
               <div class="chart-title" id="upload-selectivity-title">Selectivity curves</div>
               <div id="upload-selectivity-chart" class="chart"></div>
+            </div>
+            <div class="table-wrap">
+              <table class="preview-table">
+                <thead>
+                  <tr>
+                    <th>Format</th>
+                    <th>Best selectivity col</th>
+                    <th>Median (ms)</th>
+                  </tr>
+                </thead>
+                <tbody id="upload-selectivity-best-body"></tbody>
+              </table>
             </div>
           </div>
           <div class="detail-card">
@@ -274,7 +308,7 @@
     </main>
 
     <footer class="footer">
-      <div>Benchmark runs use <code>bench/run.py</code> and write to <code>out/</code>.</div>
+      <div>Made by Sayeeda and Goutham for the CloudDB Project.</div>
       <div class="footer-links">
         <a href="./index.html">Overall</a>
         <a href="./dataset.html">Dataset detail</a>

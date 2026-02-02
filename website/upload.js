@@ -45,6 +45,8 @@ let lastUploadInfo = null;
 let lastReportPath = null;
 let selectedDatasetFile = null;
 let selectedSchemaFile = null;
+let chartPrefs = { showLegend: false, showValues: false };
+let uploadOverlayMode = false;
 
 const _shortLineLabel = (label) => {
   const text = String(label).replace("parquet_", "pq_");
@@ -263,7 +265,7 @@ const renderCustomQueryResults = (output, data) => {
   output.appendChild(resultPanel);
 };
 
-const createLineChart = (container, data, valueFormatter, mode = "line") => {
+const createLineChart = (container, data, valueFormatter, mode = "line", options = {}) => {
   container.innerHTML = "";
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, data.length * 90);
@@ -383,6 +385,17 @@ const createLineChart = (container, data, valueFormatter, mode = "line") => {
       svg.appendChild(rect);
     }
 
+    if (options.showValues) {
+      const valueLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      valueLabel.setAttribute("x", point.x);
+      valueLabel.setAttribute("y", Math.max(point.y - 8, padding.top + 10));
+      valueLabel.setAttribute("text-anchor", "middle");
+      valueLabel.setAttribute("font-size", "10");
+      valueLabel.setAttribute("fill", "#4f574f");
+      valueLabel.textContent = valueFormatter(point.item.value);
+      svg.appendChild(valueLabel);
+    }
+
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     const lx = point.x;
     const ly = height - padding.bottom + 28;
@@ -406,7 +419,7 @@ const createLineChart = (container, data, valueFormatter, mode = "line") => {
   container.appendChild(svg);
 };
 
-const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
+const createMultiLineChart = (container, series, xLabels, valueFormatter, options = {}) => {
   container.innerHTML = "";
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, xLabels.length * 80);
@@ -498,10 +511,35 @@ const createMultiLineChart = (container, series, xLabels, valueFormatter) => {
         tooltip.style.opacity = "0";
       });
       svg.appendChild(circle);
+
+      if (options.showValues) {
+        const valueLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        valueLabel.setAttribute("x", point.x);
+        valueLabel.setAttribute("y", Math.max(point.y - 8, padding.top + 10));
+        valueLabel.setAttribute("text-anchor", "middle");
+        valueLabel.setAttribute("font-size", "10");
+        valueLabel.setAttribute("fill", "#4f574f");
+        valueLabel.textContent = valueFormatter(point.value);
+        svg.appendChild(valueLabel);
+      }
     });
   });
 
   container.appendChild(svg);
+
+  if (options.showLegend && series.length > 1) {
+    const legend = document.createElement("div");
+    legend.className = "legend";
+    legend.style.justifyContent = "center";
+    legend.style.marginTop = "10px";
+    series.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "legend-item";
+      row.innerHTML = `<span class="legend-dot" style="background:${item.color}"></span>${item.label}`;
+      legend.appendChild(row);
+    });
+    container.appendChild(legend);
+  }
 };
 
 const _shortLabel = (label) => {
@@ -528,7 +566,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter, op
   const baseWidth = container.clientWidth || 640;
   const plotWidth = Math.max(baseWidth, categories.length * 90);
   const height = 420;
-  const padding = { top: 18, right: 40, bottom: 140, left: 64 };
+  const padding = { top: 18, right: 40, bottom: options.fullLabels ? 170 : 140, left: 64 };
   const allValues = series.flatMap((item) => item.values);
   const rawMax = Math.max(...allValues.filter(Number.isFinite), 1);
   const maxValue = Math.max(options.yMax || 0, rawMax, 1);
@@ -578,7 +616,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter, op
     const xStart = padding.left + index * groupWidth + groupWidth * 0.15;
     const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
     let lx = padding.left + index * groupWidth + groupWidth * 0.5;
-    const ly = height - 40;
+    const ly = height - (options.fullLabels ? 54 : 40);
     const minX = padding.left + 6;
     const maxX = plotWidth - padding.right - 6;
     lx = Math.min(Math.max(lx, minX), maxX);
@@ -587,7 +625,7 @@ const createGroupedBarChart = (container, categories, series, valueFormatter, op
     label.setAttribute("text-anchor", "middle");
     label.setAttribute("font-size", "11");
     label.setAttribute("fill", "#4f574f");
-    const lines = _splitLabel(category);
+    const lines = options.fullLabels ? String(category).split(" ") : _splitLabel(category);
     label.textContent = "";
     lines.forEach((line, idx) => {
       const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
@@ -603,8 +641,10 @@ const createGroupedBarChart = (container, categories, series, valueFormatter, op
       const capped = Math.min(value, maxValue);
       const barHeight = (capped / maxValue) * chartHeight;
       const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      rect.setAttribute("x", xStart + seriesIndex * barWidth);
-      rect.setAttribute("y", padding.top + chartHeight - barHeight);
+      const barX = xStart + seriesIndex * barWidth;
+      const barY = padding.top + chartHeight - barHeight;
+      rect.setAttribute("x", barX);
+      rect.setAttribute("y", barY);
       rect.setAttribute("width", barWidth * 0.9);
       rect.setAttribute("height", barHeight);
       rect.setAttribute("rx", 4);
@@ -621,10 +661,35 @@ const createGroupedBarChart = (container, categories, series, valueFormatter, op
         tooltip.style.opacity = "0";
       });
       svg.appendChild(rect);
+
+      if (options.showValues) {
+        const valueLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        valueLabel.setAttribute("x", barX + (barWidth * 0.45));
+        valueLabel.setAttribute("y", Math.max(barY - 6, padding.top + 10));
+        valueLabel.setAttribute("text-anchor", "middle");
+        valueLabel.setAttribute("font-size", "10");
+        valueLabel.setAttribute("fill", "#4f574f");
+        valueLabel.textContent = valueFormatter(value);
+        svg.appendChild(valueLabel);
+      }
     });
   });
 
   container.appendChild(svg);
+
+  if (options.showLegend && series.length > 1) {
+    const legend = document.createElement("div");
+    legend.className = "legend";
+    legend.style.justifyContent = "center";
+    legend.style.marginTop = "10px";
+    series.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "legend-item";
+      row.innerHTML = `<span class="legend-dot" style="background:${item.color}"></span>${item.label}`;
+      legend.appendChild(row);
+    });
+    container.appendChild(legend);
+  }
 };
 
 const setStatus = (message, state) => {
@@ -771,6 +836,7 @@ const renderDiagnostics = (report) => {
   const body = document.getElementById("diagnostics-body");
   const coldChart = document.getElementById("diagnostics-cold-chart");
   const baseChart = document.getElementById("diagnostics-baseline-chart");
+  const coldQueryChart = document.getElementById("diagnostics-cold-query-chart");
   if (!head || !body) return;
   const formats = Object.entries(report.formats || {});
   if (!formats.length) return;
@@ -778,7 +844,7 @@ const renderDiagnostics = (report) => {
   head.innerHTML = "";
   body.innerHTML = "";
   const headerRow = document.createElement("tr");
-  ["Format", "Warm (ms)", "Cold (ms)", "Note"].forEach((label) => {
+  ["Format", "Warm (ms)", "Cold (ms)"].forEach((label) => {
     const th = document.createElement("th");
     th.textContent = label;
     headerRow.appendChild(th);
@@ -789,8 +855,7 @@ const renderDiagnostics = (report) => {
     const tr = document.createElement("tr");
     const full = data.queries?.full_scan_min?.median_ms;
     const cold = data.queries?.full_scan_min?.cold_ms;
-    const note = data.note || "";
-    [name, formatMs(full), formatMs(cold), note].forEach((val) => {
+    [name, formatMs(full), formatMs(cold)].forEach((val) => {
       const td = document.createElement("td");
       td.textContent = String(val ?? "--");
       tr.appendChild(td);
@@ -809,7 +874,8 @@ const renderDiagnostics = (report) => {
         { label: "Warm", color: "#2f4a36", values: warm },
         { label: "Cold", color: "#e38b2c", values: cold },
       ],
-      (value) => formatMs(value)
+      (value) => formatMs(value),
+      { showLegend: chartPrefs.showLegend, showValues: chartPrefs.showValues }
     );
   }
 
@@ -820,7 +886,28 @@ const renderDiagnostics = (report) => {
       baseChart,
       categories,
       [{ label: "Median", color: "#4c6fa8", values }],
-      (value) => formatMs(value)
+      (value) => formatMs(value),
+      { showLegend: chartPrefs.showLegend, showValues: chartPrefs.showValues }
+    );
+  }
+
+  if (coldQueryChart) {
+    const categories = ["Full scan", "Selective predicate", "Random access"];
+    const series = formats.map(([name, data]) => ({
+      label: name,
+      color: getFormatColor(name),
+      values: [
+        data.queries?.full_scan_min?.cold_ms || 0,
+        data.queries?.selective_predicate?.cold_ms || 0,
+        data.queries?.random_access?.cold_ms || 0,
+      ],
+    }));
+    createGroupedBarChart(
+      coldQueryChart,
+      categories,
+      series,
+      (value) => formatMs(value),
+      { showLegend: chartPrefs.showLegend, showValues: chartPrefs.showValues, fullLabels: true }
     );
   }
 };
@@ -884,6 +971,24 @@ const buildFormatCard = (name, data, isOverall, best) => {
         data.query_median_ms_geomean?.random_access,
         undefined
       )}</strong></div>
+      <div class="kv ${isBestMin(
+        data.cold_query_ms_stats?.full_scan_min?.geomean,
+        best?.cold_full
+      ) ? "is-best" : ""}"><span>Cold full scan</span><strong>${formatMs(
+        data.cold_query_ms_stats?.full_scan_min?.geomean
+      )}</strong></div>
+      <div class="kv ${isBestMin(
+        data.cold_query_ms_stats?.selective_predicate?.geomean,
+        best?.cold_selective
+      ) ? "is-best" : ""}"><span>Cold selective</span><strong>${formatMs(
+        data.cold_query_ms_stats?.selective_predicate?.geomean
+      )}</strong></div>
+      <div class="kv ${isBestMin(
+        data.cold_query_ms_stats?.random_access?.geomean,
+        best?.cold_random_access
+      ) ? "is-best" : ""}"><span>Cold random access</span><strong>${formatMs(
+        data.cold_query_ms_stats?.random_access?.geomean
+      )}</strong></div>
       ${errorNote}
     `;
   } else {
@@ -919,6 +1024,24 @@ const buildFormatCard = (name, data, isOverall, best) => {
           data.queries?.random_access?.p95_ms
         )}</strong>
       </div>
+      <div class="kv ${isBestMin(
+        data.queries?.full_scan_min?.cold_ms,
+        best?.cold_full
+      ) ? "is-best" : ""}"><span>Cold full scan</span><strong>${formatMs(
+        data.queries?.full_scan_min?.cold_ms
+      )}</strong></div>
+      <div class="kv ${isBestMin(
+        data.queries?.selective_predicate?.cold_ms,
+        best?.cold_selective
+      ) ? "is-best" : ""}"><span>Cold selective</span><strong>${formatMs(
+        data.queries?.selective_predicate?.cold_ms
+      )}</strong></div>
+      <div class="kv ${isBestMin(
+        data.queries?.random_access?.cold_ms,
+        best?.cold_random_access
+      ) ? "is-best" : ""}"><span>Cold random access</span><strong>${formatMs(
+        data.queries?.random_access?.cold_ms
+      )}</strong></div>
       <div class="kv"><span>Compression validation</span><strong>${validationText}</strong></div>
       ${errorNote}
     `;
@@ -945,6 +1068,9 @@ const computeBestMetrics = (formats) => {
     decomp_time: min(getNums((item) => item.write?.decompression_time_s)),
     full_scan: min(getNums((item) => item.queries?.full_scan_min?.median_ms)),
     random_access: min(getNums((item) => item.queries?.random_access?.median_ms)),
+    cold_full: min(getNums((item) => item.queries?.full_scan_min?.cold_ms)),
+    cold_selective: min(getNums((item) => item.queries?.selective_predicate?.cold_ms)),
+    cold_random_access: min(getNums((item) => item.queries?.random_access?.cold_ms)),
   };
 };
 
@@ -972,9 +1098,29 @@ const renderReportPreview = (data) => {
         output.appendChild(buildFormatCard(name, format, false, best));
       });
     renderUploadSelectivity(data.formats || {});
+    renderUploadSelectivityBestTable(data.formats || {});
     renderUploadEncodings(data.formats || {});
     initUploadLikeSelect(data.formats || {});
   }
+};
+
+const renderUploadSelectivityBestTable = (formats) => {
+  const body = document.getElementById("upload-selectivity-best-body");
+  if (!body) return;
+  body.innerHTML = "";
+  Object.entries(formats || {})
+    .filter(([name]) => name !== "vortex_error")
+    .forEach(([name, data]) => {
+      const tr = document.createElement("tr");
+      const bestCol = data.best_select_col || "--";
+      const bestMs = data.best_select_col_avg_median_ms;
+      [name, bestCol, formatMs(bestMs)].forEach((val) => {
+        const td = document.createElement("td");
+        td.textContent = String(val ?? "--");
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
 };
 
 const renderPlots = (plots) => {
@@ -1057,10 +1203,13 @@ async function runBenchmark(file) {
     if (data.report) {
       currentReport = data.report;
       renderReportPreview(data.report);
+      updateUploadFormatSelect(data.report);
       renderUploadChart(
         data.report,
         document.getElementById("upload-metric")?.value,
-        uploadChartMode
+        uploadChartMode,
+        uploadOverlayMode,
+        document.getElementById("upload-format")?.value
       );
       renderUploadSelectivity(data.report.formats || {});
       renderUploadEncodings(data.report.formats || {});
@@ -1182,7 +1331,7 @@ const initCustomQuery = () => {
   });
 };
 
-const renderUploadChart = (report, metric, mode) => {
+const renderUploadChart = (report, metric, mode, overlay = false, formatKey = "") => {
   const container = document.getElementById("upload-chart");
   const title = document.getElementById("upload-chart-title");
   if (!container || !title) return;
@@ -1236,7 +1385,12 @@ const renderUploadChart = (report, metric, mode) => {
   };
 
   const chosen = metricMap[metric] || metricMap.compression_ratio;
-  const data = Object.entries(report.formats || {}).map(([name, values]) => ({
+  let entries = Object.entries(report.formats || {});
+  if (!overlay && formatKey) {
+    const filtered = entries.filter(([name]) => name === formatKey);
+    if (filtered.length) entries = filtered;
+  }
+  const data = entries.map(([name, values]) => ({
     label: name,
     value: chosen.getValue(values) || 0,
     size: values.write?.output_size_bytes,
@@ -1246,7 +1400,31 @@ const renderUploadChart = (report, metric, mode) => {
   }));
 
   title.textContent = chosen.label;
-  createLineChart(container, data, chosen.format, mode);
+  createLineChart(container, data, chosen.format, mode, {
+    showValues: chartPrefs.showValues,
+  });
+};
+
+const updateUploadFormatSelect = (report) => {
+  const select = document.getElementById("upload-format");
+  if (!select) return;
+  const current = select.value;
+  const keys = Object.keys(report.formats || {});
+  select.innerHTML = "";
+  keys.forEach((key) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = key;
+    select.appendChild(option);
+  });
+  if (current && keys.includes(current)) {
+    select.value = current;
+  } else if (keys.includes("parquet_snappy")) {
+    select.value = "parquet_snappy";
+  } else if (keys.length) {
+    select.value = keys[0];
+  }
+  select.disabled = uploadOverlayMode;
 };
 
 const renderUploadSelectivity = (formats) => {
@@ -1287,7 +1465,13 @@ const renderUploadSelectivity = (formats) => {
       container.textContent = "Selectivity data not available.";
       return;
     }
-    createMultiLineChart(container, series, xLabels, (value) => formatMs(value));
+    createMultiLineChart(
+      container,
+      series,
+      xLabels,
+      (value) => formatMs(value),
+      { showLegend: chartPrefs.showLegend, showValues: chartPrefs.showValues }
+    );
   };
   render();
   select.addEventListener("change", render);
@@ -1404,6 +1588,8 @@ const renderUploadLikeChart = (formatName, format, column) => {
     (value) => formatMs(scale === "log" ? Math.pow(10, value) - 1 : value),
     {
       yMax: axisMax,
+      showLegend: chartPrefs.showLegend,
+      showValues: chartPrefs.showValues,
     }
   );
 };
@@ -1522,7 +1708,11 @@ loadDeleteOptions();
 initDeleteUpload();
 
 const metricSelect = document.getElementById("upload-metric");
+const formatSelect = document.getElementById("upload-format");
 const chartToggle = document.getElementById("upload-chart-toggle");
+const overlayToggle = document.getElementById("upload-overlay-toggle");
+const legendButtons = document.querySelectorAll(".js-toggle-legend");
+const valuesButtons = document.querySelectorAll(".js-toggle-values");
 if (chartToggle) {
   chartToggle.addEventListener("click", (event) => {
     const button = event.target.closest("[data-mode]");
@@ -1534,7 +1724,13 @@ if (chartToggle) {
       .querySelectorAll(".toggle-btn")
       .forEach((item) => item.classList.toggle("is-active", item === button));
     if (currentReport) {
-      renderUploadChart(currentReport, metricSelect?.value, uploadChartMode);
+      renderUploadChart(
+        currentReport,
+        metricSelect?.value,
+        uploadChartMode,
+        uploadOverlayMode,
+        formatSelect?.value
+      );
     }
   });
 }
@@ -1542,15 +1738,89 @@ if (chartToggle) {
 if (metricSelect) {
   metricSelect.addEventListener("change", () => {
     if (currentReport) {
-      renderUploadChart(currentReport, metricSelect.value, uploadChartMode);
+      renderUploadChart(
+        currentReport,
+        metricSelect.value,
+        uploadChartMode,
+        uploadOverlayMode,
+        formatSelect?.value
+      );
     }
   });
   window.addEventListener("resize", () => {
     if (currentReport) {
-      renderUploadChart(currentReport, metricSelect.value, uploadChartMode);
+      renderUploadChart(
+        currentReport,
+        metricSelect.value,
+        uploadChartMode,
+        uploadOverlayMode,
+        formatSelect?.value
+      );
     }
   });
 }
+
+if (formatSelect) {
+  formatSelect.addEventListener("change", () => {
+    if (currentReport) {
+      renderUploadChart(
+        currentReport,
+        metricSelect?.value,
+        uploadChartMode,
+        uploadOverlayMode,
+        formatSelect.value
+      );
+    }
+  });
+}
+
+if (overlayToggle) {
+  const overlayButton = overlayToggle.querySelector(".toggle-btn");
+  overlayButton?.addEventListener("click", () => {
+    uploadOverlayMode = !uploadOverlayMode;
+    overlayButton.classList.toggle("is-active", uploadOverlayMode);
+    if (formatSelect) formatSelect.disabled = uploadOverlayMode;
+    if (currentReport) {
+      renderUploadChart(
+        currentReport,
+        metricSelect?.value,
+        uploadChartMode,
+        uploadOverlayMode,
+        formatSelect?.value
+      );
+    }
+  });
+}
+
+const refreshCharts = () => {
+  if (currentReport) {
+    renderUploadChart(
+      currentReport,
+      metricSelect?.value,
+      uploadChartMode,
+      uploadOverlayMode,
+      formatSelect?.value
+    );
+    renderDiagnostics(currentReport);
+    renderUploadSelectivity(currentReport.formats || {});
+    renderUploadEncodings(currentReport.formats || {});
+    initUploadLikeSelect(currentReport.formats || {});
+  }
+};
+legendButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    chartPrefs.showLegend = !chartPrefs.showLegend;
+    legendButtons.forEach((b) => b.classList.toggle("is-active", chartPrefs.showLegend));
+    refreshCharts();
+  });
+});
+valuesButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    chartPrefs.showValues = !chartPrefs.showValues;
+    valuesButtons.forEach((b) => b.classList.toggle("is-active", chartPrefs.showValues));
+    refreshCharts();
+  });
+});
 
 const initReveal = () => {
   const targets = document.querySelectorAll(".panel, .stats-grid, .chart-card, .plot-viewer");

@@ -13,6 +13,24 @@ def _geomean(values: Iterable[float]) -> Optional[float]:
     return math.exp(sum(math.log(v) for v in vals) / len(vals))
 
 
+def _median(values: Iterable[float]) -> Optional[float]:
+    vals = sorted(v for v in values if v is not None)
+    if not vals:
+        return None
+    mid = len(vals) // 2
+    if len(vals) % 2 == 1:
+        return vals[mid]
+    return (vals[mid - 1] + vals[mid]) / 2
+
+
+def _p95(values: Iterable[float]) -> Optional[float]:
+    vals = sorted(v for v in values if v is not None)
+    if not vals:
+        return None
+    idx = int(0.95 * (len(vals) - 1))
+    return vals[idx]
+
+
 def _load_reports(reports_dir: Path) -> List[Dict[str, Any]]:
     reports = []
     for p in sorted(reports_dir.glob("report_*.json")):
@@ -97,6 +115,9 @@ def _build_summary(reports: List[Dict[str, Any]]) -> Dict[str, Any]:
         q_full_vals = []
         q_sel_vals = []
         q_rand_vals = []
+        cold_full_vals = []
+        cold_sel_vals = []
+        cold_rand_vals = []
         like_prefix = []
         like_suffix = []
         like_contains = []
@@ -132,6 +153,15 @@ def _build_summary(reports: List[Dict[str, Any]]) -> Dict[str, Any]:
             v = queries.get("random_access", {}).get("median_ms")
             if v is not None:
                 q_rand_vals.append(v)
+            v = queries.get("full_scan_min", {}).get("cold_ms")
+            if v is not None:
+                cold_full_vals.append(v)
+            v = queries.get("selective_predicate", {}).get("cold_ms")
+            if v is not None:
+                cold_sel_vals.append(v)
+            v = queries.get("random_access", {}).get("cold_ms")
+            if v is not None:
+                cold_rand_vals.append(v)
             like_by_col = queries.get("like_by_col", {})
             if like_by_col:
                 summary = _like_summary_by_type(like_by_col)
@@ -154,6 +184,23 @@ def _build_summary(reports: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "full_scan_min": _geomean(q_full_vals),
                 "selective_predicate": _geomean(q_sel_vals),
                 "random_access": _geomean(q_rand_vals),
+            },
+            "cold_query_ms_stats": {
+                "full_scan_min": {
+                    "geomean": _geomean(cold_full_vals),
+                    "median": _median(cold_full_vals),
+                    "p95": _p95(cold_full_vals),
+                },
+                "selective_predicate": {
+                    "geomean": _geomean(cold_sel_vals),
+                    "median": _median(cold_sel_vals),
+                    "p95": _p95(cold_sel_vals),
+                },
+                "random_access": {
+                    "geomean": _geomean(cold_rand_vals),
+                    "median": _median(cold_rand_vals),
+                    "p95": _p95(cold_rand_vals),
+                },
             },
             "like_median_ms_geomean": {
                 "prefix": _geomean(like_prefix),
@@ -216,6 +263,28 @@ def generate_overall_summary(reports_dir: Path, out_dir: Path) -> None:
             f"{_format_float(q.get('full_scan_min'))} | "
             f"{_format_float(q.get('selective_predicate'))} | "
             f"{_format_float(q.get('random_access'))}"
+        )
+
+    lines.append("")
+    lines.append("## Formats (Cold run across datasets)")
+    lines.append("format | cold_full_geomean | cold_full_median | cold_full_p95 | cold_sel_geomean | cold_sel_median | cold_sel_p95 | cold_rand_geomean | cold_rand_median | cold_rand_p95")
+    lines.append("--- | --- | --- | --- | --- | --- | --- | --- | --- | ---")
+    for name, body in summary["formats"].items():
+        cold = body.get("cold_query_ms_stats", {})
+        full = cold.get("full_scan_min", {})
+        sel = cold.get("selective_predicate", {})
+        rand = cold.get("random_access", {})
+        lines.append(
+            f"{name} | "
+            f"{_format_float(full.get('geomean'))} | "
+            f"{_format_float(full.get('median'))} | "
+            f"{_format_float(full.get('p95'))} | "
+            f"{_format_float(sel.get('geomean'))} | "
+            f"{_format_float(sel.get('median'))} | "
+            f"{_format_float(sel.get('p95'))} | "
+            f"{_format_float(rand.get('geomean'))} | "
+            f"{_format_float(rand.get('median'))} | "
+            f"{_format_float(rand.get('p95'))}"
         )
 
     out_md = out_dir / "overall_summary.md"

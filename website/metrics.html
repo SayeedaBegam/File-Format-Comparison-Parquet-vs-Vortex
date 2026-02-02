@@ -34,33 +34,35 @@
           <div class="detail-card">
             <h3>Storage efficiency</h3>
             <ul class="clean-list">
-              <li><strong>compression_ratio</strong> -- higher is better.</li>
-              <li><strong>compressed_size</strong> -- lower is better.</li>
-              <li><strong>compression_time_s</strong> -- lower is better.</li>
+              <li><strong>compression_ratio</strong> — input_size / output_size (higher = smaller files).</li>
+              <li><strong>compressed_size</strong> — final file size on disk (lower = better).</li>
+              <li><strong>compression_time_s</strong> — time to write the file (lower = faster writes).</li>
             </ul>
           </div>
           <div class="detail-card">
             <h3>Query latency</h3>
             <ul class="clean-list">
-              <li><strong>median_ms</strong> -- typical latency.</li>
-              <li><strong>p95_ms</strong> -- tail latency.</li>
-              <li><strong>cold_ms</strong> -- first-run latency.</li>
+              <li><strong>median_ms</strong> — median over timed runs (steady-state).</li>
+              <li><strong>p95_ms</strong> — tail latency over timed runs.</li>
+              <li><strong>cold_ms</strong> — first run before warmup (cache-cold).</li>
+              <li><strong>warmup</strong> — warmup runs before timing (default 1).</li>
+              <li><strong>runs</strong> — timed runs used for median/p95 (default 7).</li>
             </ul>
           </div>
           <div class="detail-card">
             <h3>Selectivity behavior</h3>
             <ul class="clean-list">
-              <li><strong>selectivity curve</strong> -- slope shows pruning.</li>
-              <li><strong>random_access</strong> -- point reads.</li>
-              <li><strong>LIKE predicates</strong> -- text scans.</li>
+              <li><strong>selectivity curve</strong> — latency vs selectivity thresholds.</li>
+              <li><strong>random_access</strong> — point lookup latency on high‑NDV column.</li>
+              <li><strong>LIKE predicates</strong> — text pattern scans (prefix/suffix/contains).</li>
             </ul>
           </div>
           <div class="detail-card">
             <h3>Reliability</h3>
             <ul class="clean-list">
-              <li><strong>runs</strong> -- more runs = stable.</li>
-              <li><strong>variance</strong> -- lower is stable.</li>
-              <li><strong>validation</strong> -- correctness check.</li>
+              <li><strong>runs</strong> — more runs reduce noise.</li>
+              <li><strong>variance</strong> — lower = more stable.</li>
+              <li><strong>validation</strong> — base table vs format correctness checks.</li>
             </ul>
           </div>
         </div>
@@ -119,22 +121,26 @@
         <div class="detail-row">
           <div class="detail-card">
             <h3>Cold vs warm</h3>
-            <p>Cold run is measured once before warmup. Warm timing is the median of repeated runs.</p>
+            <p>Cold is a single run before warmup. Warm uses median/p95 from timed runs after warmup.</p>
           </div>
           <div class="detail-card">
             <h3>Cache state</h3>
-            <p>Cold runs avoid cache effects; warm runs show steady-state performance.</p>
-          </div>
-          <div class="detail-card">
-            <h3>Row group behavior</h3>
-            <p>Sorted columns enable pruning; unsorted scans more blocks.</p>
+            <p>Cold reflects cache-miss behavior; warm reflects steady-state scans.</p>
           </div>
           <div class="detail-card">
             <h3>Format notes</h3>
-            <p>Missing extensions or errors appear next to the format.</p>
+            <p>Any missing extensions or runtime errors are shown next to the format.</p>
           </div>
         </div>
       </section>
     </main>
+    <footer class="footer">
+      <div>Made by Sayeeda and Goutham for the CloudDB Project.</div>
+      <div class="footer-links">
+        <a href="./index.html">Overall</a>
+        <a href="./dataset.html">Dataset detail</a>
+        <a href="./upload.html">Upload</a>
+      </div>
+    </footer>
   </body>
 </html>

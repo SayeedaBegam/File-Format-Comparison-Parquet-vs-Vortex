@@ -106,6 +106,74 @@
           </div>
         </div>
       </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Parquet encodings (quick meanings)</h2>
+          <p>Encodings reported in the benchmark come from Parquet metadata.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>Common encodings</h3>
+            <ul class="clean-list">
+              <li><strong>PLAIN</strong> — values stored as-is.</li>
+              <li><strong>RLE</strong> — run-length encoding for repeated values.</li>
+              <li><strong>BIT_PACKED</strong> — bit-level packing for small integers.</li>
+              <li><strong>RLE_DICTIONARY / DICTIONARY</strong> — dictionary + indices.</li>
+            </ul>
+          </div>
+          <div class="detail-card">
+            <h3>Delta and byte-array encodings</h3>
+            <ul class="clean-list">
+              <li><strong>DELTA_BINARY_PACKED</strong> — delta + packed ints.</li>
+              <li><strong>DELTA_BYTE_ARRAY</strong> — shared prefixes for strings.</li>
+              <li><strong>DELTA_LENGTH_BYTE_ARRAY</strong> — delta-encoded string lengths.</li>
+              <li><strong>BYTE_STREAM_SPLIT</strong> — splits bytes of floats for better compression.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Parquet compression codecs</h2>
+          <p>These control how Parquet pages are compressed on disk.</p>
+        </div>
+        <div class="detail-row">
+          <div class="detail-card">
+            <h3>zstd</h3>
+            <p class="panel-note">Modern codec with strong compression and good speed.</p>
+            <ul class="clean-list">
+              <li>Higher compression ratios than Snappy in most cases.</li>
+              <li>Good balance for scan-heavy analytics.</li>
+            </ul>
+          </div>
+          <div class="detail-card">
+            <h3>snappy</h3>
+            <p class="panel-note">Fast, lightweight compression.</p>
+            <ul class="clean-list">
+              <li>Lower compression ratio than zstd.</li>
+              <li>Very fast decompression.</li>
+            </ul>
+          </div>
+          <div class="detail-card">
+            <h3>uncompressed</h3>
+            <p class="panel-note">No compression.</p>
+            <ul class="clean-list">
+              <li>Largest files, simplest to decode.</li>
+              <li>Useful as a baseline for storage cost.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
     </main>
+    <footer class="footer">
+      <div>Made by Sayeeda and Goutham for the CloudDB Project.</div>
+      <div class="footer-links">
+        <a href="./index.html">Overall</a>
+        <a href="./dataset.html">Dataset detail</a>
+        <a href="./upload.html">Upload</a>
+      </div>
+    </footer>
   </body>
 </html>

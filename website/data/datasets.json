@@ -57,10 +57,6 @@
       "report": "../out/report_HashTags_1.json"
     },
     {
-      "name": "dummy",
-      "report": "./out/report_dummy.json"
-    },
-    {
       "name": "Corporations_1",
       "report": "./out/report_Corporations_1.json"
     },

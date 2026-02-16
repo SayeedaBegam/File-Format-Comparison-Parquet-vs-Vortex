@@ -75,6 +75,10 @@
     {
       "name": "NYC_1",
       "report": "./out/report_NYC_1.json"
+    },
+    {
+      "name": "Food_1",
+      "report": "./out/report_Food_1.json"
     }
   ]
 }

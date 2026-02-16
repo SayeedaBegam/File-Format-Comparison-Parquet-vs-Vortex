@@ -1,0 +1,223 @@
+# Benchmark Report
+
+- Input: `/home/utn/ozil43oh/sem_3/cloud_db/clouddb_project/File-Format-Comparison-Parquet-vs-Vortex/out/uploads/Food_1.csv` (csv)
+- Rows: **5,216,593**
+- Input rows: **5,216,593**
+- Dropped rows: **0**
+- Input size: **205.91 MB**
+- column_type_counts: numeric=4, text=2, date=0, bool=0, other=0
+- min_col: `column1`
+- filter_col: `column4`
+- select_cols: `column1, column4, column5`
+- ndv_ratio_by_type: numeric=0.109, text=0.001
+- ndv_ratio_top_cols:
+  - column5: 0.420
+  - column1: 0.016
+  - column2: 0.001
+  - column3: 0.001
+  - column4: 0.001
+  - column0: 0.000
+- recommendations:
+  - storage-first: `parquet_zstd`
+    - reason: highest compression_ratio 6.157
+  - compression-speed-first: `vortex_default`
+    - reason: highest compression_speed_mb_s 395.88
+  - decompression-speed-first: `parquet_uncompressed`
+    - reason: highest decompression_speed_mb_s 1410.17
+  - read-latency-first: `vortex_default`
+    - reason: lowest random_access median_ms 8.00
+  - scan-first: `parquet_uncompressed`
+    - reason: lowest full_scan_min median_ms 2.01
+
+## duckdb_table
+- size_mb: **205.91**
+- compression_time_s: **0.000**
+- compression_ratio: **1.000**
+- full_scan_min median_ms: **0.64** (p95 **0.65**, cold **1.04**)
+- selective_predicate median_ms: **0.91** (p95 **0.94**, cold **1.00**)
+- random_access median_ms: **18.08** (p95 **18.21**, cold **18.53**)
+- best_select_col: `column5` (avg median_ms **3.68**)
+- selectivity:
+  - column1: 1%: 12.11ms, 10%: 8.40ms, 25%: 8.31ms, 50%: 8.52ms, 90%: 8.60ms
+  - column4: 1%: 11.06ms, 10%: 8.97ms, 25%: 9.03ms, 50%: 9.04ms, 90%: 9.11ms
+  - column5: 1%: 3.80ms, 10%: 3.82ms, 25%: 3.83ms, 50%: 3.32ms, 90%: 3.61ms
+- like_predicates:
+  - column2 prefix target 1%,10%,25%,50%,90% (actual 0.72%) `Pro%`: 4.02ms
+  - column2 suffix target 1% (actual 1.01%) `%ter`: 8.49ms
+  - column2 suffix target 10%,25%,50%,90% (actual 13.12%) `%tes`: 8.42ms
+  - column2 contains target 1% (actual 0.91%) `%rio%`: 8.47ms
+  - column2 contains target 10%,25%,50%,90% (actual 2.62%) `%erv%`: 8.44ms
+  - column3 prefix target 1% (actual 0.96%) `And%`: 2.34ms
+  - column3 prefix target 10% (actual 6.99%) `Xpe%`: 2.39ms
+  - column3 prefix target 25%,50%,90% (actual 22.51%) `Gal%`: 2.41ms
+  - column3 suffix target 1% (actual 0.98%) `%000`: 10.20ms
+  - column3 suffix target 10%,25%,50%,90% (actual 3.75%) `%00)`: 10.29ms
+  - column3 contains target 1% (actual 0.99%) `%ga %`: 10.48ms
+  - column3 contains target 10%,25%,50%,90% (actual 7.00%) `%ria%`: 10.04ms
+- like_summary:
+  - contains: avg median_ms **9.36** (n=4)
+  - prefix: avg median_ms **2.79** (n=4)
+  - suffix: avg median_ms **9.35** (n=4)
+
+## parquet_zstd
+- size_mb: **33.44**
+- compression_time_s: **0.521**
+- compression_speed_mb_s: **395.044**
+- decompression_time_s: **0.053**
+- decompression_speed_mb_s: **630.437**
+- compression_ratio: **6.157**
+- encodings:
+  - column0: PLAIN_DICTIONARY
+  - column1: PLAIN_DICTIONARY
+  - column2: PLAIN_DICTIONARY
+  - column3: PLAIN_DICTIONARY
+  - column4: PLAIN_DICTIONARY
+  - column5: PLAIN
+- full_scan_min median_ms: **2.37** (p95 **2.70**, cold **3.47**)
+- selective_predicate median_ms: **3.55** (p95 **3.60**, cold **3.87**)
+- random_access median_ms: **58.76** (p95 **59.19**, cold **59.71**)
+- best_select_col: `column4` (avg median_ms **4.22**)
+- validation_pass: **True**
+- selectivity:
+  - column1: 1%: 4.32ms, 10%: 4.51ms, 25%: 4.86ms, 50%: 3.85ms, 90%: 3.76ms
+  - column4: 1%: 4.56ms, 10%: 4.24ms, 25%: 4.27ms, 50%: 4.09ms, 90%: 3.95ms
+  - column5: 1%: 11.60ms, 10%: 8.34ms, 25%: 8.38ms, 50%: 8.43ms, 90%: 8.60ms
+- like_predicates:
+  - column2 prefix target 1%,10%,25%,50%,90% (actual 0.72%) `Pro%`: 2.50ms
+  - column2 suffix target 1% (actual 1.01%) `%ter`: 2.74ms
+  - column2 suffix target 10%,25%,50%,90% (actual 13.12%) `%tes`: 2.84ms
+  - column2 contains target 1% (actual 0.91%) `%rio%`: 2.74ms
+  - column2 contains target 10%,25%,50%,90% (actual 2.62%) `%erv%`: 2.76ms
+  - column3 prefix target 1% (actual 0.96%) `And%`: 1.43ms
+  - column3 prefix target 10% (actual 6.99%) `Xpe%`: 1.58ms
+  - column3 prefix target 25%,50%,90% (actual 22.51%) `Gal%`: 1.52ms
+  - column3 suffix target 1% (actual 0.98%) `%000`: 1.62ms
+  - column3 suffix target 10%,25%,50%,90% (actual 3.75%) `%00)`: 1.54ms
+  - column3 contains target 1% (actual 0.99%) `%ga %`: 1.50ms
+  - column3 contains target 10%,25%,50%,90% (actual 7.00%) `%ria%`: 1.51ms
+- like_summary:
+  - contains: avg median_ms **2.13** (n=4)
+  - prefix: avg median_ms **1.76** (n=4)
+  - suffix: avg median_ms **2.19** (n=4)
+
+## parquet_snappy
+- size_mb: **45.93**
+- compression_time_s: **0.608**
+- compression_speed_mb_s: **338.914**
+- decompression_time_s: **0.050**
+- decompression_speed_mb_s: **926.167**
+- compression_ratio: **4.483**
+- encodings:
+  - column0: PLAIN_DICTIONARY
+  - column1: PLAIN_DICTIONARY
+  - column2: PLAIN_DICTIONARY
+  - column3: PLAIN_DICTIONARY
+  - column4: PLAIN_DICTIONARY
+  - column5: PLAIN
+- full_scan_min median_ms: **2.19** (p95 **2.52**, cold **2.72**)
+- selective_predicate median_ms: **3.42** (p95 **3.67**, cold **3.50**)
+- random_access median_ms: **42.00** (p95 **42.31**, cold **42.92**)
+- best_select_col: `column1` (avg median_ms **4.11**)
+- validation_pass: **True**
+- selectivity:
+  - column1: 1%: 4.57ms, 10%: 4.11ms, 25%: 4.20ms, 50%: 3.94ms, 90%: 3.70ms
+  - column4: 1%: 4.62ms, 10%: 4.61ms, 25%: 4.57ms, 50%: 4.65ms, 90%: 4.30ms
+  - column5: 1%: 5.88ms, 10%: 5.89ms, 25%: 6.15ms, 50%: 6.00ms, 90%: 6.09ms
+- like_predicates:
+  - column2 prefix target 1%,10%,25%,50%,90% (actual 0.72%) `Pro%`: 2.25ms
+  - column2 suffix target 1% (actual 1.01%) `%ter`: 2.43ms
+  - column2 suffix target 10%,25%,50%,90% (actual 13.12%) `%tes`: 2.56ms
+  - column2 contains target 1% (actual 0.91%) `%rio%`: 2.48ms
+  - column2 contains target 10%,25%,50%,90% (actual 2.62%) `%erv%`: 2.43ms
+  - column3 prefix target 1% (actual 0.96%) `And%`: 1.53ms
+  - column3 prefix target 10% (actual 6.99%) `Xpe%`: 1.65ms
+  - column3 prefix target 25%,50%,90% (actual 22.51%) `Gal%`: 1.48ms
+  - column3 suffix target 1% (actual 0.98%) `%000`: 1.53ms
+  - column3 suffix target 10%,25%,50%,90% (actual 3.75%) `%00)`: 1.51ms
+  - column3 contains target 1% (actual 0.99%) `%ga %`: 1.49ms
+  - column3 contains target 10%,25%,50%,90% (actual 7.00%) `%ria%`: 1.52ms
+- like_summary:
+  - contains: avg median_ms **1.98** (n=4)
+  - prefix: avg median_ms **1.73** (n=4)
+  - suffix: avg median_ms **2.01** (n=4)
+
+## parquet_uncompressed
+- size_mb: **66.49**
+- compression_time_s: **0.789**
+- compression_speed_mb_s: **261.130**
+- decompression_time_s: **0.047**
+- decompression_speed_mb_s: **1410.173**
+- compression_ratio: **3.097**
+- encodings:
+  - column0: PLAIN_DICTIONARY
+  - column1: PLAIN_DICTIONARY
+  - column2: PLAIN_DICTIONARY
+  - column3: PLAIN_DICTIONARY
+  - column4: PLAIN_DICTIONARY
+  - column5: PLAIN
+- full_scan_min median_ms: **2.01** (p95 **2.03**, cold **2.99**)
+- selective_predicate median_ms: **2.96** (p95 **3.03**, cold **3.35**)
+- random_access median_ms: **21.07** (p95 **21.18**, cold **21.95**)
+- best_select_col: `column4` (avg median_ms **3.41**)
+- validation_pass: **True**
+- selectivity:
+  - column1: 1%: 3.62ms, 10%: 4.06ms, 25%: 4.07ms, 50%: 3.99ms, 90%: 3.96ms
+  - column4: 1%: 3.67ms, 10%: 3.51ms, 25%: 3.41ms, 50%: 3.25ms, 90%: 3.20ms
+  - column5: 1%: 3.98ms, 10%: 3.78ms, 25%: 3.83ms, 50%: 4.39ms, 90%: 4.08ms
+- like_predicates:
+  - column2 prefix target 1%,10%,25%,50%,90% (actual 0.72%) `Pro%`: 1.99ms
+  - column2 suffix target 1% (actual 1.01%) `%ter`: 2.03ms
+  - column2 suffix target 10%,25%,50%,90% (actual 13.12%) `%tes`: 2.03ms
+  - column2 contains target 1% (actual 0.91%) `%rio%`: 1.97ms
+  - column2 contains target 10%,25%,50%,90% (actual 2.62%) `%erv%`: 2.09ms
+  - column3 prefix target 1% (actual 0.96%) `And%`: 1.44ms
+  - column3 prefix target 10% (actual 6.99%) `Xpe%`: 1.48ms
+  - column3 prefix target 25%,50%,90% (actual 22.51%) `Gal%`: 1.46ms
+  - column3 suffix target 1% (actual 0.98%) `%000`: 1.47ms
+  - column3 suffix target 10%,25%,50%,90% (actual 3.75%) `%00)`: 1.49ms
+  - column3 contains target 1% (actual 0.99%) `%ga %`: 1.47ms
+  - column3 contains target 10%,25%,50%,90% (actual 7.00%) `%ria%`: 1.48ms
+- like_summary:
+  - contains: avg median_ms **1.75** (n=4)
+  - prefix: avg median_ms **1.59** (n=4)
+  - suffix: avg median_ms **1.75** (n=4)
+
+## vortex_default
+- size_mb: **43.14**
+- compression_time_s: **0.520**
+- compression_speed_mb_s: **395.879**
+- decompression_time_s: **0.050**
+- decompression_speed_mb_s: **856.347**
+- compression_ratio: **4.773**
+- encodings: unable to read vortex encodings: Type `u32` at position 466 is unaligned.
+	while verifying table field `max` at position 466
+	while verifying vector element 0 at position 24
+	while verifying table field `field_stats` at position 16
+
+
+- full_scan_min median_ms: **3.14** (p95 **3.45**, cold **122.92**)
+- selective_predicate median_ms: **4.31** (p95 **4.62**, cold **52.24**)
+- random_access median_ms: **8.00** (p95 **12.93**, cold **189.49**)
+- best_select_col: `column5` (avg median_ms **8.04**)
+- validation_pass: **True**
+- selectivity:
+  - column1: 1%: 9.77ms, 10%: 9.39ms, 25%: 9.87ms, 50%: 10.03ms, 90%: 9.91ms
+  - column4: 1%: 12.30ms, 10%: 12.65ms, 25%: 12.40ms, 50%: 11.77ms, 90%: 11.97ms
+  - column5: 1%: 6.42ms, 10%: 7.97ms, 25%: 7.98ms, 50%: 8.51ms, 90%: 9.34ms
+- like_predicates:
+  - column2 prefix target 1%,10%,25%,50%,90% (actual 0.72%) `Pro%`: 3.59ms
+  - column2 suffix target 1% (actual 1.01%) `%ter`: 3.69ms
+  - column2 suffix target 10%,25%,50%,90% (actual 13.12%) `%tes`: 3.80ms
+  - column2 contains target 1% (actual 0.91%) `%rio%`: 3.78ms
+  - column2 contains target 10%,25%,50%,90% (actual 2.62%) `%erv%`: 3.71ms
+  - column3 prefix target 1% (actual 0.96%) `And%`: 2.15ms
+  - column3 prefix target 10% (actual 6.99%) `Xpe%`: 2.02ms
+  - column3 prefix target 25%,50%,90% (actual 22.51%) `Gal%`: 1.97ms
+  - column3 suffix target 1% (actual 0.98%) `%000`: 2.35ms
+  - column3 suffix target 10%,25%,50%,90% (actual 3.75%) `%00)`: 2.38ms
+  - column3 contains target 1% (actual 0.99%) `%ga %`: 2.30ms
+  - column3 contains target 10%,25%,50%,90% (actual 7.00%) `%ria%`: 2.23ms
+- like_summary:
+  - contains: avg median_ms **3.01** (n=4)
+  - prefix: avg median_ms **2.43** (n=4)
+  - suffix: avg median_ms **3.06** (n=4)
